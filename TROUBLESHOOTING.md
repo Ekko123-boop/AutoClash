@@ -1,0 +1,33 @@
+# Known Issues & Troubleshooting History
+
+This log tracks bugs encountered during the development and usage of the Automated Model Clash Runner, along with their root causes and fixes. Future developers can reference this to resolve regressions quickly.
+
+### 1. WPF Crash: "Data at the root level is invalid" (StaticResourceHolder exception)
+**Symptom**: Attempting to launch the plugin immediately threw a fatal XAML parsing exception related to a `StaticResource`.
+**Cause**: A `BooleanToVisibilityConverter` was referenced in a CheckBox binding `Visibility="{Binding IsFolder, Converter={StaticResource BooleanToVisibilityConverter}}"` but the converter was never explicitly defined in the XAML `<Window.Resources>`.
+**Fix**: Add the following to the top of `MainWindow.xaml`:
+```xml
+<Window.Resources>
+    <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+</Window.Resources>
+```
+
+### 2. Deployment Failure: "The process cannot access the file"
+**Symptom**: Running `Copy-Item` to deploy the built `.dll` into the `%APPDATA%` bundle folder failed with an `IOException`.
+**Cause**: The DLL is loaded into the Navisworks AppDomain when the application starts. Windows locks the file, preventing overwrites.
+**Fix**: Navisworks MUST be fully closed before attempting to copy or deploy a new compiled DLL.
+
+### 3. Missing Properties on ClashTest (CS0117)
+**Symptom**: Compile errors stating `'ClashTest' does not contain a definition for 'MergeType'` and `'CompositeObjectClashing'`.
+**Cause**: The Navisworks .NET API (`Autodesk.Navisworks.Api.Clash`) handles clash test construction slightly differently than the legacy COM API. Some properties are not directly exposed on the constructor or have been deprecated/moved.
+**Fix**: Removed explicit assignments for `MergeType` and `CompositeObjectClashing`. Rely on Navisworks defaults or manage them via standard UI templates if strictly required.
+
+### 4. UI Bug: Manual Search Sets Missing from List
+**Symptom**: The UI only displayed one Search Set ("AS BUILT") but completely hid actual Folders (like "Base Build").
+**Cause**: The WPF binding `Visibility="{Binding IsFolder, Converter={StaticResource BooleanToVisibilityConverter}}"` evaluated to `Collapsed` for Sets (which was correct for hiding the *CheckBox*), but because it was applied incorrectly, the inverse logic was needed. 
+**Fix**: Created a dedicated `public bool IsSet => !IsFolder;` property in the ViewModel and bound visibility to that instead, ensuring checkboxes only appear on actual sets while keeping the folder names visible in the tree.
+
+### 5. Model Discovery Bug: Nested `.nwc` Files Missing
+**Symptom**: The UI showed top-level federated `.nwd` branches (e.g., `F1-MEI - A&B.nwd`) but failed to list the actual `.nwc` leaf files inside them.
+**Cause**: The original discovery logic only iterated `doc.Models` and checked exactly one level deep (`model.RootItem.Children`). It failed to recurse into federated models.
+**Fix**: Implemented a recursive `FindModelNodes` function in `ModelDiscoveryService.cs`. It now recursively drills into `item.Children` (up to a safe depth of 3) looking for items containing the `Source File Name` property or a `ClassDisplayName` of "File", correctly extracting `.nwc`, `.rvt`, and `.dwg` leaf nodes.

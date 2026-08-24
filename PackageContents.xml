@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage
+    SchemaVersion="1.0"
+    AutodeskProduct="Navisworks"
+    Name="AutomatedClashRunner"
+    AppVersion="1.0.0"
+    Description="Automated Model Clash Runner for Navisworks"
+    ProductType="Application">
+
+    <CompanyDetails Name="Custom" />
+
+    <Components Description="Main Plugin">
+        <RuntimeRequirements
+            OS="Win64"
+            Platform="NAVMAN"
+            SeriesMin="Nw21"
+            SeriesMax="Nw21" />
+        <ComponentEntry
+            AppName="AutomatedClashRunner"
+            ModuleName="./Contents/AutomatedClashRunner.dll"
+            AppType="ManagedPlugin" />
+    </Components>
+</ApplicationPackage>
