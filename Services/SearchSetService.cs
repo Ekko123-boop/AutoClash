@@ -74,7 +74,7 @@ namespace AutomatedClashRunner.Services
             
             if (!string.IsNullOrEmpty(modelNode.SourceFilePath))
             {
-                search.SearchConditions.Add(SearchCondition.HasPropertyByDisplayName("Item", "Source File Name").EqualValue(VariantData.FromDisplayString(modelNode.SourceFilePath)));
+                search.SearchConditions.Add(SearchCondition.HasPropertyByDisplayName("Item", "Name").EqualValue(VariantData.FromDisplayString(modelNode.SourceFilePath)));
             }
             else
             {
