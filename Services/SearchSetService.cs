@@ -93,10 +93,16 @@ namespace AutomatedClashRunner.Services
             var newSet = new SelectionSet(search) { DisplayName = finalName };
             doc.SelectionSets.AddCopy(newSet);
             
-            // Re-find to return the added instance
-            var saved = doc.SelectionSets.RootItem.Children.FirstOrDefault(x => x.DisplayName == "Tests" && x is FolderItem) as FolderItem;
-            var finalSet = saved.Children.LastOrDefault(x => x.DisplayName == finalName) as SelectionSet;
+            // Re-find to return the added instance from RootItem where AddCopy places it
+            var finalSet = doc.SelectionSets.RootItem.Children.LastOrDefault(x => x.DisplayName == finalName) as SelectionSet;
             
+            // Try to move it to Tests folder if possible, otherwise leave in root
+            try {
+                if (finalSet != null) {
+                    doc.SelectionSets.Move(finalSet.Parent, doc.SelectionSets.RootItem.Children.IndexOf(finalSet), testsFolder, testsFolder.Children.Count);
+                }
+            } catch { }
+
             result.GeneratedSets.Add($"Tests > {finalName}");
             return finalSet;
         }

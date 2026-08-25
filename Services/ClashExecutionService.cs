@@ -73,14 +73,20 @@ namespace AutomatedClashRunner.Services
                             test.SelectionB.Selection.CopyFrom(new ModelItemCollection());
 
                             // We need to use SavedItem selection
-                            // Autodesk.Navisworks.Api.Clash doesn't expose easy assign of SearchSets to ClashSelection 
-                            // directly via API without using the COM API or selecting and then assigning.
-                            // Actually, in .NET we can do:
                             doc.CurrentSelection.Clear();
-                            var searchA = ((SelectionSet)manualSet.OriginalSavedItem).Search;
+                            
+                            ModelItemCollection itemsA = null;
+                            var setA = manualSet.OriginalSavedItem as SelectionSet;
+                            if (setA != null)
+                            {
+                                if (setA.HasSearch) itemsA = setA.Search.FindAll(doc, false);
+                                else itemsA = setA.ExplicitModelItems;
+                            }
+                            if (itemsA == null) itemsA = new ModelItemCollection();
+
                             var searchB = generatedSet.Search;
 
-                            test.SelectionA.Selection.CopyFrom(searchA.FindAll(doc, false));
+                            test.SelectionA.Selection.CopyFrom(itemsA);
                             test.SelectionB.Selection.CopyFrom(searchB.FindAll(doc, false));
 
                             clashTests.TestsAddCopy(test);
