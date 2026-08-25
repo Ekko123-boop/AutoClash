@@ -25,9 +25,9 @@ namespace AutomatedClashRunner.Services
             if (item != Application.ActiveDocument.SelectionSets.RootItem)
             {
                 list.Add(new SearchSetNode { 
-                    DisplayName = $"{item.DisplayName} [{item.GetType().Name}]", 
+                    DisplayName = $"{item.DisplayName}", 
                     FullPath = currentPath, 
-                    IsFolder = (item is FolderItem), 
+                    IsFolder = item.IsGroup, 
                     OriginalSavedItem = item 
                 });
             }

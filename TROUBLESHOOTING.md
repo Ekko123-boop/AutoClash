@@ -31,3 +31,8 @@ This log tracks bugs encountered during the development and usage of the Automat
 **Symptom**: The UI showed top-level federated `.nwd` branches (e.g., `F1-MEI - A&B.nwd`) but failed to list the actual `.nwc` leaf files inside them.
 **Cause**: The original discovery logic only iterated `doc.Models` and checked exactly one level deep (`model.RootItem.Children`). It failed to recurse into federated models.
 **Fix**: Implemented a recursive `FindModelNodes` function in `ModelDiscoveryService.cs`. It now recursively drills into `item.Children` (up to a safe depth of 3) looking for items containing the `Source File Name` property or a `ClassDisplayName` of "File", correctly extracting `.nwc`, `.rvt`, and `.dwg` leaf nodes.
+
+### 6. Missing Checkboxes for Static Selection Sets & UI Validation
+**Symptom**: Some manual Search Sets (like 'AS BUILT') did not have a CheckBox in the UI. Also, if the user clicked 'Run' without selecting any manual sets, it generated the model Search Sets but silently skipped the clash matrix.
+**Cause**: The UI evaluated IsFolder = (item is FolderItem). However, Navisworks groups folders and groups under the IsGroup property. Second, the code didn't validate if manualSets was empty before running, leading to an empty clash summary.
+**Fix**: Changed IsFolder logic to use item.IsGroup instead of checking the FolderItem class directly. Added popup validation warnings in MainViewModel.cs if the user clicks Run with 0 sets selected. Fixed WPF string formatting on the Run button.

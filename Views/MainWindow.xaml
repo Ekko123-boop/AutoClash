@@ -79,7 +79,7 @@
             <Button Content="Refresh Sets" Command="{Binding RefreshSearchSetsCommand}" Padding="10,5" Margin="5,0"/>
             <Button Content="Clear All" Command="{Binding ClearAllCommand}" Padding="10,5" Margin="5,0"/>
             <Button Content="Cancel" Command="{Binding CancelCommand}" Padding="10,5" Margin="5,0"/>
-            <Button Content="{Binding ExpectedTestCount, StringFormat=Run Clash Tests ({0})}" Command="{Binding RunCommand}" Padding="10,5" Margin="5,0" FontWeight="Bold"/>
+            <Button Content="{Binding ExpectedTestCount}" ContentStringFormat="Run Clash Tests ({0})" Command="{Binding RunCommand}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5" Padding="10,5"/>
         </StackPanel>
     </Grid>
 </Window>

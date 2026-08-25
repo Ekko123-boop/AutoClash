@@ -157,7 +157,18 @@ namespace AutomatedClashRunner.ViewModels
             var selectedModels = AllModels.Where(x => x.IsSelected && x.IsSelectable).ToList();
             var selectedSets = AllSearchSets.Where(x => x.IsSelected && !x.IsFolder).ToList();
 
-            var res = MessageBox.Show($"Are you sure you want to run {ExpectedTestCount} combinations?\nModels: {selectedModels.Count}\nSets: {selectedSets.Count}", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (selectedSets.Count == 0)
+            {
+                MessageBox.Show("Please select at least one Manual Search Set from the right panel to clash the models against.", "No Sets Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (selectedModels.Count == 0)
+            {
+                MessageBox.Show("Please select at least one Model from the left panel.", "No Models Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var res = MessageBox.Show($"Are you sure you want to run {selectedModels.Count * selectedSets.Count} combinations?\nModels: {selectedModels.Count}\nSets: {selectedSets.Count}", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (res != MessageBoxResult.Yes) return;
 
             var result = ClashExecutionService.RunClashMatrix(selectedSets, selectedModels);
