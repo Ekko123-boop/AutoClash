@@ -70,8 +70,12 @@ namespace AutomatedClashRunner.Services
                             // Directly add it to the existing SelectionSources collection (avoids 'new SelectionSourceCollection()' AccessViolation)
                             test.SelectionA.Selection.SelectionSources.Add(sourceA);
 
-                            var searchB = generatedSet.Search;
-                            test.SelectionB.Selection.CopyFrom(searchB.FindAll(doc, false));
+                            ModelItemCollection itemsB = null;
+                            if (generatedSet.HasSearch) itemsB = generatedSet.Search.FindAll(doc, false);
+                            else itemsB = generatedSet.ExplicitModelItems;
+                            if (itemsB == null) itemsB = new ModelItemCollection();
+
+                            test.SelectionB.Selection.CopyFrom(itemsB);
 
                             clashTests.TestsAddCopy(test);
                             var addedTest = clashTests.Tests.LastOrDefault() as ClashTest;

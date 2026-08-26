@@ -68,20 +68,6 @@ namespace AutomatedClashRunner.Services
             var doc = Application.ActiveDocument;
             string baseName = NamingService.GetTrimmedModelCode(modelNode.DisplayName);
 
-            // Create Search condition
-            Search search = new Search();
-            search.Selection.SelectAll();
-            
-            if (!string.IsNullOrEmpty(modelNode.SourceFilePath))
-            {
-                search.SearchConditions.Add(SearchCondition.HasPropertyByDisplayName("Item", "Name").EqualValue(VariantData.FromDisplayString(modelNode.SourceFilePath)));
-            }
-            else
-            {
-                result.SkippedSets.Add($"Could not reliably identify criteria for {modelNode.DisplayName}");
-                return null;
-            }
-
             // Versioning logic
             string finalName = baseName;
             int version = 2;
@@ -90,7 +76,10 @@ namespace AutomatedClashRunner.Services
                 finalName = $"{baseName} ({version++})";
             }
 
-            var newSet = new SelectionSet(search) { DisplayName = finalName };
+            // Create a Static Set pointing directly to the exact model node we discovered
+            var modelColl = new ModelItemCollection();
+            modelColl.Add(modelNode.OriginalModelItem);
+            var newSet = new SelectionSet(modelColl) { DisplayName = finalName };
             doc.SelectionSets.AddCopy(newSet);
             
             // Re-find to return the added instance from RootItem where AddCopy places it
