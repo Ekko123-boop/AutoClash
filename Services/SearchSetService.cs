@@ -66,7 +66,7 @@ namespace AutomatedClashRunner.Services
         public static SelectionSet GenerateModelSearchSet(ModelSourceNode modelNode, FolderItem testsFolder, ExecutionResult result)
         {
             var doc = Application.ActiveDocument;
-            string baseName = System.IO.Path.GetFileNameWithoutExtension(modelNode.DisplayName);
+            string baseName = NamingService.GetTrimmedModelCode(modelNode.DisplayName);
 
             // Create Search condition
             Search search = new Search();

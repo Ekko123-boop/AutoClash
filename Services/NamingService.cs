@@ -7,15 +7,11 @@ namespace AutomatedClashRunner.Services
         public static string GetTrimmedModelCode(string rawFilename)
         {
             string name = Path.GetFileNameWithoutExtension(rawFilename);
-            var parts = name.Split('-');
-            
-            if (parts.Length >= 3)
+            int firstDash = name.IndexOf('-');
+            if (firstDash >= 0 && firstDash < name.Length - 1)
             {
-                var innerParts = new string[parts.Length - 2];
-                System.Array.Copy(parts, 1, innerParts, 0, innerParts.Length);
-                return string.Join("-", innerParts);
+                return name.Substring(firstDash + 1);
             }
-            
             return name;
         }
 

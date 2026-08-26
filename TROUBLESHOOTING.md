@@ -36,3 +36,7 @@ This log tracks bugs encountered during the development and usage of the Automat
 **Symptom**: Some manual Search Sets (like 'AS BUILT') did not have a CheckBox in the UI. Also, if the user clicked 'Run' without selecting any manual sets, it generated the model Search Sets but silently skipped the clash matrix.
 **Cause**: The UI evaluated IsFolder = (item is FolderItem). However, Navisworks groups folders and groups under the IsGroup property. Second, the code didn't validate if manualSets was empty before running, leading to an empty clash summary.
 **Fix**: Changed IsFolder logic to use item.IsGroup instead of checking the FolderItem class directly. Added popup validation warnings in MainViewModel.cs if the user clicks Run with 0 sets selected. Fixed WPF string formatting on the Run button.
+
+### 7. Name Trimming and Sets vs Standard Selection
+**Symptom**: The generated Search Set names included 'F1-' prefix which the user didn't want, and Selection A in Clash Detective was selecting geometry nodes (under the 'Standard' tab) instead of the actual 'Sets' themselves.
+**Fix**: Updated NamingService.GetTrimmedModelCode() to parse the string and drop the first string segment (e.g. 'F1') before the first dash. For the Sets selection, replaced ModelItemCollection geometry passing for Selection A with SelectionSource generated via doc.SelectionSets.CreateSelectionSource(manualSet.OriginalSavedItem) so that the clash properly binds to the Selection Set.
