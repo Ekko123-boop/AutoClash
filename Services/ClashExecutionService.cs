@@ -45,7 +45,7 @@ namespace AutomatedClashRunner.Services
 
                         var generatedSet = modelSetMap[model];
                         string trimmedCode = NamingService.GetTrimmedModelCode(model.DisplayName);
-                        string testName = NamingService.GetClashTestName(manualSet.OriginalSavedItem.DisplayName, trimmedCode);
+                        string testName = trimmedCode; // STRICTLY just the trimmed model code!
 
                         // Skip existing
                         bool exists = clashTests.Tests.Any(t => t.DisplayName.Equals(testName, StringComparison.OrdinalIgnoreCase));
@@ -64,22 +64,11 @@ namespace AutomatedClashRunner.Services
                                 Tolerance = 0.0
                             };
                             
-                            // 0 = false for Ignore settings in older/some APIs, but they are properties
-                            // The ClashTest class does not expose Ignore rules directly through simple properties.
-                            // To strictly disable them, they are false by default on new tests.
-
-                            doc.CurrentSelection.Clear();
+                            // Create SelectionSource from the Set
+                            var sourceA = doc.SelectionSets.CreateSelectionSource(manualSet.OriginalSavedItem);
                             
-                            ModelItemCollection itemsA = null;
-                            var setA = manualSet.OriginalSavedItem as SelectionSet;
-                            if (setA != null)
-                            {
-                                if (setA.HasSearch) itemsA = setA.Search.FindAll(doc, false);
-                                else itemsA = setA.ExplicitModelItems;
-                            }
-                            if (itemsA == null) itemsA = new ModelItemCollection();
-
-                            test.SelectionA.Selection.CopyFrom(itemsA);
+                            // Directly add it to the existing SelectionSources collection (avoids 'new SelectionSourceCollection()' AccessViolation)
+                            test.SelectionA.Selection.SelectionSources.Add(sourceA);
 
                             var searchB = generatedSet.Search;
                             test.SelectionB.Selection.CopyFrom(searchB.FindAll(doc, false));
