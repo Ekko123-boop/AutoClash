@@ -32,3 +32,10 @@ ew SelectionSourceCollection()) triggered a fatal memory corruption error (Acces
 4. Check the models you want to clash against on the right.
 5. Click **Run Clash Matrix**.
 6. The plugin will create a "Tests" folder in your Sets window, generate Static Sets for your models, and create a perfectly mapped Clash Test for each combination.
+
+## 4. Distribution (Multi-Version Installer)
+To distribute this addin to other team members:
+1. Locate the AutomatedClashRunner_Installer.exe file.
+2. Send this single .exe file to anyone.
+3. They just double-click it. It will automatically install the plugin into their Autodesk %APPDATA% folder.
+4. **Supported Versions**: It is automatically configured to work out-of-the-box on Navisworks Manage **2022, 2023, 2024, and 2025**.

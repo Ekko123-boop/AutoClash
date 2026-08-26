@@ -45,3 +45,8 @@ et48-windows.
 
 ## Maintaining and Updating
 If Navisworks geometry is updated (e.g., Subcontractor uploads a new .nwc and the user hits "Refresh" in Navisworks), the generated Static Sets will automatically track the geometry changes because they are bound by node memory reference, not by static coordinates or fragile string searches. Re-running the Clash Matrix will safely skip existing test names but executing "Update All" in Navisworks will accurately clash the newest geometry.
+
+## Multi-Version Installer
+The addin includes a self-contained, single-file installer executable (Installer.exe).
+- **Support**: It natively supports Autodesk Navisworks Manage versions **2022 to 2025** by declaring <RuntimeRequirements SeriesMin="Nw19" SeriesMax="Nw22" /> inside the bundled PackageContents.xml.
+- **How it works**: The .dll and PackageContents.xml are packaged into a .zip file embedded directly into the installer executable as a C# EmbeddedResource. When run, it extracts the bundle straight into the user's %APPDATA%\Autodesk\ApplicationPlugins\ folder. No third-party software (like InnoSetup) is required.

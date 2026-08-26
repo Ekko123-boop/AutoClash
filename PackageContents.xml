@@ -13,8 +13,8 @@
         <RuntimeRequirements
             OS="Win64"
             Platform="NAVMAN"
-            SeriesMin="Nw21"
-            SeriesMax="Nw21" />
+            SeriesMin="Nw19"
+            SeriesMax="Nw22" />
         <ComponentEntry
             AppName="AutomatedClashRunner"
             ModuleName="./Contents/AutomatedClashRunner.dll"
