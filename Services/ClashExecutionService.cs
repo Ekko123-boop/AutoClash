@@ -68,11 +68,18 @@ namespace AutomatedClashRunner.Services
                             // The ClashTest class does not expose Ignore rules directly through simple properties.
                             // To strictly disable them, they are false by default on new tests.
 
-                            // Assign selections using SelectionSource to ensure they show up under "Sets" tab in Navisworks
-                            var sourceCollectionA = new SelectionSourceCollection();
-                            var sourceA = doc.SelectionSets.CreateSelectionSource(manualSet.OriginalSavedItem);
-                            sourceCollectionA.Add(sourceA);
-                            test.SelectionA.Selection.CopyFrom(sourceCollectionA);
+                            doc.CurrentSelection.Clear();
+                            
+                            ModelItemCollection itemsA = null;
+                            var setA = manualSet.OriginalSavedItem as SelectionSet;
+                            if (setA != null)
+                            {
+                                if (setA.HasSearch) itemsA = setA.Search.FindAll(doc, false);
+                                else itemsA = setA.ExplicitModelItems;
+                            }
+                            if (itemsA == null) itemsA = new ModelItemCollection();
+
+                            test.SelectionA.Selection.CopyFrom(itemsA);
 
                             var searchB = generatedSet.Search;
                             test.SelectionB.Selection.CopyFrom(searchB.FindAll(doc, false));
