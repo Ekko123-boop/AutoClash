@@ -8,39 +8,51 @@ using AutomatedClashRunner.Views;
 
 namespace AutomatedClashRunner.ViewModels
 {
-    public class MainViewModel : ViewModelBase
+    public partial class MainViewModel : ViewModelBase
     {
         private readonly Window _window;
+
+        public ObservableCollection<ModelSourceNode> AllModels { get; } = new ObservableCollection<ModelSourceNode>();
+        public ObservableCollection<ModelSourceNode> FilteredModels { get; } = new ObservableCollection<ModelSourceNode>();
+
+        public ObservableCollection<SearchSetNode> AllSearchSets { get; } = new ObservableCollection<SearchSetNode>();
+        public ObservableCollection<SearchSetNode> FilteredSearchSets { get; } = new ObservableCollection<SearchSetNode>();
+
         private string _searchTextModels;
-        private string _searchTextSets;
-
-        public ObservableCollection<ModelSourceNode> AllModels { get; set; } = new ObservableCollection<ModelSourceNode>();
-        public ObservableCollection<ModelSourceNode> FilteredModels { get; set; } = new ObservableCollection<ModelSourceNode>();
-
-        public ObservableCollection<SearchSetNode> AllSearchSets { get; set; } = new ObservableCollection<SearchSetNode>();
-        public ObservableCollection<SearchSetNode> FilteredSearchSets { get; set; } = new ObservableCollection<SearchSetNode>();
-
         public string SearchTextModels
         {
             get => _searchTextModels;
             set
             {
-                _searchTextModels = value;
-                OnPropertyChanged();
-                FilterModels();
+                if (_searchTextModels != value)
+                {
+                    _searchTextModels = value;
+                    OnPropertyChanged(nameof(SearchTextModels));
+                    FilterModels();
+                }
             }
         }
 
+        private string _searchTextSets;
         public string SearchTextSets
         {
             get => _searchTextSets;
             set
             {
-                _searchTextSets = value;
-                OnPropertyChanged();
-                FilterSearchSets();
+                if (_searchTextSets != value)
+                {
+                    _searchTextSets = value;
+                    OnPropertyChanged(nameof(SearchTextSets));
+                    FilterSearchSets();
+                }
             }
         }
+
+        public ICommand RefreshModelsCommand { get; }
+        public ICommand RefreshSearchSetsCommand { get; }
+        public ICommand ClearAllCommand { get; }
+        public ICommand CancelCommand { get; }
+        public ICommand RunCommand { get; }
 
         public int ExpectedTestCount
         {
@@ -54,12 +66,6 @@ namespace AutomatedClashRunner.ViewModels
 
         public bool IsRunEnabled => ExpectedTestCount > 0;
 
-        public RelayCommand RefreshModelsCommand { get; }
-        public RelayCommand RefreshSearchSetsCommand { get; }
-        public RelayCommand ClearAllCommand { get; }
-        public RelayCommand CancelCommand { get; }
-        public RelayCommand RunCommand { get; }
-
         public MainViewModel(Window window)
         {
             _window = window;
@@ -71,6 +77,7 @@ namespace AutomatedClashRunner.ViewModels
 
             LoadModels();
             LoadSearchSets();
+            InitializeDistillerTab();
         }
 
         private void LoadModels()

@@ -5,81 +5,118 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Window.Resources>
-    <Grid Margin="10">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+    <Grid>
+        <TabControl Margin="10">
+            <TabItem Header="Generate Matrix">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-        <!-- Left Panel: Models -->
-        <GroupBox Header="Selected Models / NWCs" Grid.Row="0" Grid.Column="0" Margin="0,0,5,5">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <TextBox Text="{Binding SearchTextModels, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" Padding="2" />
-                <ListView Grid.Row="1" ItemsSource="{Binding FilteredModels}">
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="{Binding IsSelectable}" Margin="0,0,5,0"/>
-                                <TextBlock Text="{Binding DisplayType}" FontWeight="Bold" Margin="0,0,5,0"/>
-                                <TextBlock Text="{Binding DisplayName}" />
-                                <TextBlock Text="{Binding WarningMessage}" Foreground="Red" Margin="5,0,0,0" FontStyle="Italic"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-            </Grid>
-        </GroupBox>
+                    <!-- Left Panel: Models -->
+                    <GroupBox Header="Selected Models / NWCs" Grid.Row="0" Grid.Column="0" Margin="0,0,5,5">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBox Text="{Binding SearchTextModels, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" Padding="2" />
+                            <ListView Grid.Row="1" ItemsSource="{Binding FilteredModels}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="{Binding IsSelectable}" Margin="0,0,5,0"/>
+                                            <TextBlock Text="{Binding DisplayType}" FontWeight="Bold" Margin="0,0,5,0"/>
+                                            <TextBlock Text="{Binding DisplayName}" />
+                                            <TextBlock Text="{Binding WarningMessage}" Foreground="Red" Margin="5,0,0,0" FontStyle="Italic"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
+                    </GroupBox>
 
-        <!-- Right Panel: Sets -->
-        <GroupBox Header="Manual Search Sets" Grid.Row="0" Grid.Column="1" Margin="5,0,0,5">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <TextBox Text="{Binding SearchTextSets, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" Padding="2" />
-                <ListView Grid.Row="1" ItemsSource="{Binding FilteredSearchSets}">
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="True" Margin="0,0,5,0" Visibility="{Binding IsSet, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                                <TextBlock Text="{Binding FullPath}" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-            </Grid>
-        </GroupBox>
+                    <!-- Right Panel: Sets -->
+                    <GroupBox Header="Manual Search Sets" Grid.Row="0" Grid.Column="1" Margin="5,0,0,5">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBox Text="{Binding SearchTextSets, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" Padding="2" />
+                            <ListView Grid.Row="1" ItemsSource="{Binding FilteredSearchSets}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="True" Margin="0,0,5,0" Visibility="{Binding IsSet, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                            <TextBlock Text="{Binding FullPath}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
+                    </GroupBox>
 
-        <!-- Bottom Panel: Settings -->
-        <GroupBox Header="Clash Settings (Read-Only)" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,5,0,5">
-            <WrapPanel Margin="5">
-                <TextBlock Text="Clash Type: Clearance | "/>
-                <TextBlock Text="Tolerance: 0.000 m | "/>
-                <TextBlock Text="Link: None | "/>
-                <TextBlock Text="Step: 0.1 s | "/>
-                <TextBlock Text="Composite Object Clashing: Enabled | "/>
-                <TextBlock Text="Ignore Rules: Disabled"/>
-            </WrapPanel>
-        </GroupBox>
+                    <!-- Bottom Panel: Settings -->
+                    <GroupBox Header="Clash Settings (Read-Only)" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,5,0,5">
+                        <WrapPanel Margin="5">
+                            <TextBlock Text="Clash Type: Clearance | "/>
+                            <TextBlock Text="Tolerance: 0.000 m | "/>
+                            <TextBlock Text="Link: None | "/>
+                            <TextBlock Text="Step: 0.1 s | "/>
+                            <TextBlock Text="Composite Object Clashing: Enabled | "/>
+                            <TextBlock Text="Ignore Rules: Disabled"/>
+                        </WrapPanel>
+                    </GroupBox>
 
-        <!-- Footer -->
-        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
-            <Button Content="Refresh Models" Command="{Binding RefreshModelsCommand}" Padding="10,5" Margin="5,0"/>
-            <Button Content="Refresh Sets" Command="{Binding RefreshSearchSetsCommand}" Padding="10,5" Margin="5,0"/>
-            <Button Content="Clear All" Command="{Binding ClearAllCommand}" Padding="10,5" Margin="5,0"/>
-            <Button Content="Cancel" Command="{Binding CancelCommand}" Padding="10,5" Margin="5,0"/>
-            <Button Content="{Binding ExpectedTestCount}" ContentStringFormat="Run Clash Tests ({0})" Command="{Binding RunCommand}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5" Padding="10,5"/>
-        </StackPanel>
+                    <!-- Footer -->
+                    <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
+                        <Button Content="Refresh Models" Command="{Binding RefreshModelsCommand}" Padding="10,5" Margin="5,0"/>
+                        <Button Content="Refresh Sets" Command="{Binding RefreshSearchSetsCommand}" Padding="10,5" Margin="5,0"/>
+                        <Button Content="Clear All" Command="{Binding ClearAllCommand}" Padding="10,5" Margin="5,0"/>
+                        <Button Content="Cancel" Command="{Binding CancelCommand}" Padding="10,5" Margin="5,0"/>
+                        <Button Content="{Binding ExpectedTestCount}" ContentStringFormat="Run Clash Tests ({0})" Command="{Binding RunCommand}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="5" Padding="10,5"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Distiller / Manage Tests">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBox Grid.Row="0" Text="{Binding SearchTextTests, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" Padding="2" />
+                    
+                    <ListView Grid.Row="1" ItemsSource="{Binding FilteredTests}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox IsChecked="{Binding IsSelected}" Margin="0,0,5,0"/>
+                                    <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" Margin="0,0,10,0"/>
+                                    <TextBlock Text="{Binding Status}" FontStyle="Italic"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
+                        <Button Content="Refresh Tests" Command="{Binding RefreshTestsCommand}" Padding="10,5" Margin="5,0"/>
+                        <Button Content="Group by Element" Command="{Binding GroupByElementCommand}" Padding="10,5" Margin="5,0"/>
+                        <Button Content="Export 'Reviewed' Viewpoints" Command="{Binding ExportViewpointsCommand}" Padding="10,5" Margin="5,0"/>
+                        <Button Content="Re-Run Selected" Command="{Binding ReRunSelectedCommand}" Padding="10,5" Margin="5,0"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Window>
