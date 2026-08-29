@@ -45,7 +45,15 @@ namespace AutomatedClashRunner.Services
 
                         var generatedSet = modelSetMap[model];
                         string trimmedCode = NamingService.GetTrimmedModelCode(model.DisplayName);
-                        string testName = trimmedCode; // STRICTLY just the trimmed model code!
+                        
+                        // Prefix logic based on manual set name
+                        string testName = trimmedCode;
+                        string manualName = manualSet.OriginalSavedItem.DisplayName;
+                        if (!manualName.Equals("Base Build", StringComparison.OrdinalIgnoreCase) &&
+                            !manualName.Equals("BaseBuild", StringComparison.OrdinalIgnoreCase))
+                        {
+                            testName = "T-" + trimmedCode;
+                        }
 
                         // Skip existing
                         bool exists = clashTests.Tests.Any(t => t.DisplayName.Equals(testName, StringComparison.OrdinalIgnoreCase));
