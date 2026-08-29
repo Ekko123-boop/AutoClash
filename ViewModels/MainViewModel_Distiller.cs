@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -31,6 +31,20 @@ namespace AutomatedClashRunner.ViewModels
                     _searchTextTests = value;
                     OnPropertyChanged(nameof(SearchTextTests));
                     FilterTests();
+                }
+            }
+        }
+
+        private double _groupingProximity = 10.0;
+        public double GroupingProximity
+        {
+            get => _groupingProximity;
+            set
+            {
+                if (_groupingProximity != value)
+                {
+                    _groupingProximity = value;
+                    OnPropertyChanged(nameof(GroupingProximity));
                 }
             }
         }
@@ -90,7 +104,7 @@ namespace AutomatedClashRunner.ViewModels
             
             ClashDistillerService.ReRunTests(selected);
             LoadTests();
-            MessageBox.Show($""Re-ran {selected.Count} tests successfully."", ""Success"", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show($"Re-ran {selected.Count} tests successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void GroupSelectedTests()
@@ -98,9 +112,9 @@ namespace AutomatedClashRunner.ViewModels
             var selected = _allTests.Where(t => t.IsSelected).Select(t => t.OriginalTest).ToList();
             if (selected.Count == 0) return;
             
-            int groupsCreated = ClashDistillerService.GroupByElement(selected);
+            int groupsCreated = ClashDistillerService.GroupByElement(selected, GroupingProximity);
             LoadTests();
-            MessageBox.Show($""Grouped clashes! Created {groupsCreated} new groups across {selected.Count} tests."", ""Success"", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show($"Grouped clashes! Created {groupsCreated} new groups across {selected.Count} tests.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void ExportSelectedViewpoints()
@@ -110,7 +124,7 @@ namespace AutomatedClashRunner.ViewModels
             
             int vpCreated = ClashDistillerService.ExportReviewedViewpoints(selected);
             LoadTests();
-            MessageBox.Show($""Exported {vpCreated} 'Reviewed' viewpoints into the Saved Viewpoints window."", ""Success"", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show($"Exported {vpCreated} 'Reviewed' viewpoints into the Saved Viewpoints window.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 }

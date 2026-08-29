@@ -109,12 +109,20 @@
                         </ListView.ItemTemplate>
                     </ListView>
 
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
-                        <Button Content="Refresh Tests" Command="{Binding RefreshTestsCommand}" Padding="10,5" Margin="5,0"/>
-                        <Button Content="Group by Element" Command="{Binding GroupByElementCommand}" Padding="10,5" Margin="5,0"/>
-                        <Button Content="Export 'Reviewed' Viewpoints" Command="{Binding ExportViewpointsCommand}" Padding="10,5" Margin="5,0"/>
-                        <Button Content="Re-Run Selected" Command="{Binding ReRunSelectedCommand}" Padding="10,5" Margin="5,0"/>
-                    </StackPanel>
+                    <DockPanel Grid.Row="2" Margin="0,5,0,0">
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                            <TextBlock Text="Max Group Proximity (ft): " FontWeight="Bold"/>
+                            <TextBlock Text="{Binding GroupingProximity, StringFormat={}{0:F1}}" Width="30" TextAlignment="Right" Margin="0,0,5,0"/>
+                            <Slider Minimum="0" Maximum="150" Value="{Binding GroupingProximity}" Width="150" TickFrequency="5" IsSnapToTickEnabled="True" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Refresh Tests" Command="{Binding RefreshTestsCommand}" Padding="10,5" Margin="5,0"/>
+                            <Button Content="Group by Element" Command="{Binding GroupByElementCommand}" Padding="10,5" Margin="5,0"/>
+                            <Button Content="Export 'Reviewed' Viewpoints" Command="{Binding ExportViewpointsCommand}" Padding="10,5" Margin="5,0"/>
+                            <Button Content="Re-Run Selected" Command="{Binding ReRunSelectedCommand}" Padding="10,5" Margin="5,0"/>
+                        </StackPanel>
+                    </DockPanel>
                 </Grid>
             </TabItem>
         </TabControl>

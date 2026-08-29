@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Navisworks.Api;
@@ -20,68 +20,100 @@ namespace AutomatedClashRunner.Services
             }
         }
 
-        public static int GroupByElement(IEnumerable<ClashTest> tests)
+        public static int GroupByElement(IEnumerable<ClashTest> tests, double maxProximityFt)
         {
             int groupsCreated = 0;
             var doc = Application.ActiveDocument;
             var clashData = doc.GetClash().TestsData;
 
+            double conversionFactor = 1.0;
+            switch(doc.Units)
+            {
+                case Units.Feet: conversionFactor = 1.0; break;
+                case Units.Meters: conversionFactor = 0.3048; break;
+                case Units.Millimeters: conversionFactor = 304.8; break;
+                case Units.Centimeters: conversionFactor = 30.48; break;
+                case Units.Inches: conversionFactor = 12.0; break;
+                default: conversionFactor = 0.3048; break; 
+            }
+            double maxDistInternal = maxProximityFt * conversionFactor;
+
             foreach (var test in tests)
             {
-                // 1. Gather all ungrouped results
                 var rawResults = test.Children.OfType<ClashResult>().ToList();
                 if (rawResults.Count == 0) continue;
 
-                // 2. Group them by their Item1 (Selection A) Top-most element
-                var groups = new Dictionary<ModelItem, List<ClashResult>>();
+                var elementGroups = new Dictionary<ModelItem, List<ClashResult>>();
 
                 foreach (var res in rawResults)
                 {
                     if (res.Item1 == null) continue;
                     
-                    // We take the highest level ancestor or the item itself
-                    var masterElement = res.Item1.AncestorsAndSelf.FirstOrDefault(x => x.PropertyCategories.FindPropertyByDisplayName(""Item"", ""Name"") != null) ?? res.Item1;
+                    var masterElement = res.Item1.AncestorsAndSelf.FirstOrDefault(x => x.PropertyCategories.FindPropertyByDisplayName("Item", "Name") != null) ?? res.Item1;
 
-                    if (!groups.ContainsKey(masterElement))
+                    if (!elementGroups.ContainsKey(masterElement))
                     {
-                        groups[masterElement] = new List<ClashResult>();
+                        elementGroups[masterElement] = new List<ClashResult>();
                     }
-                    groups[masterElement].Add(res);
+                    elementGroups[masterElement].Add(res);
                 }
 
-                // 3. Create groups and move them
                 int groupIndex = 1;
-                foreach (var kvp in groups)
+                foreach (var kvp in elementGroups)
                 {
-                    var itemsInGroup = kvp.Value;
-                    if (itemsInGroup.Count == 0) continue;
+                    var items = kvp.Value;
+                    if (items.Count == 0) continue;
 
-                    string groupName = $""{test.DisplayName}-{groupIndex:D3}"";
-                    var newGroup = new ClashResultGroup { DisplayName = groupName };
-                    
-                    // Add the empty group to the test
-                    clashData.TestsAddCopy(test, newGroup);
-                    
-                    // The added group is now the LAST child of the test
-                    var addedGroup = test.Children.Last() as ClashResultGroup;
-                    
-                    if (addedGroup != null)
+                    var clusters = new List<List<ClashResult>>();
+                    foreach(var res in items)
                     {
-                        // Move all raw results into the added group
-                        foreach (var res in itemsInGroup)
+                        bool added = false;
+                        foreach(var cluster in clusters)
                         {
-                            int sourceIndex = test.Children.IndexOf(res);
-                            if (sourceIndex >= 0)
+                            if (cluster.Any(c => Distance(c.Center, res.Center) <= maxDistInternal))
                             {
-                                clashData.TestsMove(test, sourceIndex, addedGroup, addedGroup.Children.Count);
+                                cluster.Add(res);
+                                added = true;
+                                break;
                             }
                         }
-                        groupsCreated++;
-                        groupIndex++;
+                        if (!added)
+                        {
+                            clusters.Add(new List<ClashResult> { res });
+                        }
+                    }
+
+                    foreach(var cluster in clusters)
+                    {
+                        string groupName = $"{test.DisplayName}-{groupIndex:D3}";
+                        var newGroup = new ClashResultGroup { DisplayName = groupName };
+                        
+                        clashData.TestsAddCopy(test, newGroup);
+                        var addedGroup = test.Children.Last() as ClashResultGroup;
+                        
+                        if (addedGroup != null)
+                        {
+                            foreach (var res in cluster)
+                            {
+                                int sourceIndex = test.Children.IndexOf(res);
+                                if (sourceIndex >= 0)
+                                {
+                                    clashData.TestsMove(test, sourceIndex, addedGroup, addedGroup.Children.Count);
+                                }
+                            }
+                            groupsCreated++;
+                            groupIndex++;
+                        }
                     }
                 }
             }
             return groupsCreated;
+        }
+
+        private static double Distance(Point3D p1, Point3D p2)
+        {
+            if (p1 == null || p2 == null) return double.MaxValue;
+            return Math.Sqrt(Math.Pow(p1.X - p2.X, 2) + Math.Pow(p1.Y - p2.Y, 2) + Math.Pow(p1.Z - p2.Z, 2));
         }
 
         public static int ExportReviewedViewpoints(IEnumerable<ClashTest> tests)
