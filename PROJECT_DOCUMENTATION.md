@@ -1,4 +1,4 @@
-﻿# Automated Clash Runner - Project Documentation
+# Automated Clash Runner - Project Documentation
 
 ## Overview
 Automated Clash Runner is an Autodesk Navisworks Manage 2024 add-in built in C# (.NET Framework 4.8). Its primary purpose is to automate the creation and execution of clash tests by taking manually predefined Selection Sets (e.g., "Base Build") and automatically clashing them against dynamically discovered .nwc federated model nodes (e.g., HVAC, Plumbing, Structural).
@@ -29,7 +29,9 @@ ew SelectionSet(new ModelItemCollection { originalNode }) instead of string-base
 
 ### 5. ClashExecutionService.cs
 - Iterates through a matrix of [Selected Manual Sets] x [Selected Models].
-- **Naming Convention**: Trims the 'F1-' prefix and extensions via NamingService. Names the Clash Test strictly after the trimmed .nwc filename (e.g., STS-HDLS201-DR).
+- **Naming Convention**: 
+  - Trims the 'F1-' prefix and extensions via `NamingService` (e.g., `STS-HDLS201-DR`).
+  - **Prefix Rule**: If the manual set is named exactly "Base Build", the test name remains the trimmed model name (e.g., `STS-HDLS201-DR`). If the manual set is anything else (e.g., "AS BUILT"), it prepends `T-` to the test name (e.g., `T-STS-HDLS201-DR`).
 - **Selection A**: Binds the manual set to the Clash Test's Selection A. 
   - *Crucial Workaround*: Directly modifies 	est.SelectionA.Selection.SelectionSources.Add(sourceA) to force it to appear under the UI "Sets" tab. (Calling 
 ew SelectionSourceCollection() directly causes an AccessViolationException in Navisworks 2024).

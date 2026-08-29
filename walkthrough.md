@@ -39,3 +39,8 @@ To distribute this addin to other team members:
 2. Send this single .exe file to anyone.
 3. They just double-click it. It will automatically install the plugin into their Autodesk %APPDATA% folder.
 4. **Supported Versions**: It is automatically configured to work out-of-the-box on Navisworks Manage **2022, 2023, 2024, and 2025**.
+
+### Dynamic Clash Naming Rule
+To prevent duplicate test names when clashing a single model against multiple different manual sets, the system automatically checks the name of the manual set you selected:
+- If clashing against **Base Build**, it uses the exact trimmed model name (e.g., STS-HDLS201-DR).
+- If clashing against **anything else** (e.g., AS BUILT), it intelligently injects a T- prefix to differentiate the test (e.g., T-STS-HDLS201-DR).
