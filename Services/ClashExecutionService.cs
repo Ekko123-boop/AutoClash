@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Navisworks.Api;
@@ -47,23 +47,6 @@ namespace AutomatedClashRunner.Services
             }
 
             var clashTests = documentClash.TestsData;
-            var testsFolder = _searchSets.EnsureTestsFolder(doc);
-
-            // Step 1: Generate or retrieve static selection sets for the selected models
-            var modelSetMap = new Dictionary<ModelSourceNode, SelectionSet>();
-            int modelIdx = 0;
-            foreach (var model in models)
-            {
-                modelIdx++;
-                progressCallback?.Invoke($"Generating search set for {model.DisplayName}...", modelIdx, models.Count);
-
-                var set = _searchSets.GenerateModelSearchSet(doc, model, testsFolder, result);
-                if (set != null)
-                {
-                    modelSetMap[model] = set;
-                }
-            }
-
             int totalCombinations = manualSets.Count * models.Count;
             int currentCombination = 0;
             bool anySucceeded = false;
@@ -75,9 +58,8 @@ namespace AutomatedClashRunner.Services
                     foreach (var model in models)
                     {
                         currentCombination++;
-                        if (!modelSetMap.ContainsKey(model)) continue;
+                        if (model?.OriginalModelItem == null) continue;
 
-                        var generatedSet = modelSetMap[model];
                         string testName = _naming.GetClashTestName(model.DisplayName, manualSet.OriginalSavedItem.DisplayName);
 
                         progressCallback?.Invoke($"Running test: {testName} ({currentCombination}/{totalCombinations})", currentCombination, totalCombinations);
@@ -104,9 +86,9 @@ namespace AutomatedClashRunner.Services
                             var sourceA = doc.SelectionSets.CreateSelectionSource(manualSet.OriginalSavedItem);
                             test.SelectionA.Selection.SelectionSources.Add(sourceA);
 
-                            // Selection B: Generated Model Set (Dynamic link)
-                            var sourceB = doc.SelectionSets.CreateSelectionSource(generatedSet);
-                            test.SelectionB.Selection.SelectionSources.Add(sourceB);
+                            // Selection B: Direct Standard NWC Model File
+                            var itemsB = new ModelItemCollection { model.OriginalModelItem };
+                            test.SelectionB.Selection.CopyFrom(itemsB);
 
                             clashTests.TestsAddCopy(test);
                             var addedTest = clashTests.Tests.LastOrDefault() as ClashTest;
