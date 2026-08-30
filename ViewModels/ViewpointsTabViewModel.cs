@@ -11,7 +11,7 @@ using AutomatedClashRunner.Services.Interfaces;
 
 namespace AutomatedClashRunner.ViewModels
 {
-    public class DistillerTabViewModel : ViewModelBase
+    public class ViewpointsTabViewModel : ViewModelBase
     {
         private readonly IClashDistillerService _distiller;
         private readonly IDialogService _dialogService;
@@ -20,39 +20,73 @@ namespace AutomatedClashRunner.ViewModels
         public ObservableCollection<ClashTestNode> AllTests { get; } = new ObservableCollection<ClashTestNode>();
         public ICollectionView TestsView { get; }
 
-        private string _searchTextTests = string.Empty;
-        public string SearchTextTests
+        private string _searchText = string.Empty;
+        public string SearchText
         {
-            get => _searchTextTests;
+            get => _searchText;
             set
             {
-                if (SetProperty(ref _searchTextTests, value))
+                if (SetProperty(ref _searchText, value))
                 {
                     TestsView.Refresh();
                 }
             }
         }
 
-        private double _groupingProximity = 10.0;
-        public double GroupingProximity
+        private bool _includeNew;
+        public bool IncludeNew
         {
-            get => _groupingProximity;
-            set => SetProperty(ref _groupingProximity, value);
+            get => _includeNew;
+            set => SetProperty(ref _includeNew, value);
+        }
+
+        private bool _includeActive;
+        public bool IncludeActive
+        {
+            get => _includeActive;
+            set => SetProperty(ref _includeActive, value);
+        }
+
+        private bool _includeReviewed = true;
+        public bool IncludeReviewed
+        {
+            get => _includeReviewed;
+            set => SetProperty(ref _includeReviewed, value);
+        }
+
+        private bool _includeApproved;
+        public bool IncludeApproved
+        {
+            get => _includeApproved;
+            set => SetProperty(ref _includeApproved, value);
+        }
+
+        private bool _includeResolved;
+        public bool IncludeResolved
+        {
+            get => _includeResolved;
+            set => SetProperty(ref _includeResolved, value);
+        }
+
+        private bool _placeInTimestampedFolder;
+        public bool PlaceInTimestampedFolder
+        {
+            get => _placeInTimestampedFolder;
+            set => SetProperty(ref _placeInTimestampedFolder, value);
         }
 
         public string TestSelectionSummary =>
-            $"{AllTests.Count(x => x.IsSelected)} of {AllTests.Count} tests selected";
+            $"{AllTests.Count(x => x.IsSelected)} of {AllTests.Count} selected";
 
         public bool HasNoTests => AllTests.Count == 0;
 
         public ICommand RefreshTestsCommand { get; }
         public ICommand SelectAllTestsCommand { get; }
         public ICommand DeselectAllTestsCommand { get; }
-        public ICommand DistillSelectedCommand { get; }
-        public ICommand DistillAllCommand { get; }
-        public ICommand ReRunSelectedCommand { get; }
+        public ICommand CreateViewpointsSelectedCommand { get; }
+        public ICommand CreateViewpointsAllCommand { get; }
 
-        public DistillerTabViewModel(
+        public ViewpointsTabViewModel(
             IClashDistillerService distiller,
             IDialogService dialogService,
             ILoggerService logger)
@@ -67,9 +101,9 @@ namespace AutomatedClashRunner.ViewModels
             RefreshTestsCommand = new RelayCommand(_ => LoadTests());
             SelectAllTestsCommand = new RelayCommand(_ => SelectAllVisibleTests(true));
             DeselectAllTestsCommand = new RelayCommand(_ => SelectAllVisibleTests(false));
-            DistillSelectedCommand = new RelayCommand(_ => DistillTests(selectedOnly: true));
-            DistillAllCommand = new RelayCommand(_ => DistillTests(selectedOnly: false));
-            ReRunSelectedCommand = new RelayCommand(_ => ReRunSelectedTests());
+
+            CreateViewpointsSelectedCommand = new RelayCommand(_ => ExportViewpoints(selectedOnly: true));
+            CreateViewpointsAllCommand = new RelayCommand(_ => ExportViewpoints(selectedOnly: false));
 
             LoadTests();
         }
@@ -77,9 +111,9 @@ namespace AutomatedClashRunner.ViewModels
         private bool FilterTestItem(object obj)
         {
             if (!(obj is ClashTestNode node)) return false;
-            if (string.IsNullOrWhiteSpace(SearchTextTests)) return true;
+            if (string.IsNullOrWhiteSpace(SearchText)) return true;
 
-            string q = SearchTextTests.Trim();
+            string q = SearchText.Trim();
             return node.DisplayName != null && node.DisplayName.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
@@ -124,7 +158,7 @@ namespace AutomatedClashRunner.ViewModels
             }
             catch (Exception ex)
             {
-                _logger.LogError("Error loading clash tests", ex);
+                _logger.LogError("Error loading tests for Viewpoints tab", ex);
                 _dialogService.ShowError($"Failed to load clash tests: {ex.Message}");
             }
         }
@@ -154,30 +188,7 @@ namespace AutomatedClashRunner.ViewModels
             }
         }
 
-        private void ReRunSelectedTests()
-        {
-            var selected = AllTests.Where(t => t.IsSelected).Select(t => t.OriginalTest).ToList();
-            if (selected.Count == 0)
-            {
-                _dialogService.ShowWarning("Please select at least one test to re-run.", "No Tests Selected");
-                return;
-            }
-
-            try
-            {
-                var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
-                _distiller.ReRunTests(doc, selected);
-                LoadTests();
-                _dialogService.ShowInformation($"Re-ran {selected.Count} tests successfully.", "Success");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("Error re-running selected tests", ex);
-                _dialogService.ShowError($"Failed to re-run tests: {ex.Message}");
-            }
-        }
-
-        private void DistillTests(bool selectedOnly)
+        private void ExportViewpoints(bool selectedOnly)
         {
             var targetTests = selectedOnly
                 ? AllTests.Where(t => t.IsSelected).Select(t => t.OriginalTest).ToList()
@@ -186,22 +197,40 @@ namespace AutomatedClashRunner.ViewModels
             if (targetTests.Count == 0)
             {
                 _dialogService.ShowWarning(
-                    selectedOnly ? "Please select at least one test to distill." : "No clash tests available.",
+                    selectedOnly ? "Please select at least one clash test." : "No clash tests available.",
                     "No Tests Available");
+                return;
+            }
+
+            if (!IncludeNew && !IncludeActive && !IncludeReviewed && !IncludeApproved && !IncludeResolved)
+            {
+                _dialogService.ShowWarning("Please enable at least one status (e.g., Reviewed) under 'Include statuses'.", "No Status Filter");
                 return;
             }
 
             try
             {
                 var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
-                int groupsCreated = _distiller.GroupByElement(doc, targetTests, GroupingProximity);
+                int count = _distiller.ExportViewpoints(
+                    doc,
+                    targetTests,
+                    IncludeNew,
+                    IncludeActive,
+                    IncludeReviewed,
+                    IncludeApproved,
+                    IncludeResolved,
+                    PlaceInTimestampedFolder);
+
                 LoadTests();
-                _dialogService.ShowInformation($"Clash Distillation complete! Created {groupsCreated} new groups across {targetTests.Count} tests.", "Distill Complete");
+
+                _dialogService.ShowInformation(
+                    $"Generated {count} viewpoints across {targetTests.Count} clash tests into the Saved Viewpoints window.",
+                    "Viewpoints Created");
             }
             catch (Exception ex)
             {
-                _logger.LogError("Error distilling clash tests", ex);
-                _dialogService.ShowError($"Failed to distill clashes: {ex.Message}");
+                _logger.LogError("Error generating viewpoints", ex);
+                _dialogService.ShowError($"Failed to generate viewpoints: {ex.Message}");
             }
         }
     }

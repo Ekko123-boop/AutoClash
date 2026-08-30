@@ -9,5 +9,14 @@ namespace AutomatedClashRunner.Services.Interfaces
         void ReRunTests(Document doc, IEnumerable<ClashTest> tests);
         int GroupByElement(Document doc, IEnumerable<ClashTest> tests, double maxProximityFt);
         int ExportReviewedViewpoints(Document doc, IEnumerable<ClashTest> tests);
+        int ExportViewpoints(
+            Document doc,
+            IEnumerable<ClashTest> tests,
+            bool includeNew,
+            bool includeActive,
+            bool includeReviewed,
+            bool includeApproved,
+            bool includeResolved,
+            bool timestampedFolder = false);
     }
 }

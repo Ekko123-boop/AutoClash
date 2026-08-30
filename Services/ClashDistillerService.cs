@@ -154,6 +154,19 @@ namespace AutomatedClashRunner.Services
 
         public int ExportReviewedViewpoints(Document doc, IEnumerable<ClashTest> tests)
         {
+            return ExportViewpoints(doc, tests, includeNew: false, includeActive: false, includeReviewed: true, includeApproved: false, includeResolved: false);
+        }
+
+        public int ExportViewpoints(
+            Document doc,
+            IEnumerable<ClashTest> tests,
+            bool includeNew,
+            bool includeActive,
+            bool includeReviewed,
+            bool includeApproved,
+            bool includeResolved,
+            bool timestampedFolder = false)
+        {
             int viewpointsCreated = 0;
             if (doc == null || tests == null) return viewpointsCreated;
 
@@ -163,24 +176,58 @@ namespace AutomatedClashRunner.Services
             var clashData = documentClash.TestsData;
             var savedViewpoints = doc.SavedViewpoints;
 
+            FolderItem targetRootFolder = null;
+            if (timestampedFolder)
+            {
+                var tsFolder = new FolderItem { DisplayName = $"Clash Viewpoints ({DateTime.Now:yyyy-MM-dd HHmm})" };
+                savedViewpoints.AddCopy(tsFolder);
+                targetRootFolder = savedViewpoints.RootItem.Children.LastOrDefault() as FolderItem;
+            }
+
             foreach (var test in tests)
             {
                 try
                 {
-                    var reviewedGroups = test.Children.OfType<ClashResultGroup>()
-                        .Where(g => g.Status == ClashResultStatus.Reviewed)
+                    var matchingGroups = test.Children.OfType<ClashResultGroup>()
+                        .Where(g =>
+                            (includeNew && g.Status == ClashResultStatus.New) ||
+                            (includeActive && g.Status == ClashResultStatus.Active) ||
+                            (includeReviewed && g.Status == ClashResultStatus.Reviewed) ||
+                            (includeApproved && g.Status == ClashResultStatus.Approved) ||
+                            (includeResolved && g.Status == ClashResultStatus.Resolved))
                         .ToList();
 
-                    if (reviewedGroups.Count == 0) continue;
+                    // If there are raw results matching and no groups
+                    var matchingRaw = test.Children.OfType<ClashResult>()
+                        .Where(r =>
+                            (includeNew && r.Status == ClashResultStatus.New) ||
+                            (includeActive && r.Status == ClashResultStatus.Active) ||
+                            (includeReviewed && r.Status == ClashResultStatus.Reviewed) ||
+                            (includeApproved && r.Status == ClashResultStatus.Approved) ||
+                            (includeResolved && r.Status == ClashResultStatus.Resolved))
+                        .ToList();
+
+                    if (matchingGroups.Count == 0 && matchingRaw.Count == 0) continue;
 
                     // Create folder for the clash test
                     var folder = new FolderItem { DisplayName = test.DisplayName };
-                    savedViewpoints.AddCopy(folder);
+                    if (targetRootFolder != null)
+                    {
+                        savedViewpoints.AddCopy(targetRootFolder, folder);
+                    }
+                    else
+                    {
+                        savedViewpoints.AddCopy(folder);
+                    }
 
-                    var actualFolder = savedViewpoints.RootItem.Children.LastOrDefault() as FolderItem;
+                    FolderItem actualFolder = targetRootFolder != null
+                        ? targetRootFolder.Children.LastOrDefault() as FolderItem
+                        : savedViewpoints.RootItem.Children.LastOrDefault() as FolderItem;
+
                     if (actualFolder == null) continue;
 
-                    foreach (var group in reviewedGroups)
+                    // Process Groups
+                    foreach (var group in matchingGroups)
                     {
                         if (group.RepresentativeResult == null) continue;
 
@@ -193,7 +240,19 @@ namespace AutomatedClashRunner.Services
                         }
                     }
 
-                    _logger.Log($"Exported viewpoints for reviewed groups in test: {test.DisplayName}");
+                    // Process Raw Results (if any)
+                    foreach (var raw in matchingRaw)
+                    {
+                        var vp = clashData.TestsViewpointForResult(raw);
+                        if (vp != null)
+                        {
+                            var svp = new SavedViewpoint(vp) { DisplayName = raw.DisplayName };
+                            savedViewpoints.AddCopy(actualFolder, svp);
+                            viewpointsCreated++;
+                        }
+                    }
+
+                    _logger.Log($"Exported {viewpointsCreated} viewpoints for test: {test.DisplayName}");
                 }
                 catch (Exception ex)
                 {

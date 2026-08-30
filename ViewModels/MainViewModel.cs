@@ -11,6 +11,7 @@ namespace AutomatedClashRunner.ViewModels
 
         public MatrixTabViewModel MatrixTab { get; }
         public DistillerTabViewModel DistillerTab { get; }
+        public ViewpointsTabViewModel ViewpointsTab { get; }
 
         public ICommand CancelCommand { get; }
 
@@ -34,6 +35,7 @@ namespace AutomatedClashRunner.ViewModels
 
             MatrixTab = new MatrixTabViewModel(discoverySvc, searchSetSvc, executionSvc, dialogSvc, loggerSvc);
             DistillerTab = new DistillerTabViewModel(distillerSvc, dialogSvc, loggerSvc);
+            ViewpointsTab = new ViewpointsTabViewModel(distillerSvc, dialogSvc, loggerSvc);
 
             CancelCommand = new RelayCommand(_ => _closeAction?.Invoke());
         }

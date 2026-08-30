@@ -1,21 +1,26 @@
 ﻿<Window x:Class="AutomatedClashRunner.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Automated Model Clash Runner &amp; Distiller" Height="680" Width="1050" 
-        MinHeight="550" MinWidth="850"
+        Title="Automated Clash Runner &amp; Distiller" 
+        Height="740" Width="1140" 
+        MinHeight="600" MinWidth="920"
         WindowStartupLocation="CenterOwner"
-        FontFamily="Segoe UI" FontSize="12">
+        FontFamily="Segoe UI" 
+        FontSize="12"
+        Background="#F8FAFC">
     
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
-        <!-- Watermark Style for TextBoxes -->
-        <Style x:Key="WatermarkTextBox" TargetType="TextBox">
-            <Setter Property="Padding" Value="6,4"/>
+        <!-- Modern SearchBox Style -->
+        <Style x:Key="ModernSearchBox" TargetType="TextBox">
+            <Setter Property="Padding" Value="8,5"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Background" Value="#FAFAFA"/>
-            <Setter Property="BorderBrush" Value="#CFD8DC"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
             <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="12"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
@@ -23,12 +28,12 @@
                             <Border Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="3">
+                                    CornerRadius="4">
                                 <ScrollViewer x:Name="PART_ContentHost" Margin="2" />
                             </Border>
                             <TextBlock Text="{TemplateBinding Tag}"
-                                       Foreground="#90A4AE"
-                                       Margin="8,0,0,0"
+                                       Foreground="#94A3B8"
+                                       Margin="10,0,0,0"
                                        VerticalAlignment="Center"
                                        IsHitTestVisible="False">
                                 <TextBlock.Style>
@@ -48,18 +53,95 @@
             </Setter>
         </Style>
 
-        <!-- Standard Button Style -->
-        <Style x:Key="FlatButton" TargetType="Button">
-            <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Background" Value="#ECEFF1"/>
-            <Setter Property="Foreground" Value="#263238"/>
-            <Setter Property="BorderBrush" Value="#CFD8DC"/>
+        <!-- Secondary Button Style -->
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Padding" Value="14,7"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="#334155"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F1F5F9"/>
+                    <Setter Property="BorderBrush" Value="#94A3B8"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.5"/>
+                    <Setter Property="Cursor" Value="Arrow"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Primary Solid Green Button Style (Matching Reference Images!) -->
+        <Style x:Key="PrimaryGreenButton" TargetType="Button">
+            <Setter Property="Padding" Value="18,8"/>
+            <Setter Property="Background" Value="#00875A"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#00704A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#00A36C"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#94A3B8"/>
+                    <Setter Property="Opacity" Value="0.6"/>
+                    <Setter Property="Cursor" Value="Arrow"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Mini Selection Button -->
+        <Style x:Key="MiniButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+            <Setter Property="Padding" Value="7,3"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Margin" Value="2,0"/>
+        </Style>
+
+        <!-- Status Filter Toggle Button (Matching Reference Toggle Bars!) -->
+        <Style x:Key="StatusToggleButton" TargetType="ToggleButton">
+            <Setter Property="Padding" Value="12,5"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="Foreground" Value="#475569"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
@@ -71,280 +153,563 @@
                 </Setter.Value>
             </Setter>
             <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#CFD8DC"/>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="Background" Value="#0284C7"/>
+                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="BorderBrush" Value="#0369A1"/>
                 </Trigger>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Opacity" Value="0.5"/>
-                    <Setter Property="Cursor" Value="Arrow"/>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="#0284C7"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
 
-        <!-- Primary Accent Button Style -->
-        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource FlatButton}">
-            <Setter Property="Background" Value="#0288D1"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#0277BD"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#039BE5"/>
-                </Trigger>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Background" Value="#B0BEC5"/>
-                    <Setter Property="Foreground" Value="#ECEFF1"/>
-                    <Setter Property="Opacity" Value="0.7"/>
-                </Trigger>
-            </Style.Triggers>
+        <!-- Clean GridView Header Style -->
+        <Style x:Key="CleanGridViewHeader" TargetType="GridViewColumnHeader">
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="Foreground" Value="#475569"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
         </Style>
 
-        <!-- Action / Tool Button Style -->
-        <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource FlatButton}">
-            <Setter Property="Background" Value="#37474F"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#263238"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#455A64"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <!-- Mini Selection Button Style -->
-        <Style x:Key="MiniButton" TargetType="Button" BasedOn="{StaticResource FlatButton}">
-            <Setter Property="Padding" Value="6,2"/>
-            <Setter Property="FontSize" Value="10"/>
-            <Setter Property="FontWeight" Value="Normal"/>
-            <Setter Property="Margin" Value="2,0"/>
+        <!-- Modern TabItem Style -->
+        <Style x:Key="ModernTabItem" TargetType="TabItem">
+            <Setter Property="Padding" Value="18,10"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="TabBorder" 
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="Transparent"
+                                BorderThickness="0,0,0,3"
+                                Padding="{TemplateBinding Padding}"
+                                Margin="0,0,8,0"
+                                Cursor="Hand">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="#00875A"/>
+                                <Setter Property="Foreground" Value="#0F172A"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#0F172A"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
 
-    <Grid Background="#F5F7F8">
-        <TabControl Margin="10" Background="White" BorderBrush="#E0E0E0">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- TOP APP HEADER BAR -->
+        <Border Grid.Row="0" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="16,10,16,0">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center" Margin="0,0,24,10">
+                    <Border Width="34" Height="34" Background="#00875A" CornerRadius="6" Margin="0,0,10,0">
+                        <TextBlock Text="âš¡" FontSize="18" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Automated Clash Runner &amp; Distiller" FontWeight="Bold" FontSize="15" Foreground="#0F172A"/>
+                        <TextBlock Text="Autodesk Navisworks Automated Coordination Suite" FontSize="11" Foreground="#64748B"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Navigation Tabs -->
+                <TabControl x:Name="MainTabs" Background="Transparent" BorderThickness="0" Padding="0" VerticalAlignment="Bottom">
+                    <TabItem Header="Generate Matrix" Style="{StaticResource ModernTabItem}"/>
+                    <TabItem Header="Distill Clashes" Style="{StaticResource ModernTabItem}"/>
+                    <TabItem Header="Create Viewpoints" Style="{StaticResource ModernTabItem}"/>
+                </TabControl>
+            </DockPanel>
+        </Border>
+
+        <!-- MAIN CONTENT AREA SWITCHED BY TAB -->
+        <Grid Grid.Row="1" Margin="14">
             
-            <!-- ========================================================= -->
-            <!-- TAB 1: GENERATE CLASH MATRIX                             -->
-            <!-- ========================================================= -->
-            <TabItem Header="Generate Matrix" DataContext="{Binding MatrixTab}">
-                <Grid Margin="10">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+            <!-- ========================================================================= -->
+            <!-- TAB 1: GENERATE MATRIX                                                    -->
+            <!-- ========================================================================= -->
+            <Grid DataContext="{Binding MatrixTab}">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedIndex, ElementName=MainTabs}" Value="0">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
 
-                    <!-- LEFT PANEL: Models -->
-                    <GroupBox Grid.Row="0" Grid.Column="0" Margin="0,0,6,6" BorderBrush="#B0BEC5">
-                        <GroupBox.Header>
-                            <DockPanel>
-                                <TextBlock Text="Selected Models / NWCs" FontWeight="Bold" Foreground="#37474F"/>
-                                <TextBlock Text="{Binding ModelSelectionSummary}" HorizontalAlignment="Right" Foreground="#78909C" FontSize="11" Margin="10,0,0,0"/>
-                            </DockPanel>
-                        </GroupBox.Header>
-                        <Grid Margin="4">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: Models / NWCs -->
+                <Border Grid.Row="0" Grid.Column="0" Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Margin="0,0,6,8" Padding="10">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <DockPanel Grid.Row="0" Margin="0,0,0,6">
+                            <TextBlock Text="Selected Models / NWCs" FontWeight="Bold" FontSize="13" Foreground="#0F172A" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ModelSelectionSummary}" HorizontalAlignment="Right" Foreground="#64748B" FontSize="11" VerticalAlignment="Center"/>
+                        </DockPanel>
+
+                        <DockPanel Grid.Row="1" Margin="0,0,0,6">
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
+                                <Button Content="â˜‘ All" Command="{Binding SelectAllModelsCommand}" Style="{StaticResource MiniButton}"/>
+                                <Button Content="â˜ None" Command="{Binding DeselectAllModelsCommand}" Style="{StaticResource MiniButton}"/>
+                            </StackPanel>
+                            <TextBox Style="{StaticResource ModernSearchBox}" 
+                                     Tag="ðŸ” Filter models by name..." 
+                                     Text="{Binding SearchTextModels, UpdateSourceTrigger=PropertyChanged}"/>
+                        </DockPanel>
+
+                        <ListView Grid.Row="2" ItemsSource="{Binding ModelsView}" BorderBrush="#E2E8F0" Background="#FFFFFF">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                                        <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="{Binding IsSelectable}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <Border Background="#F1F5F9" CornerRadius="3" Padding="5,1" Margin="0,0,6,0">
+                                            <TextBlock Text="{Binding DisplayType}" FontSize="10" Foreground="#475569" FontWeight="SemiBold"/>
+                                        </Border>
+                                        <TextBlock Text="{Binding DisplayName}" FontWeight="Medium" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding WarningMessage}" Foreground="#DC2626" Margin="8,0,0,0" FontStyle="Italic" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+
+                        <TextBlock Grid.Row="2" Text="No NWC models found in document." 
+                                   Foreground="#94A3B8" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Visibility="{Binding HasNoModels, Converter={StaticResource BoolToVis}}"/>
+                    </Grid>
+                </Border>
+
+                <!-- Right: Search Sets -->
+                <Border Grid.Row="0" Grid.Column="1" Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Margin="6,0,0,8" Padding="10">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <DockPanel Grid.Row="0" Margin="0,0,0,6">
+                            <TextBlock Text="Manual Search Sets" FontWeight="Bold" FontSize="13" Foreground="#0F172A" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SetSelectionSummary}" HorizontalAlignment="Right" Foreground="#64748B" FontSize="11" VerticalAlignment="Center"/>
+                        </DockPanel>
+
+                        <DockPanel Grid.Row="1" Margin="0,0,0,6">
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
+                                <Button Content="â˜‘ All" Command="{Binding SelectAllSetsCommand}" Style="{StaticResource MiniButton}"/>
+                                <Button Content="â˜ None" Command="{Binding DeselectAllSetsCommand}" Style="{StaticResource MiniButton}"/>
+                            </StackPanel>
+                            <TextBox Style="{StaticResource ModernSearchBox}" 
+                                     Tag="ðŸ” Filter search sets by path..." 
+                                     Text="{Binding SearchTextSets, UpdateSourceTrigger=PropertyChanged}"/>
+                        </DockPanel>
+
+                        <ListView Grid.Row="2" ItemsSource="{Binding SearchSetsView}" BorderBrush="#E2E8F0" Background="#FFFFFF">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                                        <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="True" VerticalAlignment="Center" Margin="0,0,8,0"
+                                                  Visibility="{Binding IsSet, Converter={StaticResource BoolToVis}}"/>
+                                        <TextBlock Text="{Binding FullPath}" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+
+                        <TextBlock Grid.Row="2" Text="No manual search sets found in document." 
+                                   Foreground="#94A3B8" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Visibility="{Binding HasNoSets, Converter={StaticResource BoolToVis}}"/>
+                    </Grid>
+                </Border>
+
+                <!-- Bottom Configuration Card -->
+                <Border Grid.Row="1" Grid.ColumnSpan="2" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,10">
+                    <WrapPanel VerticalAlignment="Center">
+                        <TextBlock Text="Clash Test Type: " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334155"/>
+                        <ComboBox ItemsSource="{Binding AvailableClashTypes}" SelectedItem="{Binding SelectedClashType}" Width="130" Margin="0,0,20,0" Padding="6,3"/>
+                        
+                        <TextBlock Text="Tolerance (m): " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334155"/>
+                        <TextBox Text="{Binding Tolerance, UpdateSourceTrigger=PropertyChanged}" Width="70" Margin="0,0,20,0" Padding="6,3" VerticalContentAlignment="Center"/>
+
+                        <TextBlock Text="Selection B Mode: " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334155"/>
+                        <TextBlock Text="Standard Model Hierarchy | " VerticalAlignment="Center" Foreground="#00875A" FontWeight="SemiBold" Margin="0,0,8,0"/>
+
+                        <TextBlock Text="Composite Clashing: " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334155"/>
+                        <TextBlock Text="Enabled" VerticalAlignment="Center" Foreground="#64748B"/>
+                    </WrapPanel>
+                </Border>
+
+                <!-- Footer Action Bar -->
+                <DockPanel Grid.Row="2" Grid.ColumnSpan="2">
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                        <Button Content="Refresh Models" Command="{Binding RefreshModelsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"/>
+                        <Button Content="Refresh Sets" Command="{Binding RefreshSearchSetsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0"/>
+                        <Button Content="Clear All" Command="{Binding ClearAllCommand}" Style="{StaticResource SecondaryButton}"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Cancel" Command="{Binding DataContext.CancelCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
+                                Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
+                        <Button Content="{Binding ExpectedTestCount, StringFormat='Run Clash Matrix ({0} Tests)'}" 
+                                Command="{Binding RunCommand}" 
+                                Style="{StaticResource PrimaryGreenButton}"/>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Loading / Busy Overlay -->
+                <Grid Grid.RowSpan="3" Grid.ColumnSpan="2" Background="#90FFFFFF" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+                    <Border Background="#FFFFFF" BorderBrush="#00875A" BorderThickness="2" CornerRadius="8" 
+                            HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28" Width="440">
+                        <StackPanel>
+                            <TextBlock Text="âš¡ Executing Clash Matrix..." FontWeight="Bold" FontSize="15" Foreground="#00875A" Margin="0,0,0,12" HorizontalAlignment="Center"/>
+                            <ProgressBar Value="{Binding ProgressBarValue}" Maximum="{Binding ProgressBarMax}" Height="18" Margin="0,0,0,10"/>
+                            <TextBlock Text="{Binding ProgressText}" Foreground="#475569" TextAlignment="Center" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+
+
+            <!-- ========================================================================= -->
+            <!-- TAB 2: DISTILL (REFERENCE IMAGE 2 INSPIRATION)                             -->
+            <!-- ========================================================================= -->
+            <Grid DataContext="{Binding DistillerTab}">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedIndex, ElementName=MainTabs}" Value="1">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Title Header Banner (Matching Reference 2) -->
+                <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Width="32" Height="32" Background="#E0F2FE" CornerRadius="6" Margin="0,0,10,0">
+                            <TextBlock Text="âš—ï¸" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="DISTILL" FontWeight="Bold" FontSize="26" Foreground="#0F172A" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button Content="â˜‘ Select All" Command="{Binding SelectAllTestsCommand}" Style="{StaticResource MiniButton}" Margin="0,0,4,0"/>
+                        <Button Content="â˜ Deselect All" Command="{Binding DeselectAllTestsCommand}" Style="{StaticResource MiniButton}" Margin="0,0,8,0"/>
+                        <TextBox Style="{StaticResource ModernSearchBox}" 
+                                 Tag="ðŸ” Filter tests..." 
+                                 Width="220"
+                                 Text="{Binding SearchTextTests, UpdateSourceTrigger=PropertyChanged}"/>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Main Data Table with Column Counts (Matching Reference 2 Table) -->
+                <Border Grid.Row="1" Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Margin="0,0,0,10">
+                    <ListView ItemsSource="{Binding TestsView}" BorderThickness="0" Background="Transparent">
+                        <ListView.View>
+                            <GridView ColumnHeaderContainerStyle="{StaticResource CleanGridViewHeader}">
+                                <GridViewColumn Width="40">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Clash Test" Width="430">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="2,0">
+                                                <TextBlock Text="âœ“" Foreground="#00875A" FontWeight="Bold" Margin="0,0,6,0"/>
+                                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="#0F172A"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Active/New" Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ActiveNewCount}" Foreground="#D97706" FontWeight="SemiBold" TextAlignment="Right"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Reviewed" Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ReviewedCount}" Foreground="#0284C7" FontWeight="SemiBold" TextAlignment="Right"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Approved" Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ApprovedCount}" Foreground="#00875A" FontWeight="SemiBold" TextAlignment="Right"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Resolved" Width="90">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ResolvedCount}" Foreground="#64748B" TextAlignment="Right"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Total" Width="80">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding TotalCount}" FontWeight="Bold" Foreground="#0F172A" TextAlignment="Right"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </Border>
+
+                <!-- Distillation Settings Card (Matching Reference 2 Card) -->
+                <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="14" Margin="0,0,0,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="420"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left: Distillation Proximity & Group Settings -->
+                        <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                            <TextBlock Text="Distillation Settings" FontWeight="Bold" FontSize="13" Foreground="#0F172A" Margin="0,0,0,8"/>
                             
-                            <!-- Search & Quick Selection Toolbar -->
-                            <DockPanel Grid.Row="0" Margin="0,0,0,6">
-                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
-                                    <Button Content="☑ All" Command="{Binding SelectAllModelsCommand}" Style="{StaticResource MiniButton}"/>
-                                    <Button Content="☐ None" Command="{Binding DeselectAllModelsCommand}" Style="{StaticResource MiniButton}"/>
-                                </StackPanel>
-                                <TextBox Style="{StaticResource WatermarkTextBox}" 
-                                         Tag="🔍 Filter models by name..." 
-                                         Text="{Binding SearchTextModels, UpdateSourceTrigger=PropertyChanged}"/>
+                            <!-- Focused <--> Global Slider -->
+                            <TextBlock Text="Proximity Clustering Range:" FontWeight="SemiBold" Foreground="#475569" FontSize="11" Margin="0,0,0,4"/>
+                            <DockPanel Margin="0,0,0,10">
+                                <TextBlock Text="Focused" FontSize="10" Foreground="#64748B" VerticalAlignment="Center" DockPanel.Dock="Left" Margin="0,0,8,0"/>
+                                <TextBlock Text="Global" FontSize="10" Foreground="#64748B" VerticalAlignment="Center" DockPanel.Dock="Right" Margin="8,0,0,0"/>
+                                <TextBox Text="{Binding GroupingProximity, UpdateSourceTrigger=PropertyChanged}" Width="40" DockPanel.Dock="Right" Padding="2" TextAlignment="Center" VerticalContentAlignment="Center" Margin="6,0,0,0"/>
+                                <Slider Minimum="1" Maximum="150" Value="{Binding GroupingProximity}" TickFrequency="5" IsSnapToTickEnabled="True" VerticalAlignment="Center"/>
                             </DockPanel>
 
-                            <!-- Models List -->
-                            <ListView Grid.Row="1" ItemsSource="{Binding ModelsView}" BorderBrush="#CFD8DC" Background="White">
-                                <ListView.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" Margin="0,2">
-                                            <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="{Binding IsSelectable}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                            <Border Background="#ECEFF1" CornerRadius="2" Padding="4,1" Margin="0,0,6,0">
-                                                <TextBlock Text="{Binding DisplayType}" FontSize="10" Foreground="#546E7A"/>
-                                            </Border>
-                                            <TextBlock Text="{Binding DisplayName}" FontWeight="Medium" Foreground="#263238" VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding WarningMessage}" Foreground="#D32F2F" Margin="6,0,0,0" FontStyle="Italic" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
-
-                            <!-- Empty State -->
-                            <TextBlock Grid.Row="1" Text="No NWC models found. Please open an NWF/NWD file with appended models." 
-                                       Foreground="#90A4AE" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       TextWrapping="Wrap" TextAlignment="Center" Margin="20"
-                                       Visibility="{Binding HasNoModels, Converter={StaticResource BoolToVis}}"/>
-                        </Grid>
-                    </GroupBox>
-
-                    <!-- RIGHT PANEL: Search Sets -->
-                    <GroupBox Grid.Row="0" Grid.Column="1" Margin="6,0,0,6" BorderBrush="#B0BEC5">
-                        <GroupBox.Header>
-                            <DockPanel>
-                                <TextBlock Text="Manual Search Sets" FontWeight="Bold" Foreground="#37474F"/>
-                                <TextBlock Text="{Binding SetSelectionSummary}" HorizontalAlignment="Right" Foreground="#78909C" FontSize="11" Margin="10,0,0,0"/>
-                            </DockPanel>
-                        </GroupBox.Header>
-                        <Grid Margin="4">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            
-                            <!-- Search & Quick Selection Toolbar -->
-                            <DockPanel Grid.Row="0" Margin="0,0,0,6">
-                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
-                                    <Button Content="☑ All" Command="{Binding SelectAllSetsCommand}" Style="{StaticResource MiniButton}"/>
-                                    <Button Content="☐ None" Command="{Binding DeselectAllSetsCommand}" Style="{StaticResource MiniButton}"/>
-                                </StackPanel>
-                                <TextBox Style="{StaticResource WatermarkTextBox}" 
-                                         Tag="🔍 Filter search sets by path..." 
-                                         Text="{Binding SearchTextSets, UpdateSourceTrigger=PropertyChanged}"/>
-                            </DockPanel>
-
-                            <!-- Search Sets List -->
-                            <ListView Grid.Row="1" ItemsSource="{Binding SearchSetsView}" BorderBrush="#CFD8DC" Background="White">
-                                <ListView.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" Margin="0,2">
-                                            <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="True" VerticalAlignment="Center" Margin="0,0,6,0"
-                                                      Visibility="{Binding IsSet, Converter={StaticResource BoolToVis}}"/>
-                                            <TextBlock Text="{Binding FullPath}" Foreground="#263238" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
-
-                            <!-- Empty State -->
-                            <TextBlock Grid.Row="1" Text="No manual search sets found. Create search sets in Navisworks first." 
-                                       Foreground="#90A4AE" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       TextWrapping="Wrap" TextAlignment="Center" Margin="20"
-                                       Visibility="{Binding HasNoSets, Converter={StaticResource BoolToVis}}"/>
-                        </Grid>
-                    </GroupBox>
-
-                    <!-- BOTTOM PANEL: Configurable Clash Settings -->
-                    <GroupBox Header="Clash Test Configuration" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,4,0,6" BorderBrush="#CFD8DC">
-                        <WrapPanel Margin="8,4" VerticalAlignment="Center">
-                            <TextBlock Text="Clash Type: " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#37474F"/>
-                            <ComboBox ItemsSource="{Binding AvailableClashTypes}" SelectedItem="{Binding SelectedClashType}" Width="120" Margin="0,0,16,0" Padding="4,2"/>
-                            
-                            <TextBlock Text="Tolerance (m): " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#37474F"/>
-                            <TextBox Text="{Binding Tolerance, UpdateSourceTrigger=PropertyChanged}" Width="70" Margin="0,0,16,0" Padding="4,2" VerticalContentAlignment="Center"/>
-
-                            <TextBlock Text="Composite Objects: " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#37474F"/>
-                            <TextBlock Text="Enabled | " VerticalAlignment="Center" Foreground="#546E7A" Margin="0,0,8,0"/>
-
-                            <TextBlock Text="Rules: " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#37474F"/>
-                            <TextBlock Text="Default" VerticalAlignment="Center" Foreground="#546E7A"/>
-                        </WrapPanel>
-                    </GroupBox>
-
-                    <!-- FOOTER ACTIONS -->
-                    <DockPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,4,0,0">
-                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                            <Button Content="Refresh Models" Command="{Binding RefreshModelsCommand}" Style="{StaticResource FlatButton}" Margin="0,0,6,0"/>
-                            <Button Content="Refresh Sets" Command="{Binding RefreshSearchSetsCommand}" Style="{StaticResource FlatButton}" Margin="0,0,6,0"/>
-                            <Button Content="Clear All" Command="{Binding ClearAllCommand}" Style="{StaticResource FlatButton}"/>
+                            <TextBlock Text="Clustering Strategy:" FontWeight="SemiBold" Foreground="#475569" FontSize="11" Margin="0,0,0,4"/>
+                            <TextBlock Text="â€¢ Group by Master Named Element in Selection A" Foreground="#0F172A" FontSize="11" Margin="4,0,0,2"/>
+                            <TextBlock Text="â€¢ Sub-cluster by spatial proximity threshold" Foreground="#0F172A" FontSize="11" Margin="4,0,0,0"/>
                         </StackPanel>
 
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Cancel" Command="{Binding DataContext.CancelCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
-                                    Style="{StaticResource FlatButton}" Margin="0,0,8,0"/>
-                            <Button Content="{Binding ExpectedTestCount, StringFormat='Run Clash Tests ({0})'}" 
-                                    Command="{Binding RunCommand}" 
-                                    Style="{StaticResource PrimaryButton}" 
-                                    Padding="16,8"/>
-                        </StackPanel>
-                    </DockPanel>
-
-                    <!-- BUSY / PROGRESS OVERLAY -->
-                    <Grid Grid.RowSpan="3" Grid.ColumnSpan="2" Background="#80FFFFFF" 
-                          Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
-                        <Border Background="White" BorderBrush="#0288D1" BorderThickness="2" CornerRadius="6" 
-                                HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24" Width="400">
+                        <!-- Right: Status / Priority Settings -->
+                        <Border Grid.Column="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="12">
                             <StackPanel>
-                                <TextBlock Text="Executing Clash Matrix..." FontWeight="Bold" FontSize="14" Foreground="#0288D1" Margin="0,0,0,12" HorizontalAlignment="Center"/>
-                                <ProgressBar Value="{Binding ProgressBarValue}" Maximum="{Binding ProgressBarMax}" Height="18" Margin="0,0,0,8"/>
-                                <TextBlock Text="{Binding ProgressText}" Foreground="#546E7A" TextAlignment="Center" TextWrapping="Wrap"/>
+                                <TextBlock Text="Clash Classification &amp; Grouping" FontWeight="Bold" FontSize="12" Foreground="#0F172A" Margin="0,0,0,8"/>
+                                <TextBlock Text="Group naming format: {TestName}-{001, 002, ...}" FontSize="11" Foreground="#475569" Margin="0,0,0,6"/>
+                                <TextBlock Text="Raw clashes within proximity distance are organized cleanly into named groups under each clash test in Clash Detective." FontSize="11" Foreground="#64748B" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
                     </Grid>
-                </Grid>
-            </TabItem>
+                </Border>
 
-            <!-- ========================================================= -->
-            <!-- TAB 2: DISTILLER & MANAGE TESTS                          -->
-            <!-- ========================================================= -->
-            <TabItem Header="Distiller / Manage Tests" DataContext="{Binding DistillerTab}">
-                <Grid Margin="10">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    
-                    <!-- Search & Selection Toolbar -->
-                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
-                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="8,0,0,0">
-                            <Button Content="☑ Select All" Command="{Binding SelectAllTestsCommand}" Style="{StaticResource MiniButton}" Padding="8,4"/>
-                            <Button Content="☐ Deselect All" Command="{Binding DeselectAllTestsCommand}" Style="{StaticResource MiniButton}" Padding="8,4"/>
-                            <TextBlock Text="{Binding TestSelectionSummary}" Foreground="#78909C" VerticalAlignment="Center" Margin="10,0,0,0" FontSize="11"/>
-                        </StackPanel>
-                        <TextBox Style="{StaticResource WatermarkTextBox}" 
-                                 Tag="🔍 Filter clash tests by name..." 
-                                 Text="{Binding SearchTextTests, UpdateSourceTrigger=PropertyChanged}"/>
-                    </DockPanel>
-                    
-                    <!-- Clash Tests List -->
-                    <ListView Grid.Row="1" ItemsSource="{Binding TestsView}" BorderBrush="#CFD8DC" Background="White">
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Margin="0,3">
-                                    <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                    <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" Foreground="#263238" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                                    <Border Background="#ECEFF1" CornerRadius="3" Padding="6,2" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Status}" FontSize="11" Foreground="#455A64" FontStyle="Italic"/>
-                                    </Border>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
+                <!-- Bottom Action Bar (Matching Reference 2 Buttons!) -->
+                <DockPanel Grid.Row="3">
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                        <Button Content="Refresh Tests" Command="{Binding RefreshTestsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
+                        <Button Content="Re-Run Selected" Command="{Binding ReRunSelectedCommand}" Style="{StaticResource SecondaryButton}"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Distill Selected Test(s)" Command="{Binding DistillSelectedCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
+                        <Button Content="Distill All Tests" Command="{Binding DistillAllCommand}" Style="{StaticResource PrimaryGreenButton}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Grid>
+
+
+            <!-- ========================================================================= -->
+            <!-- TAB 3: VIEWPOINTS (REFERENCE IMAGE 1 INSPIRATION)                         -->
+            <!-- ========================================================================= -->
+            <Grid DataContext="{Binding ViewpointsTab}">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedIndex, ElementName=MainTabs}" Value="2">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Title Header Banner (Matching Reference 1) -->
+                <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Width="32" Height="32" Background="#FEF3C7" CornerRadius="6" Margin="0,0,10,0">
+                            <TextBlock Text="ðŸ“·" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="VIEWPOINTS" FontWeight="Bold" FontSize="26" Foreground="#0F172A" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button Content="â˜‘ Select All" Command="{Binding SelectAllTestsCommand}" Style="{StaticResource MiniButton}" Margin="0,0,4,0"/>
+                        <Button Content="â˜ Deselect All" Command="{Binding DeselectAllTestsCommand}" Style="{StaticResource MiniButton}" Margin="0,0,8,0"/>
+                        <TextBox Style="{StaticResource ModernSearchBox}" 
+                                 Tag="ðŸ” Filter tests..." 
+                                 Width="220"
+                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Main Data Table (Matching Reference 1 Table) -->
+                <Border Grid.Row="1" Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Margin="0,0,0,10">
+                    <ListView ItemsSource="{Binding TestsView}" BorderThickness="0" Background="Transparent">
+                        <ListView.View>
+                            <GridView ColumnHeaderContainerStyle="{StaticResource CleanGridViewHeader}">
+                                <GridViewColumn Width="40">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Clash Test" Width="440">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Active/New" Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ActiveNewCount}" Foreground="#D97706" FontWeight="SemiBold" TextAlignment="Right"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Reviewed" Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ReviewedCount}" Foreground="#0284C7" FontWeight="SemiBold" TextAlignment="Right"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Approved" Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ApprovedCount}" Foreground="#00875A" FontWeight="SemiBold" TextAlignment="Right"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Resolved" Width="90">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ResolvedCount}" Foreground="#64748B" TextAlignment="Right"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Total" Width="80">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding TotalCount}" FontWeight="Bold" Foreground="#0F172A" TextAlignment="Right"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
                     </ListView>
+                </Border>
 
-                    <!-- Empty State -->
-                    <TextBlock Grid.Row="1" Text="No clash tests found in Clash Detective. Run a matrix or create tests first." 
-                               Foreground="#90A4AE" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"
-                               TextWrapping="Wrap" TextAlignment="Center" Margin="20"
-                               Visibility="{Binding HasNoTests, Converter={StaticResource BoolToVis}}"/>
+                <!-- Viewpoint Settings Card (Matching Reference 1 Card) -->
+                <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="14" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock Text="Viewpoint Settings" FontWeight="Bold" FontSize="13" Foreground="#0F172A" Margin="0,0,0,8"/>
 
-                    <!-- Bottom Controls & Action Bar -->
-                    <DockPanel Grid.Row="2" Margin="0,10,0,0">
-                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
-                            <TextBlock Text="Max Group Proximity (ft): " FontWeight="SemiBold" Foreground="#37474F" VerticalAlignment="Center"/>
-                            <TextBox Text="{Binding GroupingProximity, UpdateSourceTrigger=PropertyChanged}" Width="45" Margin="0,0,6,0" Padding="3,2" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
-                            <Slider Minimum="0" Maximum="150" Value="{Binding GroupingProximity}" Width="140" TickFrequency="5" IsSnapToTickEnabled="True" VerticalAlignment="Center"/>
-                        </StackPanel>
+                        <WrapPanel Margin="0,0,0,10">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,24,6">
+                                <TextBlock Text="Group by: " FontWeight="SemiBold" Foreground="#334155" VerticalAlignment="Center"/>
+                                <Border Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="3" Padding="8,4">
+                                    <TextBlock Text="Dedicated Test Folder" FontWeight="Medium" Foreground="#0F172A"/>
+                                </Border>
+                            </StackPanel>
 
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Refresh Tests" Command="{Binding RefreshTestsCommand}" Style="{StaticResource FlatButton}" Margin="0,0,6,0"/>
-                            <Button Content="Group by Element" Command="{Binding GroupByElementCommand}" Style="{StaticResource ActionButton}" Margin="0,0,6,0"/>
-                            <Button Content="Export 'Reviewed' Viewpoints" Command="{Binding ExportViewpointsCommand}" Style="{StaticResource ActionButton}" Margin="0,0,6,0"/>
-                            <Button Content="Re-Run Selected" Command="{Binding ReRunSelectedCommand}" Style="{StaticResource PrimaryButton}" Padding="14,6"/>
-                        </StackPanel>
-                    </DockPanel>
-                </Grid>
-            </TabItem>
-        </TabControl>
+                            <CheckBox Content="Place viewpoints in timestamped master folder" IsChecked="{Binding PlaceInTimestampedFolder}" VerticalAlignment="Center" Margin="0,0,20,6"/>
+                        </WrapPanel>
+
+                        <!-- Status Filter Toggle Buttons (Matching Reference 1 "Include statuses") -->
+                        <DockPanel>
+                            <TextBlock Text="Include statuses: " FontWeight="SemiBold" Foreground="#334155" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <StackPanel Orientation="Horizontal">
+                                <ToggleButton Content="New" IsChecked="{Binding IncludeNew}" Style="{StaticResource StatusToggleButton}" Margin="0,0,4,0"/>
+                                <ToggleButton Content="Active" IsChecked="{Binding IncludeActive}" Style="{StaticResource StatusToggleButton}" Margin="0,0,4,0"/>
+                                <ToggleButton Content="Reviewed" IsChecked="{Binding IncludeReviewed}" Style="{StaticResource StatusToggleButton}" Margin="0,0,4,0"/>
+                                <ToggleButton Content="Approved" IsChecked="{Binding IncludeApproved}" Style="{StaticResource StatusToggleButton}" Margin="0,0,4,0"/>
+                                <ToggleButton Content="Resolved" IsChecked="{Binding IncludeResolved}" Style="{StaticResource StatusToggleButton}"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Bottom Action Bar (Matching Reference 1 Buttons!) -->
+                <DockPanel Grid.Row="3">
+                    <Button Content="Refresh Tests" Command="{Binding RefreshTestsCommand}" Style="{StaticResource SecondaryButton}" DockPanel.Dock="Left"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Create Viewpoints for Selected Test(s)" Command="{Binding CreateViewpointsSelectedCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
+                        <Button Content="Create Viewpoints for All Tests" Command="{Binding CreateViewpointsAllCommand}" Style="{StaticResource PrimaryGreenButton}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Grid>
+
+        </Grid>
     </Grid>
 </Window>
