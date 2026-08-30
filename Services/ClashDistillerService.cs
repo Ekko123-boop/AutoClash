@@ -1,112 +1,148 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
-using Application = Autodesk.Navisworks.Api.Application;
+using AutomatedClashRunner.Services.Interfaces;
 
 namespace AutomatedClashRunner.Services
 {
-    public static class ClashDistillerService
+    public class ClashDistillerService : IClashDistillerService
     {
-        public static void ReRunTests(IEnumerable<ClashTest> tests)
-        {
-            var doc = Application.ActiveDocument;
-            var clashData = doc.GetClash().TestsData;
+        private readonly ILoggerService _logger;
 
+        public static ClashDistillerService Instance { get; } = new ClashDistillerService(LoggerService.Instance);
+
+        public ClashDistillerService(ILoggerService logger)
+        {
+            _logger = logger ?? LoggerService.Instance;
+        }
+
+        public void ReRunTests(Document doc, IEnumerable<ClashTest> tests)
+        {
+            if (doc == null || tests == null) return;
+
+            var documentClash = doc.GetClash();
+            if (documentClash == null) return;
+
+            var clashData = documentClash.TestsData;
             foreach (var test in tests)
             {
-                clashData.TestsRunTest(test);
+                try
+                {
+                    clashData.TestsRunTest(test);
+                    _logger.Log($"Re-ran clash test: {test.DisplayName}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Failed to re-run test '{test.DisplayName}'", ex);
+                }
             }
         }
 
-        public static int GroupByElement(IEnumerable<ClashTest> tests, double maxProximityFt)
+        public int GroupByElement(Document doc, IEnumerable<ClashTest> tests, double maxProximityFt)
         {
             int groupsCreated = 0;
-            var doc = Application.ActiveDocument;
-            var clashData = doc.GetClash().TestsData;
+            if (doc == null || tests == null) return groupsCreated;
 
-            double conversionFactor = 1.0;
-            switch(doc.Units)
-            {
-                case Units.Feet: conversionFactor = 1.0; break;
-                case Units.Meters: conversionFactor = 0.3048; break;
-                case Units.Millimeters: conversionFactor = 304.8; break;
-                case Units.Centimeters: conversionFactor = 30.48; break;
-                case Units.Inches: conversionFactor = 12.0; break;
-                default: conversionFactor = 0.3048; break; 
-            }
-            double maxDistInternal = maxProximityFt * conversionFactor;
+            var documentClash = doc.GetClash();
+            if (documentClash == null) return groupsCreated;
+
+            var clashData = documentClash.TestsData;
+
+            // Navisworks internal coordinate system is ALWAYS in meters.
+            // 1 foot = 0.3048 meters.
+            double maxDistMeters = maxProximityFt * 0.3048;
 
             foreach (var test in tests)
             {
-                var rawResults = test.Children.OfType<ClashResult>().ToList();
-                if (rawResults.Count == 0) continue;
-
-                var elementGroups = new Dictionary<ModelItem, List<ClashResult>>();
-
-                foreach (var res in rawResults)
+                try
                 {
-                    if (res.Item1 == null) continue;
-                    
-                    var masterElement = res.Item1.AncestorsAndSelf.FirstOrDefault(x => x.PropertyCategories.FindPropertyByDisplayName("Item", "Name") != null) ?? res.Item1;
+                    var rawResults = test.Children.OfType<ClashResult>().ToList();
+                    if (rawResults.Count == 0) continue;
 
-                    if (!elementGroups.ContainsKey(masterElement))
+                    // Group by top-level named ancestor in Selection A
+                    var elementGroups = new Dictionary<ModelItem, List<ClashResult>>();
+
+                    foreach (var res in rawResults)
                     {
-                        elementGroups[masterElement] = new List<ClashResult>();
-                    }
-                    elementGroups[masterElement].Add(res);
-                }
+                        if (res.Item1 == null) continue;
 
-                int groupIndex = 1;
-                foreach (var kvp in elementGroups)
-                {
-                    var items = kvp.Value;
-                    if (items.Count == 0) continue;
+                        var masterElement = res.Item1.AncestorsAndSelf
+                            .FirstOrDefault(x => x.PropertyCategories.FindPropertyByDisplayName("Item", "Name") != null) 
+                            ?? res.Item1;
 
-                    var clusters = new List<List<ClashResult>>();
-                    foreach(var res in items)
-                    {
-                        bool added = false;
-                        foreach(var cluster in clusters)
+                        if (!elementGroups.ContainsKey(masterElement))
                         {
-                            if (cluster.Any(c => Distance(c.Center, res.Center) <= maxDistInternal))
-                            {
-                                cluster.Add(res);
-                                added = true;
-                                break;
-                            }
+                            elementGroups[masterElement] = new List<ClashResult>();
                         }
-                        if (!added)
-                        {
-                            clusters.Add(new List<ClashResult> { res });
-                        }
+                        elementGroups[masterElement].Add(res);
                     }
 
-                    foreach(var cluster in clusters)
+                    int groupIndex = 1;
+                    foreach (var kvp in elementGroups)
                     {
-                        string groupName = $"{test.DisplayName}-{groupIndex:D3}";
-                        var newGroup = new ClashResultGroup { DisplayName = groupName };
-                        
-                        clashData.TestsAddCopy(test, newGroup);
-                        var addedGroup = test.Children.Last() as ClashResultGroup;
-                        
-                        if (addedGroup != null)
+                        var items = kvp.Value;
+                        if (items.Count == 0) continue;
+
+                        // Spatial clustering by distance threshold
+                        var clusters = new List<List<ClashResult>>();
+                        foreach (var res in items)
                         {
-                            foreach (var res in cluster)
+                            bool added = false;
+                            foreach (var cluster in clusters)
                             {
-                                int sourceIndex = test.Children.IndexOf(res);
-                                if (sourceIndex >= 0)
+                                if (cluster.Any(c => Distance(c.Center, res.Center) <= maxDistMeters))
                                 {
-                                    clashData.TestsMove(test, sourceIndex, addedGroup, addedGroup.Children.Count);
+                                    cluster.Add(res);
+                                    added = true;
+                                    break;
                                 }
                             }
-                            groupsCreated++;
-                            groupIndex++;
+                            if (!added)
+                            {
+                                clusters.Add(new List<ClashResult> { res });
+                            }
+                        }
+
+                        foreach (var cluster in clusters)
+                        {
+                            string groupName = $"{test.DisplayName}-{groupIndex:D3}";
+                            var newGroup = new ClashResultGroup { DisplayName = groupName };
+
+                            clashData.TestsAddCopy(test, newGroup);
+                            var addedGroup = test.Children.LastOrDefault() as ClashResultGroup;
+
+                            if (addedGroup != null)
+                            {
+                                // Move in reverse index order to avoid index shifts
+                                var moves = cluster
+                                    .Select(res => new { Result = res, Index = test.Children.IndexOf(res) })
+                                    .Where(x => x.Index >= 0)
+                                    .OrderByDescending(x => x.Index)
+                                    .ToList();
+
+                                foreach (var m in moves)
+                                {
+                                    int currentIndex = test.Children.IndexOf(m.Result);
+                                    if (currentIndex >= 0)
+                                    {
+                                        clashData.TestsMove(test, currentIndex, addedGroup, addedGroup.Children.Count);
+                                    }
+                                }
+
+                                groupsCreated++;
+                                groupIndex++;
+                            }
                         }
                     }
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Error grouping clashes for test '{test.DisplayName}'", ex);
+                }
             }
+
             return groupsCreated;
         }
 
@@ -116,37 +152,52 @@ namespace AutomatedClashRunner.Services
             return Math.Sqrt(Math.Pow(p1.X - p2.X, 2) + Math.Pow(p1.Y - p2.Y, 2) + Math.Pow(p1.Z - p2.Z, 2));
         }
 
-        public static int ExportReviewedViewpoints(IEnumerable<ClashTest> tests)
+        public int ExportReviewedViewpoints(Document doc, IEnumerable<ClashTest> tests)
         {
             int viewpointsCreated = 0;
-            var doc = Application.ActiveDocument;
-            var clashData = doc.GetClash().TestsData;
+            if (doc == null || tests == null) return viewpointsCreated;
+
+            var documentClash = doc.GetClash();
+            if (documentClash == null) return viewpointsCreated;
+
+            var clashData = documentClash.TestsData;
             var savedViewpoints = doc.SavedViewpoints;
 
             foreach (var test in tests)
             {
-                var reviewedGroups = test.Children.OfType<ClashResultGroup>().Where(g => g.Status == ClashResultStatus.Reviewed).ToList();
-                if (reviewedGroups.Count == 0) continue;
-
-                // Create folder for the test
-                var folder = new FolderItem { DisplayName = test.DisplayName };
-                savedViewpoints.AddCopy(folder);
-                
-                // Get the actual inserted folder (last in root)
-                var actualFolder = savedViewpoints.RootItem.Children.Last() as FolderItem;
-                if (actualFolder == null) continue;
-
-                foreach (var group in reviewedGroups)
+                try
                 {
-                    if (group.RepresentativeResult == null) continue;
-                    
-                    var vp = clashData.TestsViewpointForResult(group.RepresentativeResult);
-                    if (vp != null)
+                    var reviewedGroups = test.Children.OfType<ClashResultGroup>()
+                        .Where(g => g.Status == ClashResultStatus.Reviewed)
+                        .ToList();
+
+                    if (reviewedGroups.Count == 0) continue;
+
+                    // Create folder for the clash test
+                    var folder = new FolderItem { DisplayName = test.DisplayName };
+                    savedViewpoints.AddCopy(folder);
+
+                    var actualFolder = savedViewpoints.RootItem.Children.LastOrDefault() as FolderItem;
+                    if (actualFolder == null) continue;
+
+                    foreach (var group in reviewedGroups)
                     {
-                        var svp = new SavedViewpoint(vp) { DisplayName = group.DisplayName };
-                        savedViewpoints.AddCopy(actualFolder, svp);
-                        viewpointsCreated++;
+                        if (group.RepresentativeResult == null) continue;
+
+                        var vp = clashData.TestsViewpointForResult(group.RepresentativeResult);
+                        if (vp != null)
+                        {
+                            var svp = new SavedViewpoint(vp) { DisplayName = group.DisplayName };
+                            savedViewpoints.AddCopy(actualFolder, svp);
+                            viewpointsCreated++;
+                        }
                     }
+
+                    _logger.Log($"Exported viewpoints for reviewed groups in test: {test.DisplayName}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Error exporting viewpoints for test '{test.DisplayName}'", ex);
                 }
             }
 

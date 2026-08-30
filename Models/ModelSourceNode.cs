@@ -1,15 +1,23 @@
+﻿using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using Autodesk.Navisworks.Api;
-using AutomatedClashRunner.ViewModels;
 
 namespace AutomatedClashRunner.Models
 {
-    public class ModelSourceNode : ViewModelBase
+    public class ModelSourceNode : INotifyPropertyChanged
     {
         private bool _isSelected;
         public bool IsSelected
         {
             get => _isSelected;
-            set { _isSelected = value; OnPropertyChanged(nameof(IsSelected)); }
+            set
+            {
+                if (_isSelected != value)
+                {
+                    _isSelected = value;
+                    OnPropertyChanged();
+                }
+            }
         }
 
         public string DisplayName { get; set; }
@@ -17,8 +25,14 @@ namespace AutomatedClashRunner.Models
         public bool IsDirectNwc { get; set; }
         public string ParentContainerName { get; set; }
         public ModelItem OriginalModelItem { get; set; }
-        public bool IsSelectable { get; set; }
+        public bool IsSelectable { get; set; } = true;
         public string WarningMessage { get; set; }
         public string DisplayType => IsDirectNwc ? "Direct NWC" : "NWD Branch";
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

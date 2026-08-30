@@ -1,13 +1,14 @@
-using System;
+﻿using System;
 using System.Windows.Interop;
-using Autodesk.Navisworks.Api.Plugins;
 using Autodesk.Navisworks.Api;
-using AutomatedClashRunner.Views;
+using Autodesk.Navisworks.Api.Plugins;
+using AutomatedClashRunner.Services;
 using AutomatedClashRunner.ViewModels;
+using AutomatedClashRunner.Views;
 
 namespace AutomatedClashRunner
 {
-    [Plugin("AutomatedClashRunner", "ACR", DisplayName = "Automated Clash Runner", ToolTip = "Automated Model Clash Runner")]
+    [Plugin("AutomatedClashRunner", "ACR", DisplayName = "Automated Clash Runner", ToolTip = "Automated Model Clash Runner & Distiller")]
     [AddInPlugin(AddInLocation.AddIn)]
     public class App : AddInPlugin
     {
@@ -18,17 +19,33 @@ namespace AutomatedClashRunner
                 if (Autodesk.Navisworks.Api.Application.IsAutomated)
                     return 0;
 
-                var window = new MainWindow();
-                var helper = new WindowInteropHelper(window);
-                helper.Owner = Autodesk.Navisworks.Api.Application.Gui.MainWindow.Handle;
+                var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
+                if (doc == null || doc.IsClear)
+                {
+                    DialogService.Instance.ShowWarning(
+                        "Please open a Navisworks document (.nwf or .nwd) before running the Automated Clash Runner.",
+                        "No Active Document");
+                    return 0;
+                }
 
-                window.DataContext = new MainViewModel(window);
+                var window = new MainWindow();
+                
+                // Set Win32 parent handle so the modal behaves properly over Navisworks
+                if (Autodesk.Navisworks.Api.Application.Gui?.MainWindow?.Handle != IntPtr.Zero)
+                {
+                    var helper = new WindowInteropHelper(window);
+                    helper.Owner = Autodesk.Navisworks.Api.Application.Gui.MainWindow.Handle;
+                }
+
+                window.DataContext = new MainViewModel(() => window.Close());
                 window.ShowDialog();
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"Fatal Error: {ex.Message}\n{ex.StackTrace}");
+                LoggerService.LogErrorStatic("Unhandled exception in plugin execution", ex);
+                DialogService.Instance.ShowError($"Fatal error: {ex.Message}");
             }
+
             return 0;
         }
     }

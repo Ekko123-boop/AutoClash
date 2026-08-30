@@ -3,8 +3,8 @@
     SchemaVersion="1.0"
     AutodeskProduct="Navisworks"
     Name="AutomatedClashRunner"
-    AppVersion="1.0.0"
-    Description="Automated Model Clash Runner for Navisworks"
+    AppVersion="1.2.0"
+    Description="Automated Model Clash Runner and Distiller for Navisworks"
     ProductType="Application">
 
     <CompanyDetails Name="Custom" />
@@ -14,7 +14,7 @@
             OS="Win64"
             Platform="NAVMAN"
             SeriesMin="Nw19"
-            SeriesMax="Nw22" />
+            SeriesMax="Nw24" />
         <ComponentEntry
             AppName="AutomatedClashRunner"
             ModuleName="./Contents/AutomatedClashRunner.dll"

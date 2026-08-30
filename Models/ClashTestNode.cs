@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using Autodesk.Navisworks.Api.Clash;
 
 namespace AutomatedClashRunner.Models
@@ -17,13 +18,13 @@ namespace AutomatedClashRunner.Models
                 if (_isSelected != value)
                 {
                     _isSelected = value;
-                    OnPropertyChanged(nameof(IsSelected));
+                    OnPropertyChanged();
                 }
             }
         }
 
-        public string DisplayName => OriginalTest.DisplayName;
-        public string Status => OriginalTest.Status.ToString();
+        public string DisplayName => OriginalTest?.DisplayName ?? string.Empty;
+        public string Status => OriginalTest?.Status.ToString() ?? "Unknown";
 
         public ClashTestNode(ClashTest test)
         {
@@ -31,7 +32,7 @@ namespace AutomatedClashRunner.Models
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string propertyName)
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }

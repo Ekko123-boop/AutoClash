@@ -1,54 +1,81 @@
-# Automated Clash Runner - Project Documentation
+﻿# Automated Clash Runner — Technical & Architectural Documentation
 
-## Overview
-Automated Clash Runner is an Autodesk Navisworks Manage 2024 add-in built in C# (.NET Framework 4.8). Its primary purpose is to automate the creation and execution of clash tests by taking manually predefined Selection Sets (e.g., "Base Build") and automatically clashing them against dynamically discovered .nwc federated model nodes (e.g., HVAC, Plumbing, Structural).
+## 1. System Overview & Architecture
 
-## Architecture & Components
+AutomatedClashRunner is a modular, high-reliability Autodesk Navisworks Manage add-in designed with a clean MVVM (Model-View-ViewModel) architecture.
 
-### 1. App.cs (Entry Point)
-- Inherits from AddInPlugin.
-- Registered via [PluginAttribute] and [AddInPlugin(AddInLocation.AddIn)].
-- Launches the WPF MainWindow UI.
+### High-Level Layers
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       WPF Views                             │
+│  - MainWindow.xaml (TabControl: Matrix & Distiller)         │
+│  - SummaryDialog.xaml (Color-coded items & CSV Export)      │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ DataBinding / ICommand
+┌──────────────────────────────▼──────────────────────────────┐
+│                      ViewModels                             │
+│  - MainViewModel (Host shell)                               │
+│  - MatrixTabViewModel (Model & Set selection, Matrix run)   │
+│  - DistillerTabViewModel (Grouping, Re-run, Viewpoints)     │
+│  - SummaryViewModel (Status formatting & Reporting)         │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Dependency Injection
+┌──────────────────────────────▼──────────────────────────────┐
+│                    Service Interfaces                       │
+│  - IModelDiscoveryService      - ISearchSetService          │
+│  - INamingService              - IClashExecutionService     │
+│  - IClashDistillerService      - IDialogService             │
+│  - ILoggerService                                           │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ API Invocations
+┌──────────────────────────────▼──────────────────────────────┐
+│         Autodesk Navisworks .NET & COM Assemblies           │
+│  - Autodesk.Navisworks.Api.dll                              │
+│  - Autodesk.Navisworks.Clash.dll                            │
+│  - Autodesk.Navisworks.ComApi.dll                           │
+│  - Autodesk.Navisworks.Interop.ComApi.dll                   │
+└─────────────────────────────────────────────────────────────┘
+```
 
-### 2. MainWindow.xaml & MainViewModel.cs
-- **MVVM Pattern**: The UI binds to MainViewModel.
-- **Search Sets Tree**: Displays manual selection sets. Uses an IsSet (inverse of IsGroup) property to only render checkboxes on actual sets (hiding them on folders).
-- **Models Tree**: Displays discovered federated model .nwc leaf nodes.
-- **Validation**: Ensures at least one Set and one Model are selected before execution.
+---
 
-### 3. ModelDiscoveryService.cs
-- Recursively scans Application.ActiveDocument.Models.
-- **Core Logic**: Looks for nodes where DisplayName.EndsWith(".nwc") up to 3 levels deep.
-- **Why**: Bypasses a Navisworks bug where Revit-exported .nwc files incorrectly report .rvt in their Source File Name properties.
+## 2. Core Service Responsibilities
 
-### 4. SearchSetService.cs
-- **Manual Sets**: Traverses doc.SelectionSets.RootItem to build a UI tree of folders and sets.
-- **Generated Sets**: Creates a "Tests" folder (if it doesn't exist) and generates a Static Selection Set for every selected .nwc model.
-- **Static Sets vs Search Sets**: Uses 
-ew SelectionSet(new ModelItemCollection { originalNode }) instead of string-based property searches (Item > Name) to guarantee perfect accuracy, as string property indexing for NWCs in Navisworks is highly inconsistent.
+### 2.1 ModelDiscoveryService
+- Recursively traverses `doc.Models` up to depth 20.
+- Extracts leaf `.nwc` discipline models.
+- Wraps them in `ModelSourceNode` with full property notification change guards.
 
-### 5. ClashExecutionService.cs
-- Iterates through a matrix of [Selected Manual Sets] x [Selected Models].
-- **Naming Convention**: 
-  - Trims the 'F1-' prefix and extensions via `NamingService` (e.g., `STS-HDLS201-DR`).
-  - **Prefix Rule**: If the manual set is named exactly "Base Build", the test name remains the trimmed model name (e.g., `STS-HDLS201-DR`). If the manual set is anything else (e.g., "AS BUILT"), it prepends `T-` to the test name (e.g., `T-STS-HDLS201-DR`).
-- **Selection A**: Binds the manual set to the Clash Test's Selection A. 
-  - *Crucial Workaround*: Directly modifies 	est.SelectionA.Selection.SelectionSources.Add(sourceA) to force it to appear under the UI "Sets" tab. (Calling 
-ew SelectionSourceCollection() directly causes an AccessViolationException in Navisworks 2024).
-- **Selection B**: Binds the static generated model set to the Clash Test's Selection B by passing its ExplicitModelItems. Appears under the "Standard" geometry tab perfectly mapped.
-- **Execution**: Uses doc.GetClash().TestsData.TestsRunTest() to execute the matrix.
+### 2.2 SearchSetService
+- Traverses the active document's `SelectionSets.RootItem` hierarchy.
+- Creates/ensures a designated `Tests` folder in the Navisworks Sets tree.
+- Instantiates static `SelectionSet` objects for discovered `.nwc` items.
 
-## Deployment & Build
-- **Target**: x64, 
-et48-windows.
-- **References**: Autodesk.Navisworks.Api, Autodesk.Navisworks.Clash. CopyLocal is strictly False.
-- **Bundle Path**: %APPDATA%\Autodesk\ApplicationPlugins\AutomatedClashRunner.bundle
-- **Note**: Navisworks must be completely closed when overwriting the DLL, as it locks loaded assemblies.
+### 2.3 NamingService
+- Strips file extension and leading project code before the first hyphen (e.g. `UCSC-STS-HDLS202-MX.nwc` → `STS-HDLS202-MX`).
+- Computes clash test names based on the target manual set:
+  - If manual set name is `Base Build` or `BaseBuild` → `STS-HDLS202-MX`
+  - Any other manual set → `T-STS-HDLS202-MX`
 
-## Maintaining and Updating
-If Navisworks geometry is updated (e.g., Subcontractor uploads a new .nwc and the user hits "Refresh" in Navisworks), the generated Static Sets will automatically track the geometry changes because they are bound by node memory reference, not by static coordinates or fragile string searches. Re-running the Clash Matrix will safely skip existing test names but executing "Update All" in Navisworks will accurately clash the newest geometry.
+### 2.4 ClashExecutionService
+- Builds the Cartesian product between selected Models and manual Search Sets.
+- Skips pre-existing tests.
+- Dynamically assigns `SelectionSource` pointers to both `SelectionA` and `SelectionB`.
+- Bypasses the known Navisworks `new SelectionSourceCollection()` constructor crash.
+- Executes tests and gathers execution outcomes into `ExecutionResult`.
 
-## Multi-Version Installer
-The addin includes a self-contained, single-file installer executable (Installer.exe).
-- **Support**: It natively supports Autodesk Navisworks Manage versions **2022 to 2025** by declaring <RuntimeRequirements SeriesMin="Nw19" SeriesMax="Nw22" /> inside the bundled PackageContents.xml.
-- **How it works**: The .dll and PackageContents.xml are packaged into a .zip file embedded directly into the installer executable as a C# EmbeddedResource. When run, it extracts the bundle straight into the user's %APPDATA%\Autodesk\ApplicationPlugins\ folder. No third-party software (like InnoSetup) is required.
+### 2.5 ClashDistillerService
+- **ReRunTests**: Runs tests against updated model geometry.
+- **GroupByElement**: Identifies master named ancestor items in Selection A and applies single-link spatial clustering with the proximity slider (converting feet to Navisworks internal meters via `maxProximityFt * 0.3048`). Moves items in reverse index order to prevent index shifting.
+- **ExportReviewedViewpoints**: Scans clash tests for `ClashResultGroup` with `Status == Reviewed`, generates native viewpoints using `TestsViewpointForResult`, and files them under dedicated test folders in `SavedViewpoints`.
+
+### 2.6 LoggerService
+- Thread-safe, timestamped logging with auto-rotation (10MB threshold) stored in `%LOCALAPPDATA%\AutomatedClashRunner\Logs\session_YYYY-MM-DD.log`.
+
+---
+
+## 3. Deployment & Packaging
+- **Package Manifest**: `PackageContents.xml` targets `Platform="NAVMAN" SeriesMin="Nw19" SeriesMax="Nw24"`.
+- **Bundle Directory**: `%APPDATA%\Autodesk\ApplicationPlugins\AutomatedClashRunner.bundle`.
+- **Installer**: `AutomatedClashRunner_Installer.exe` (built via `Installer\Installer.csproj` targeting `net48`).
+- **Build Pipeline**: Run `.\build_all.ps1` to compile the plugin, deploy locally, package `bundle.zip`, and compile the installer executable.
