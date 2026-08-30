@@ -1,6 +1,23 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to the Automated Clash Runner & Distiller addin are documented here.
+
+## [1.3.0] - 2026-08-30
+### Added
+- **Complete UI/UX Pro Max Overhaul**: Redesigned modern interface inspired by Sherlock/Flypaper BIM standards.
+- **3-Tab Coordination Workflow**:
+  1. `Generate Matrix` (Split card layout, live search, count badges, clash settings, progress overlay).
+  2. `Distill Clashes` (Live metric breakdown table with `Active/New`, `Reviewed`, `Approved`, `Resolved`, `Total` columns; `Focused <--> Global` proximity slider; `Distill Selected` & solid green `Distill All Tests` buttons).
+  3. `Create Viewpoints` (Live breakdown metrics, status toggle buttons `[New] [Active] [Reviewed] [Approved] [Resolved]`, timestamped master folder option, `Create Viewpoints for Selected` & solid green `Create Viewpoints for All Tests` buttons).
+- `ViewpointsTabViewModel` dedicated ViewModel for viewpoint generation.
+- Automated XAML validation in build pipeline (`validate_and_save.ps1`).
+
+### Changed
+- Selection B explicitly selects standard NWC model hierarchy node via `CopyFrom(ModelItemCollection)` from `doc.Models`.
+
+### Fixed
+- Fixed WPF `TabItem` custom template by adding `ContentSource="Header"` and `RecognizesAccessKey="True"`.
+- Fixed multi-byte character encoding and sanitized XAML markup to ensure 100% stable `XamlReader` parsing.
 
 ## [1.2.0] - 2026-08-30
 ### Added

@@ -1,4 +1,4 @@
-﻿# Automated Clash Runner — Technical & Architectural Documentation
+# Automated Clash Runner — Technical & Architectural Documentation
 
 ## 1. System Overview & Architecture
 
@@ -8,7 +8,7 @@ AutomatedClashRunner is a modular, high-reliability Autodesk Navisworks Manage a
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                       WPF Views                             │
-│  - MainWindow.xaml (TabControl: Matrix & Distiller)         │
+│  - MainWindow.xaml (TabControl: Matrix, Distill, Viewpoints)│
 │  - SummaryDialog.xaml (Color-coded items & CSV Export)      │
 └──────────────────────────────┬──────────────────────────────┘
                                │ DataBinding / ICommand
@@ -16,7 +16,8 @@ AutomatedClashRunner is a modular, high-reliability Autodesk Navisworks Manage a
 │                      ViewModels                             │
 │  - MainViewModel (Host shell)                               │
 │  - MatrixTabViewModel (Model & Set selection, Matrix run)   │
-│  - DistillerTabViewModel (Grouping, Re-run, Viewpoints)     │
+│  - DistillerTabViewModel (Clustering & Proximity Slider)    │
+│  - ViewpointsTabViewModel (Viewpoint generation & filters)  │
 │  - SummaryViewModel (Status formatting & Reporting)         │
 └──────────────────────────────┬──────────────────────────────┘
                                │ Dependency Injection
@@ -60,22 +61,28 @@ AutomatedClashRunner is a modular, high-reliability Autodesk Navisworks Manage a
 ### 2.4 ClashExecutionService
 - Builds the Cartesian product between selected Models and manual Search Sets.
 - Skips pre-existing tests.
-- Dynamically assigns `SelectionSource` pointers to both `SelectionA` and `SelectionB`.
+- Dynamically assigns `SelectionSource` pointers to `SelectionA` (from manual Search Sets).
+- Directly sets `SelectionB` to the physical NWC model node from `doc.Models` via `test.SelectionB.Selection.CopyFrom(itemsB)`.
 - Bypasses the known Navisworks `new SelectionSourceCollection()` constructor crash.
 - Executes tests and gathers execution outcomes into `ExecutionResult`.
 
 ### 2.5 ClashDistillerService
 - **ReRunTests**: Runs tests against updated model geometry.
 - **GroupByElement**: Identifies master named ancestor items in Selection A and applies single-link spatial clustering with the proximity slider (converting feet to Navisworks internal meters via `maxProximityFt * 0.3048`). Moves items in reverse index order to prevent index shifting.
-- **ExportReviewedViewpoints**: Scans clash tests for `ClashResultGroup` with `Status == Reviewed`, generates native viewpoints using `TestsViewpointForResult`, and files them under dedicated test folders in `SavedViewpoints`.
+- **ExportViewpoints**: Generates native viewpoints for matching clash results/groups based on active status filters (`New`, `Active`, `Reviewed`, `Approved`, `Resolved`), filing them under dedicated test folders or optional timestamped master folders in `SavedViewpoints`.
 
 ### 2.6 LoggerService
 - Thread-safe, timestamped logging with auto-rotation (10MB threshold) stored in `%LOCALAPPDATA%\AutomatedClashRunner\Logs\session_YYYY-MM-DD.log`.
 
 ---
 
-## 3. Deployment & Packaging
-- **Package Manifest**: `PackageContents.xml` targets `Platform="NAVMAN" SeriesMin="Nw19" SeriesMax="Nw24"`.
-- **Bundle Directory**: `%APPDATA%\Autodesk\ApplicationPlugins\AutomatedClashRunner.bundle`.
-- **Installer**: `AutomatedClashRunner_Installer.exe` (built via `Installer\Installer.csproj` targeting `net48`).
-- **Build Pipeline**: Run `.\build_all.ps1` to compile the plugin, deploy locally, package `bundle.zip`, and compile the installer executable.
+## 3. Deployment & Multi-Version Support (2022 - 2026)
+- **Universal Manifest**: `PackageContents.xml` targets `Platform="NAVMAN" SeriesMin="Nw19" SeriesMax="Nw24"`.
+  - Navisworks 2022 (`Nw19`)
+  - Navisworks 2023 (`Nw20`)
+  - Navisworks 2024 (`Nw21`)
+  - Navisworks 2025 (`Nw22`)
+  - Navisworks 2026 (`Nw23` / `Nw24`)
+- **Bundle Directory**: `%APPDATA%\Autodesk\ApplicationPlugins\AutomatedClashRunner.bundle`. A single bundle installation services all installed Navisworks versions concurrently.
+- **Self-Extracting Installer**: `AutomatedClashRunner_Installer.exe` (built via `Installer\Installer.csproj` targeting `net48`). It extracts the bundle payload to `%APPDATA%\Autodesk\ApplicationPlugins\AutomatedClashRunner.bundle`.
+- **Build & Packaging Pipeline**: Run `.\build_all.ps1` to compile the plugin, deploy locally, package `bundle.zip`, and compile the installer executable.

@@ -1,4 +1,4 @@
-﻿# Automated Clash Runner & Distiller — Comprehensive Project Issue Log
+# Automated Clash Runner & Distiller — Comprehensive Project Issue Log
 
 This document records the full engineering history, bugs encountered, root cause analyses, and architectural solutions implemented across the lifecycle of the **Automated Clash Runner & Distiller** project.
 
@@ -20,6 +20,9 @@ This document records the full engineering history, bugs encountered, root cause
 | **ISS-010** | UI Responsiveness | `MainViewModel` | UI list flicker and scroll jumps on every keystroke | `Filter()` method was calling `ObservableCollection.Clear()` and rebuilding collections on every key press. | Implemented `ICollectionView` filtering using `StringComparison.OrdinalIgnoreCase` with zero UI flicker and retained scroll state. |
 | **ISS-011** | Packaging | `PackageContents.xml` | Add-in not loading on Navisworks 2025/2026 | `SeriesMax` was locked to `Nw22` (Navisworks 2024). | Updated manifest to `SeriesMin="Nw19" SeriesMax="Nw24"`, enabling seamless loading across Navisworks 2022 to 2026. |
 | **ISS-012** | Distribution | `Installer` | End users unable to install without manual copy | Manual installation required navigating to hidden `%APPDATA%` folders. | Created self-extracting standalone `AutomatedClashRunner_Installer.exe` targeting `net48` that automatically extracts the bundle. |
+| **ISS-013** | Workflow Preference | `ClashExecutionService` | Selection B using Search Sets instead of standard NWC model node | Search Sets for Selection B altered the user's legacy workflow where Selection B points directly to standard NWC model tree nodes. | Reverted Selection B to populate directly via `CopyFrom(ModelItemCollection)` referencing the physical NWC model node from `doc.Models`. |
+| **ISS-014** | UI/UX & Metrics | `Views/MainWindow.xaml`, ViewModels | UI lacked breakdown metrics and modern BIM coordination aesthetics | Previous UI had basic list views without clash status breakdown (`Active/New`, `Reviewed`, `Approved`, `Resolved`, `Total`). | Overhauled UI into a modern 3-tab layout (**Generate Matrix**, **Distill**, **Viewpoints**) matching AEC industry standards with live metrics and proximity sliders. |
+| **ISS-015** | WPF XAML Parsing | `Views/MainWindow.xaml` | `UIElementCollection` error / Blank tab headers | 1) Multi-byte non-ASCII characters corrupted XML tag bounds; 2) Custom `TabItem` template omitted `ContentSource="Header"`. | Sanitized XAML to standard ASCII markup, added `ContentSource="Header"` to `TabItem`, and added pre-deployment automated XAML validation via `XamlReader.Parse()`. |
 
 ---
 
@@ -30,6 +33,10 @@ This document records the full engineering history, bugs encountered, root cause
 2. **Clash Grouping & Tree Mutations**:
    - Never move items within `ClashTest.Children` using ascending indices. Always sort descending by index first.
 3. **Selection Linking**:
-   - Always prefer `SelectionSource` pointers over explicit `ModelItemCollection` snapshots so tests remain dynamic across geometry reloads.
+   - Selection A uses dynamic `SelectionSource` pointers from manual Search Sets.
+   - Selection B directly selects the standard `.nwc` model node from `doc.Models` hierarchy.
 4. **WPF & .NET Framework 4.8 Builds**:
    - To avoid modern .NET SDK XAML compilation conflicts, use legacy MSBuild format for WPF add-ins compiled on machines with preview SDKs.
+   - Always ensure custom `TabItem` templates specify `<ContentPresenter ContentSource="Header" />`.
+5. **Universal Multi-Version Deployment**:
+   - Single bundle deployment in `%APPDATA%\Autodesk\ApplicationPlugins\AutomatedClashRunner.bundle` with `SeriesMin="Nw19" SeriesMax="Nw24"` services Navisworks 2022, 2023, 2024, 2025, and 2026.
