@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows.Interop;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Plugins;
@@ -42,8 +42,16 @@ namespace AutomatedClashRunner
             }
             catch (Exception ex)
             {
-                LoggerService.LogErrorStatic("Unhandled exception in plugin execution", ex);
-                DialogService.Instance.ShowError($"Fatal error: {ex.Message}");
+                var sb = new System.Text.StringBuilder();
+                var curr = ex;
+                while (curr != null)
+                {
+                    sb.AppendLine($"[{curr.GetType().Name}] {curr.Message}");
+                    sb.AppendLine(curr.StackTrace);
+                    curr = curr.InnerException;
+                }
+                LoggerService.LogErrorStatic($"Unhandled exception in plugin execution:\n{sb}");
+                DialogService.Instance.ShowError($"Fatal error: {ex.Message}\n\nDetails:\n{ex.InnerException?.Message}");
             }
 
             return 0;
