@@ -7,7 +7,7 @@
     <ProjectGuid>{B78E1C23-4567-4DEF-8901-23456789ABCD}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <RootNamespace>AutomatedClashRunner.Installer</RootNamespace>
-    <AssemblyName>AutomatedClashRunner_Installer</AssemblyName>
+    <AssemblyName>RimoTools_Installer</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -25,6 +25,8 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
   </ItemGroup>

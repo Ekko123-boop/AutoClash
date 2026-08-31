@@ -27,8 +27,47 @@ Write-Host ">>> 2. Building Navisworks 2024 Engine (Release2024)..." -Foreground
 & $msbuild "AutomatedClashRunner.csproj" -p:Configuration=Release2024 -p:Platform=x64
 if ($LASTEXITCODE -ne 0) { throw "2024 Plugin build failed." }
 
-# 3. Direct AppData Deployment: Multi-Version ApplicationPlugins Bundle
-Write-Host ">>> 3. Deploying Multi-Version RimoNavisTools.bundle to Navisworks ApplicationPlugins..." -ForegroundColor Cyan
+# 3. Package Multi-Version bundle.zip for Standalone Installer
+Write-Host ">>> 3. Staging and Packaging Multi-Version bundle.zip..." -ForegroundColor Cyan
+$staging = "$env:TEMP\rimotools_bundle_staging"
+if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
+
+$stgContents2023 = "$staging\Contents\2023"
+$stgContents2024 = "$staging\Contents\2024"
+New-Item -ItemType Directory -Force -Path $stgContents2023 | Out-Null
+New-Item -ItemType Directory -Force -Path $stgContents2024 | Out-Null
+
+Copy-Item "PackageContents.xml" -Destination $staging -Force
+Copy-Item "bin\Release\2023\*.dll" -Destination $stgContents2023 -Force
+Copy-Item "bin\Release\2024\*.dll" -Destination $stgContents2024 -Force
+
+if (Test-Path "en-US") {
+    Copy-Item "en-US" -Destination "$stgContents2023\en-US" -Recurse -Force
+    Copy-Item "en-US" -Destination "$stgContents2024\en-US" -Recurse -Force
+    Copy-Item "en-US" -Destination "$staging\en-US" -Recurse -Force
+}
+if (Test-Path "Images") {
+    Copy-Item "Images" -Destination "$stgContents2023\Images" -Recurse -Force
+    Copy-Item "Images" -Destination "$stgContents2024\Images" -Recurse -Force
+    Copy-Item "Images" -Destination "$staging\Images" -Recurse -Force
+}
+
+$zipDest = "Installer\bundle.zip"
+if (Test-Path $zipDest) { Remove-Item $zipDest -Force }
+Compress-Archive -Path "$staging\*" -DestinationPath $zipDest -Force
+Remove-Item $staging -Recurse -Force
+
+# 4. Build Standalone Installer EXE (RimoTools_Installer.exe)
+Write-Host ">>> 4. Compiling Modern Standalone RimoTools_Installer.exe..." -ForegroundColor Cyan
+& $msbuild "Installer\Installer.csproj" -p:Configuration=Release -p:Platform=x64
+if ($LASTEXITCODE -ne 0) { throw "Installer build failed." }
+
+Copy-Item "Installer\bin\Release\RimoTools_Installer.exe" -Destination "RimoTools_Installer.exe" -Force
+Get-Item "RimoTools_Installer.exe" | Unblock-File -ErrorAction SilentlyContinue
+Write-Host " - Standalone Installer ready at: RimoTools_Installer.exe" -ForegroundColor Green
+
+# 5. Direct AppData Deployment: Multi-Version ApplicationPlugins Bundle
+Write-Host ">>> 5. Deploying Multi-Version RimoNavisTools.bundle to Navisworks ApplicationPlugins..." -ForegroundColor Cyan
 $bundleDir = "$env:APPDATA\Autodesk\ApplicationPlugins\RimoNavisTools.bundle"
 if (Test-Path $bundleDir) { Remove-Item $bundleDir -Recurse -Force }
 
@@ -54,8 +93,8 @@ if (Test-Path "Images") {
 Get-ChildItem $bundleDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
 Write-Host " - Multi-Version Bundle deployed to: $bundleDir" -ForegroundColor Green
 
-# 4. Direct AppData Deployment: Navisworks Manage 2024 User Plugins Directory
-Write-Host ">>> 4. Deploying to Navisworks Manage 2024 User Plugins Directory..." -ForegroundColor Cyan
+# 6. Direct AppData Deployment: Navisworks Manage 2024 User Plugins Directory
+Write-Host ">>> 6. Deploying to Navisworks Manage 2024 User Plugins Directory..." -ForegroundColor Cyan
 $userPluginsDir = "$env:APPDATA\Autodesk\Navisworks Manage 2024\Plugins\RimoNavisTools"
 if (Test-Path $userPluginsDir) { Remove-Item $userPluginsDir -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $userPluginsDir | Out-Null
@@ -66,7 +105,9 @@ Get-ChildItem $userPluginsDir -Recurse | Unblock-File -ErrorAction SilentlyConti
 Write-Host " - User Plugin deployed to: $userPluginsDir" -ForegroundColor Green
 
 Write-Host "====================================================================" -ForegroundColor Green
-Write-Host "MULTI-VERSION BUILD & PACKAGING COMPLETE (2020-2026 READY)!" -ForegroundColor Green
-Write-Host " - 1-Click Multi-Version Installer ready at: Install_RimoTools.bat" -ForegroundColor Green
+Write-Host "ALL BUILDS & INSTALLERS 100% COMPLETE (2020-2026 READY)!" -ForegroundColor Green
+Write-Host " - Standalone EXE Installer: RimoTools_Installer.exe" -ForegroundColor Green
+Write-Host " - Universal Batch Installer: Install_RimoTools.bat" -ForegroundColor Green
+Write-Host " - Clean Uninstaller Batch:   Uninstall_RimoTools.bat" -ForegroundColor Green
 Write-Host "====================================================================" -ForegroundColor Green
 
