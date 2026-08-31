@@ -16,6 +16,24 @@ namespace AutomatedClashRunner.Installer
         {
             try
             {
+                // Check if Navisworks is currently running
+                while (true)
+                {
+                    var roamerProcs = System.Diagnostics.Process.GetProcessesByName("Roamer");
+                    if (roamerProcs.Length == 0) break;
+
+                    int res = MessageBox(IntPtr.Zero,
+                        "Autodesk Navisworks is currently running.\n\nPlease close Navisworks completely, then click 'OK' to continue the installation.",
+                        "Navisworks is Running",
+                        0x01 | 0x30); // MB_OKCANCEL | MB_ICONWARNING
+
+                    if (res == 2) // IDCANCEL
+                    {
+                        return;
+                    }
+                    System.Threading.Thread.Sleep(500);
+                }
+
                 var assembly = Assembly.GetExecutingAssembly();
                 Stream stream = assembly.GetManifestResourceStream("bundle.zip") 
                              ?? assembly.GetManifestResourceStream("AutomatedClashRunner.Installer.bundle.zip");

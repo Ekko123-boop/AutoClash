@@ -6,7 +6,6 @@ using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Plugins;
-using Autodesk.Windows;
 using AutomatedClashRunner.Services;
 using AutomatedClashRunner.ViewModels;
 using AutomatedClashRunner.Views;
@@ -88,19 +87,12 @@ namespace AutomatedClashRunner
         public override void OnLoaded()
         {
             _attempts = 0;
-            _timer = new System.Windows.Forms.Timer { Interval = 400 };
+            _timer = new System.Windows.Forms.Timer { Interval = 300 };
             _timer.Tick += (s, e) =>
             {
                 _attempts++;
-                var ribbon = ComponentManager.Ribbon;
-                if (ribbon != null)
-                {
-                    _timer.Stop();
-                    _timer.Dispose();
-                    _timer = null;
-                    InitializeRimoRibbon(ribbon);
-                }
-                else if (_attempts > 30) // Stop polling after 12 seconds
+                bool success = DynamicRibbonService.TryInitializeRibbon(App.LaunchApp);
+                if (success || _attempts > 40) // Stop polling after success or 12 seconds
                 {
                     _timer.Stop();
                     _timer.Dispose();
@@ -110,110 +102,11 @@ namespace AutomatedClashRunner
             _timer.Start();
         }
 
-        private void InitializeRimoRibbon(RibbonControl ribbon)
-        {
-            try
-            {
-                var tab = ribbon.Tabs.FirstOrDefault(t => t.Id == "ID_RIMO_TAB" || t.Title == "Rimo");
-                if (tab == null)
-                {
-                    tab = new RibbonTab { Title = "Rimo", Id = "ID_RIMO_TAB" };
-                    ribbon.Tabs.Add(tab);
-                }
-
-                var panel = tab.Panels.FirstOrDefault(p => p.Source?.Title == "Clash Automation");
-                if (panel == null)
-                {
-                    var source = new RibbonPanelSource { Title = "Clash Automation" };
-                    panel = new RibbonPanel { Source = source };
-                    tab.Panels.Add(panel);
-
-                    string asmDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
-
-                    // Button 1: Clash Matrix
-                    var btnMatrix = new RibbonButton
-                    {
-                        Text = "Clash\nMatrix",
-                        ShowText = true,
-                        Id = "ID_RIMO_CMD_MATRIX",
-                        ToolTip = "Launch Clash Matrix generator and Tools Test runner",
-                        Size = RibbonItemSize.Large,
-                        Orientation = System.Windows.Controls.Orientation.Vertical,
-                        LargeImage = LoadBitmap(Path.Combine(asmDir, "Images", "icon_matrix_32.png")),
-                        Image = LoadBitmap(Path.Combine(asmDir, "Images", "icon_matrix_16.png")),
-                        CommandHandler = new RelayRibbonCommand(() => App.LaunchApp(0))
-                    };
-                    source.Items.Add(btnMatrix);
-
-                    // Button 2: Distill Clashes
-                    var btnDistill = new RibbonButton
-                    {
-                        Text = "Distill\nClashes",
-                        ShowText = true,
-                        Id = "ID_RIMO_CMD_DISTILL",
-                        ToolTip = "Spatial element grouping & clash cluster distillation",
-                        Size = RibbonItemSize.Large,
-                        Orientation = System.Windows.Controls.Orientation.Vertical,
-                        LargeImage = LoadBitmap(Path.Combine(asmDir, "Images", "icon_distill_32.png")),
-                        Image = LoadBitmap(Path.Combine(asmDir, "Images", "icon_distill_16.png")),
-                        CommandHandler = new RelayRibbonCommand(() => App.LaunchApp(1))
-                    };
-                    source.Items.Add(btnDistill);
-
-                    // Button 3: Create Viewpoints
-                    var btnViewpoints = new RibbonButton
-                    {
-                        Text = "Create\nViewpoints",
-                        ShowText = true,
-                        Id = "ID_RIMO_CMD_VIEWPOINTS",
-                        ToolTip = "Generate filtered saved viewpoints for clash results",
-                        Size = RibbonItemSize.Large,
-                        Orientation = System.Windows.Controls.Orientation.Vertical,
-                        LargeImage = LoadBitmap(Path.Combine(asmDir, "Images", "icon_viewpoints_32.png")),
-                        Image = LoadBitmap(Path.Combine(asmDir, "Images", "icon_viewpoints_16.png")),
-                        CommandHandler = new RelayRibbonCommand(() => App.LaunchApp(2))
-                    };
-                    source.Items.Add(btnViewpoints);
-                }
-            }
-            catch (Exception ex)
-            {
-                LoggerService.LogErrorStatic($"Failed to initialize Rimo Ribbon: {ex}");
-            }
-        }
-
-        private BitmapImage LoadBitmap(string path)
-        {
-            try
-            {
-                if (File.Exists(path))
-                {
-                    var bmp = new BitmapImage();
-                    bmp.BeginInit();
-                    bmp.UriSource = new Uri(path, UriKind.Absolute);
-                    bmp.CacheOption = BitmapCacheOption.OnLoad;
-                    bmp.EndInit();
-                    bmp.Freeze();
-                    return bmp;
-                }
-            }
-            catch { }
-            return null;
-        }
-
         public override void OnUnloading()
         {
             _timer?.Stop();
             _timer?.Dispose();
+            _timer = null;
         }
-    }
-
-    public class RelayRibbonCommand : System.Windows.Input.ICommand
-    {
-        private readonly Action _action;
-        public RelayRibbonCommand(Action action) { _action = action; }
-        public bool CanExecute(object parameter) => true;
-        public void Execute(object parameter) => _action?.Invoke();
-        public event EventHandler CanExecuteChanged { add { } remove { } }
     }
 }
