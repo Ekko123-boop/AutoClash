@@ -26,12 +26,6 @@ namespace AutomatedClashRunner
                             licenseResult.Message ?? "Your access license for Automated Clash Runner has been disabled by the administrator.",
                             "Automated Clash Runner - License Notice");
                     }
-                    else
-                    {
-                        DialogService.Instance.ShowWarning(
-                            licenseResult.Message ?? "Please connect to the internet to authorize Automated Clash Runner.",
-                            "Automated Clash Runner");
-                    }
                     return 0;
                 }
                 // =====================================================

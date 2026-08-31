@@ -50,13 +50,16 @@ namespace AutomatedClashRunner.Services
 
         public static bool QuickValidate()
         {
-            if (_sessionAllowed.HasValue && _sessionAllowed.Value)
-                return true;
+            lock (_lock)
+            {
+                if (_sessionAllowed.HasValue && _sessionAllowed.Value)
+                    return true;
 
-            string hwid = HardwareFingerprint.GetMachineId();
-            var offlineResult = TryOfflineLeaseVerification(hwid, DateTime.UtcNow);
-            _sessionAllowed = offlineResult.IsAllowed;
-            return offlineResult.IsAllowed;
+                string hwid = HardwareFingerprint.GetMachineId();
+                var offlineResult = TryOfflineLeaseVerification(hwid, DateTime.UtcNow);
+                _sessionAllowed = offlineResult.IsAllowed;
+                return offlineResult.IsAllowed;
+            }
         }
 
         private static LicenseValidationResult TryOnlineVerification(string hwid, DateTime nowUtc)
