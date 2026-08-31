@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -111,17 +111,20 @@ namespace AutomatedClashRunner.ViewModels
         public bool HasNoModels => AllModels.Count == 0;
         public bool HasNoSets => AllSearchSets.Count == 0;
 
+        public int SelectedModelCount => AllModels.Count(x => x.IsSelected && x.IsSelectable);
+
         public int ExpectedTestCount
         {
             get
             {
-                int m = AllModels.Count(x => x.IsSelected && x.IsSelectable);
+                int m = SelectedModelCount;
                 int s = AllSearchSets.Count(x => x.IsSelected && !x.IsFolder);
                 return m * s;
             }
         }
 
         public bool IsRunEnabled => ExpectedTestCount > 0 && !IsBusy;
+        public bool IsToolsTestEnabled => SelectedModelCount > 0 && !IsBusy;
 
         public ICommand RefreshModelsCommand { get; }
         public ICommand RefreshSearchSetsCommand { get; }
@@ -131,6 +134,7 @@ namespace AutomatedClashRunner.ViewModels
         public ICommand DeselectAllSetsCommand { get; }
         public ICommand ClearAllCommand { get; }
         public ICommand RunCommand { get; }
+        public ICommand ToolsTestCommand { get; }
 
         public MatrixTabViewModel(
             IModelDiscoveryService modelDiscovery,
@@ -162,6 +166,7 @@ namespace AutomatedClashRunner.ViewModels
 
             ClearAllCommand = new RelayCommand(_ => ClearAllSelections());
             RunCommand = new RelayCommand(_ => RunClashTests(), _ => IsRunEnabled);
+            ToolsTestCommand = new RelayCommand(_ => RunToolsTests(), _ => IsToolsTestEnabled);
 
             LoadModels();
             LoadSearchSets();
@@ -240,14 +245,14 @@ namespace AutomatedClashRunner.ViewModels
                 AllSearchSets.Clear();
 
                 var sets = _searchSets.GetManualSearchSets(doc);
-                foreach (var setNode in sets)
+                foreach (var node in sets)
                 {
-                    if (previousSelections.Contains(setNode.FullPath ?? string.Empty))
+                    if (previousSelections.Contains(node.FullPath ?? string.Empty))
                     {
-                        setNode.IsSelected = true;
+                        node.IsSelected = true;
                     }
-                    setNode.PropertyChanged += OnSetPropertyChanged;
-                    AllSearchSets.Add(setNode);
+                    node.PropertyChanged += OnSetPropertyChanged;
+                    AllSearchSets.Add(node);
                 }
 
                 SearchSetsView.Refresh();
@@ -278,13 +283,16 @@ namespace AutomatedClashRunner.ViewModels
 
         private void UpdateSelectionState()
         {
+            OnPropertyChanged(nameof(SelectedModelCount));
             OnPropertyChanged(nameof(ExpectedTestCount));
             OnPropertyChanged(nameof(IsRunEnabled));
+            OnPropertyChanged(nameof(IsToolsTestEnabled));
             OnPropertyChanged(nameof(ModelSelectionSummary));
             OnPropertyChanged(nameof(SetSelectionSummary));
             OnPropertyChanged(nameof(HasNoModels));
             OnPropertyChanged(nameof(HasNoSets));
             (RunCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (ToolsTestCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
         private void SelectAllVisibleModels(bool isSelected)
@@ -365,6 +373,56 @@ namespace AutomatedClashRunner.ViewModels
             {
                 _logger.LogError("Fatal error in clash matrix execution", ex);
                 _dialogService.ShowError($"Execution failed: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+                ProgressText = string.Empty;
+                ProgressBarValue = 0;
+            }
+        }
+
+        private void RunToolsTests()
+        {
+            var selectedModels = AllModels.Where(x => x.IsSelected && x.IsSelectable).ToList();
+            if (selectedModels.Count == 0)
+            {
+                _dialogService.ShowWarning("Please select at least one NWC Model from the left panel.", "No Models Selected");
+                return;
+            }
+
+            bool confirm = _dialogService.ShowConfirmation(
+                $"Run Tools Test for {selectedModels.Count} selected model(s)?\n\nEach model will be automatically paired with its corresponding Selection Set (stripping level prefix).\n\nClash Type: {SelectedClashType}\nTolerance: {Tolerance:F4} m\nNaming Prefix: T-",
+                "Confirm Tools Test Execution");
+
+            if (!confirm) return;
+
+            var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
+            IsBusy = true;
+            ProgressText = "Initializing Tools Tests...";
+            ProgressBarValue = 0;
+            ProgressBarMax = selectedModels.Count;
+
+            try
+            {
+                var result = _clashExecution.RunToolsTest(
+                    doc,
+                    selectedModels,
+                    SelectedClashType,
+                    Tolerance,
+                    (status, current, total) =>
+                    {
+                        ProgressText = status;
+                        ProgressBarValue = current;
+                        ProgressBarMax = total;
+                    });
+
+                _dialogService.ShowSummary(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Fatal error in tools clash test execution", ex);
+                _dialogService.ShowError($"Tools test execution failed: {ex.Message}");
             }
             finally
             {

@@ -69,10 +69,18 @@
     <Compile Include="**\*.cs" Exclude="obj\**\*.cs;bin\**\*.cs;Installer\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="**\*.xaml" Exclude="obj\**\*.xaml;bin\**\*.xaml;App.xaml">
+    <Page Include="**\*.xaml" Exclude="obj\**\*.xaml;bin\**\*.xaml;App.xaml;en-US\**\*.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="en-US\**\*.xaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Images\**\*.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

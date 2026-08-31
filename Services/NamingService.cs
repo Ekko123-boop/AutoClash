@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using AutomatedClashRunner.Services.Interfaces;
 
@@ -11,12 +11,22 @@ namespace AutomatedClashRunner.Services
         public string GetTrimmedModelCode(string rawFilename)
         {
             if (string.IsNullOrWhiteSpace(rawFilename)) return string.Empty;
-            string name = Path.GetFileNameWithoutExtension(rawFilename);
+            string name = Path.GetFileNameWithoutExtension(rawFilename).Trim();
+            
+            // Delimiter '-' e.g. "F1-STS-HDLS202-MX" -> "STS-HDLS202-MX"
             int firstDash = name.IndexOf('-');
             if (firstDash >= 0 && firstDash < name.Length - 1)
             {
-                return name.Substring(firstDash + 1);
+                return name.Substring(firstDash + 1).Trim();
             }
+
+            // Delimiter '_' e.g. "F1_STS-HDLS202-MX" -> "STS-HDLS202-MX"
+            int firstUnderscore = name.IndexOf('_');
+            if (firstUnderscore >= 0 && firstUnderscore < name.Length - 1)
+            {
+                return name.Substring(firstUnderscore + 1).Trim();
+            }
+
             return name;
         }
 
@@ -36,6 +46,16 @@ namespace AutomatedClashRunner.Services
             {
                 return "T-" + trimmedCode;
             }
+        }
+
+        public string GetToolsTestClashName(string modelDisplayName)
+        {
+            string trimmedCode = GetTrimmedModelCode(modelDisplayName);
+            if (trimmedCode.StartsWith("T-", StringComparison.OrdinalIgnoreCase))
+            {
+                return trimmedCode;
+            }
+            return "T-" + trimmedCode;
         }
     }
 }

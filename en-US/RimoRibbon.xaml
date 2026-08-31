@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<RibbonControl
+    xmlns="clr-namespace:Autodesk.Windows;assembly=AdWindows"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:nvw="clr-namespace:Autodesk.Navisworks.Gui.Roamer.AIRLook;assembly=navisworks.gui.roamer"
+    x:Uid="UID_RIMO_RIBBON_CONTROL">
+    <RibbonTab Title="Rimo" Id="ID_RIMO_TAB">
+        <RibbonPanel x:Uid="UID_RIMO_CLASH_PANEL">
+            <RibbonPanelSource x:Uid="UID_RIMO_CLASH_SOURCE" Title="Clash Automation">
+                <nvw:NWRibbonButton
+                    x:Uid="UID_CmdMatrix"
+                    Id="ID_RIMO_CMD_MATRIX"
+                    KeyTip="CM"
+                    Orientation="Vertical"
+                    ShowText="True"
+                    Size="Large" />
+                <nvw:NWRibbonButton
+                    x:Uid="UID_CmdDistill"
+                    Id="ID_RIMO_CMD_DISTILL"
+                    KeyTip="DC"
+                    Orientation="Vertical"
+                    ShowText="True"
+                    Size="Large" />
+                <nvw:NWRibbonButton
+                    x:Uid="UID_CmdViewpoints"
+                    Id="ID_RIMO_CMD_VIEWPOINTS"
+                    KeyTip="CV"
+                    Orientation="Vertical"
+                    ShowText="True"
+                    Size="Large" />
+            </RibbonPanelSource>
+        </RibbonPanel>
+    </RibbonTab>
+</RibbonControl>

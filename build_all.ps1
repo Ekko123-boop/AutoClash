@@ -27,6 +27,15 @@ New-Item -ItemType Directory -Force -Path "$staging\Contents\AutomatedClashRunne
 Copy-Item "PackageContents.xml" -Destination $staging -Force
 Copy-Item "bin\Release\net48-windows\*.dll" -Destination "$staging\Contents\AutomatedClashRunner" -Force
 
+if (Test-Path "en-US") {
+    Copy-Item "en-US" -Destination "$staging\Contents\AutomatedClashRunner\en-US" -Recurse -Force
+    Copy-Item "en-US" -Destination "$staging\en-US" -Recurse -Force
+}
+if (Test-Path "Images") {
+    Copy-Item "Images" -Destination "$staging\Contents\AutomatedClashRunner\Images" -Recurse -Force
+    Copy-Item "Images" -Destination "$staging\Images" -Recurse -Force
+}
+
 $zipDest = "Installer\bundle.zip"
 if (Test-Path $zipDest) { Remove-Item $zipDest -Force }
 Compress-Archive -Path "$staging\*" -DestinationPath $zipDest -Force
@@ -44,6 +53,15 @@ $pluginDir = "$env:APPDATA\Autodesk\ApplicationPlugins\AutomatedClashRunner.bund
 $contentsDir = "$pluginDir\Contents\AutomatedClashRunner"
 if (!(Test-Path $contentsDir)) { New-Item -ItemType Directory -Force -Path $contentsDir | Out-Null }
 Copy-Item "PackageContents.xml" -Destination $pluginDir -Force
+
+if (Test-Path "en-US") {
+    Copy-Item "en-US" -Destination "$contentsDir\en-US" -Recurse -Force
+    Copy-Item "en-US" -Destination "$pluginDir\en-US" -Recurse -Force
+}
+if (Test-Path "Images") {
+    Copy-Item "Images" -Destination "$contentsDir\Images" -Recurse -Force
+    Copy-Item "Images" -Destination "$pluginDir\Images" -Recurse -Force
+}
 
 try {
     Copy-Item "bin\Release\net48-windows\*.dll" -Destination $contentsDir -Force

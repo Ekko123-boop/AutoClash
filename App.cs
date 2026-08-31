@@ -8,11 +8,15 @@ using AutomatedClashRunner.Views;
 
 namespace AutomatedClashRunner
 {
-    [Plugin("AutomatedClashRunner", "ACR", DisplayName = "Automated Clash Runner", ToolTip = "Automated Model Clash Runner & Distiller")]
-    [AddInPlugin(AddInLocation.AddIn)]
-    public class App : AddInPlugin
+    [Plugin("RimoRibbonCommands", "RIMO", DisplayName = "Rimo Tools", ToolTip = "Rimo Clash Automation Tools")]
+    [RibbonLayout("RimoRibbon.xaml")]
+    [RibbonTab("ID_RIMO_TAB", DisplayName = "Rimo")]
+    [Command("ID_RIMO_CMD_MATRIX", DisplayName = "Clash Matrix", Icon = "Images/icon_matrix_16.png", LargeIcon = "Images/icon_matrix_32.png", ToolTip = "Launch Clash Matrix generator and Tools Test runner")]
+    [Command("ID_RIMO_CMD_DISTILL", DisplayName = "Distill Clashes", Icon = "Images/icon_distill_16.png", LargeIcon = "Images/icon_distill_32.png", ToolTip = "Spatial element grouping & clash cluster distillation")]
+    [Command("ID_RIMO_CMD_VIEWPOINTS", DisplayName = "Create Viewpoints", Icon = "Images/icon_viewpoints_16.png", LargeIcon = "Images/icon_viewpoints_32.png", ToolTip = "Generate filtered saved viewpoints for clash results")]
+    public class App : CommandHandlerPlugin
     {
-        public override int Execute(params string[] parameters)
+        public override int ExecuteCommand(string name, params string[] parameters)
         {
             try
             {
@@ -24,7 +28,7 @@ namespace AutomatedClashRunner
                     {
                         DialogService.Instance.ShowWarning(
                             licenseResult.Message ?? "Your access license for Automated Clash Runner has been disabled by the administrator.",
-                            "Automated Clash Runner - License Notice");
+                            "Rimo Tools - License Notice");
                     }
                     return 0;
                 }
@@ -37,9 +41,19 @@ namespace AutomatedClashRunner
                 if (doc == null || doc.IsClear)
                 {
                     DialogService.Instance.ShowWarning(
-                        "Please open a Navisworks document (.nwf or .nwd) before running the Automated Clash Runner.",
+                        "Please open a Navisworks document (.nwf or .nwd) before running the tool.",
                         "No Active Document");
                     return 0;
+                }
+
+                int targetTab = 0;
+                if (string.Equals(name, "ID_RIMO_CMD_DISTILL", StringComparison.OrdinalIgnoreCase))
+                {
+                    targetTab = 1;
+                }
+                else if (string.Equals(name, "ID_RIMO_CMD_VIEWPOINTS", StringComparison.OrdinalIgnoreCase))
+                {
+                    targetTab = 2;
                 }
 
                 var window = new MainWindow();
@@ -51,7 +65,7 @@ namespace AutomatedClashRunner
                     helper.Owner = Autodesk.Navisworks.Api.Application.Gui.MainWindow.Handle;
                 }
 
-                window.DataContext = new MainViewModel(() => window.Close());
+                window.DataContext = new MainViewModel(() => window.Close(), initialTabIndex: targetTab);
                 window.ShowDialog();
             }
             catch (Exception ex)
@@ -69,6 +83,27 @@ namespace AutomatedClashRunner
             }
 
             return 0;
+        }
+
+        public override CommandState CanExecuteCommand(string name)
+        {
+            return new CommandState
+            {
+                IsVisible = true,
+                IsEnabled = !Autodesk.Navisworks.Api.Application.IsAutomated,
+                IsChecked = false
+            };
+        }
+    }
+
+    [Plugin("AutomatedClashRunner", "ACR", DisplayName = "Automated Clash Runner", ToolTip = "Automated Model Clash Runner & Distiller")]
+    [AddInPlugin(AddInLocation.AddIn)]
+    public class AddinLegacyEntry : AddInPlugin
+    {
+        public override int Execute(params string[] parameters)
+        {
+            var app = new App();
+            return app.ExecuteCommand("ID_RIMO_CMD_MATRIX", parameters);
         }
     }
 }

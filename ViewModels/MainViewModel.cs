@@ -9,6 +9,13 @@ namespace AutomatedClashRunner.ViewModels
     {
         private readonly Action _closeAction;
 
+        private int _selectedTabIndex;
+        public int SelectedTabIndex
+        {
+            get => _selectedTabIndex;
+            set => SetProperty(ref _selectedTabIndex, value);
+        }
+
         public MatrixTabViewModel MatrixTab { get; }
         public DistillerTabViewModel DistillerTab { get; }
         public ViewpointsTabViewModel ViewpointsTab { get; }
@@ -17,6 +24,7 @@ namespace AutomatedClashRunner.ViewModels
 
         public MainViewModel(
             Action closeAction,
+            int initialTabIndex = 0,
             IModelDiscoveryService modelDiscovery = null,
             ISearchSetService searchSets = null,
             IClashExecutionService clashExecution = null,
@@ -25,6 +33,7 @@ namespace AutomatedClashRunner.ViewModels
             ILoggerService logger = null)
         {
             _closeAction = closeAction;
+            _selectedTabIndex = initialTabIndex;
 
             var loggerSvc = logger ?? LoggerService.Instance;
             var dialogSvc = dialogService ?? DialogService.Instance;

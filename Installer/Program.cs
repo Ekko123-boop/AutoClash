@@ -101,12 +101,7 @@ namespace AutomatedClashRunner.Installer
                             string sourceContents = Path.Combine(tempDir, @"Contents\AutomatedClashRunner");
                             if (!Directory.Exists(sourceContents)) sourceContents = Path.Combine(tempDir, @"Contents");
 
-                            foreach (string file in Directory.GetFiles(sourceContents))
-                            {
-                                string destFile = Path.Combine(pluginsDir, Path.GetFileName(file));
-                                File.Copy(file, destFile, true);
-                                try { File.Delete(destFile + ":Zone.Identifier"); } catch { }
-                            }
+                            CopyDirectory(sourceContents, pluginsDir);
                             
                             paths.Add(Path.GetFileName(nwDir));
                             installedCount++;

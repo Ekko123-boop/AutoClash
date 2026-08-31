@@ -128,5 +128,131 @@ namespace AutomatedClashRunner.Services
 
             return result;
         }
+
+        public ExecutionResult RunToolsTest(
+            Document doc,
+            List<ModelSourceNode> models,
+            ClashTestType testType = ClashTestType.Clearance,
+            double tolerance = 0.0,
+            Action<string, int, int> progressCallback = null)
+        {
+            var result = new ExecutionResult();
+            if (!LicenseService.QuickValidate())
+            {
+                result.FailedTests.Add("License authorization expired or invalidated. Please connect to internet to refresh.");
+                return result;
+            }
+
+            if (doc == null || doc.IsClear)
+            {
+                result.FailedTests.Add("Active document is not available or is empty.");
+                return result;
+            }
+
+            var documentClash = doc.GetClash();
+            if (documentClash == null)
+            {
+                result.FailedTests.Add("Clash Detective is not available in this Navisworks edition.");
+                return result;
+            }
+
+            var clashTests = documentClash.TestsData;
+            var allSets = _searchSets.GetManualSearchSets(doc)
+                .Where(s => !s.IsFolder && s.OriginalSavedItem != null)
+                .ToList();
+
+            int total = models.Count;
+            int current = 0;
+            bool anySucceeded = false;
+
+            using (var trans = doc.BeginTransaction("Automated Tools Clash Test Run"))
+            {
+                foreach (var model in models)
+                {
+                    current++;
+                    if (model?.OriginalModelItem == null) continue;
+
+                    string rawName = model.DisplayName;
+                    string targetSetCode = _naming.GetTrimmedModelCode(rawName);
+                    string testName = _naming.GetToolsTestClashName(rawName);
+
+                    progressCallback?.Invoke($"Running tools test: {testName} ({current}/{total})", current, total);
+
+                    // 1. Find corresponding selection set (matching targetSetCode, case-insensitive)
+                    var matchedSet = allSets.FirstOrDefault(s => 
+                        string.Equals(s.DisplayName?.Trim(), targetSetCode, StringComparison.OrdinalIgnoreCase));
+
+                    // Secondary fallback: check if set name ends with target code
+                    if (matchedSet == null)
+                    {
+                        matchedSet = allSets.FirstOrDefault(s => 
+                            s.DisplayName != null && s.DisplayName.Trim().EndsWith(targetSetCode, StringComparison.OrdinalIgnoreCase));
+                    }
+
+                    if (matchedSet == null || matchedSet.OriginalSavedItem == null)
+                    {
+                        string failMsg = $"{rawName}: No matching Selection Set '{targetSetCode}' found in document.";
+                        result.FailedTests.Add(failMsg);
+                        _logger.LogWarning(failMsg);
+                        continue;
+                    }
+
+                    // 2. Check if test already exists in Clash Detective
+                    bool exists = clashTests.Tests.Any(t => string.Equals(t.DisplayName, testName, StringComparison.OrdinalIgnoreCase));
+                    if (exists)
+                    {
+                        result.SkippedTests.Add(testName);
+                        _logger.Log($"Skipped existing clash test: {testName}");
+                        continue;
+                    }
+
+                    try
+                    {
+                        var test = new ClashTest
+                        {
+                            DisplayName = testName,
+                            TestType = testType,
+                            Tolerance = tolerance
+                        };
+
+                        // Selection A: Corresponding Selection / Search Set
+                        var sourceA = doc.SelectionSets.CreateSelectionSource(matchedSet.OriginalSavedItem);
+                        test.SelectionA.Selection.SelectionSources.Add(sourceA);
+
+                        // Selection B: Direct Selected NWC Model Node
+                        var itemsB = new ModelItemCollection { model.OriginalModelItem };
+                        test.SelectionB.Selection.CopyFrom(itemsB);
+
+                        clashTests.TestsAddCopy(test);
+                        var addedTest = clashTests.Tests.LastOrDefault() as ClashTest;
+
+                        if (addedTest != null)
+                        {
+                            clashTests.TestsRunTest(addedTest);
+                            result.SuccessfulTests.Add(testName);
+                            anySucceeded = true;
+                            _logger.Log($"Successfully executed tools clash test: {testName} [Set: {matchedSet.DisplayName} vs Model: {rawName}]");
+                        }
+                        else
+                        {
+                            result.FailedTests.Add($"{testName}: Failed to register test copy in Clash Detective.");
+                            _logger.LogWarning($"Failed to register test copy for: {testName}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        result.FailedTests.Add($"{testName}: {ex.Message}");
+                        _logger.LogError($"Error executing tools clash test '{testName}'", ex);
+                    }
+                }
+
+                if (anySucceeded)
+                {
+                    trans.Commit();
+                }
+            }
+
+            return result;
+        }
     }
 }
