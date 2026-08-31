@@ -12,9 +12,9 @@
     <Components Description="Main Plugin">
         <RuntimeRequirements
             OS="Win64"
-            Platform="NAVMAN"
+            Platform="NAVMAN|NAVSIM"
             SeriesMin="Nw19"
-            SeriesMax="Nw24" />
+            SeriesMax="Nw26" />
         <ComponentEntry
             AppName="AutomatedClashRunner"
             ModuleName="./Contents/AutomatedClashRunner.dll"

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
@@ -55,13 +55,25 @@ namespace AutomatedClashRunner.Installer
                                 {
                                     using (var archive = new ZipArchive(foundStream, ZipArchiveMode.Read))
                                     {
-                                        archive.ExtractToDirectory(bundleDir);
+                                        foreach (var entry in archive.Entries)
+                                        {
+                                            string entryPath = Path.Combine(bundleDir, entry.FullName);
+                                            string dirPath = Path.GetDirectoryName(entryPath);
+                                            if (!Directory.Exists(dirPath)) Directory.CreateDirectory(dirPath);
+                                            
+                                            if (!string.IsNullOrEmpty(entry.Name))
+                                            {
+                                                entry.ExtractToFile(entryPath, true);
+                                                // Unblock file to prevent Navisworks from silently rejecting it due to Mark-of-the-Web
+                                                try { File.Delete(entryPath + ":Zone.Identifier"); } catch { }
+                                            }
+                                        }
                                     }
                                 }
                                 Console.WriteLine("[SUCCESS] Automated Clash Runner installed successfully!");
                                 Console.WriteLine($"[INFO] Deployed to: {bundleDir}");
                                 Console.WriteLine();
-                                Console.WriteLine("You can now launch Navisworks (2022 to 2026).");
+                                Console.WriteLine("You can now launch Navisworks (2022 to 2029).");
                                 Console.WriteLine("Press any key to finish...");
                                 Console.ReadKey();
                                 return;
@@ -76,7 +88,18 @@ namespace AutomatedClashRunner.Installer
 
                     using (var archive = new ZipArchive(stream, ZipArchiveMode.Read))
                     {
-                        archive.ExtractToDirectory(bundleDir);
+                        foreach (var entry in archive.Entries)
+                        {
+                            string entryPath = Path.Combine(bundleDir, entry.FullName);
+                            string dirPath = Path.GetDirectoryName(entryPath);
+                            if (!Directory.Exists(dirPath)) Directory.CreateDirectory(dirPath);
+                            
+                            if (!string.IsNullOrEmpty(entry.Name))
+                            {
+                                entry.ExtractToFile(entryPath, true);
+                                try { File.Delete(entryPath + ":Zone.Identifier"); } catch { }
+                            }
+                        }
                     }
                 }
 
