@@ -66,6 +66,15 @@ if (Test-Path "Images") {
 try {
     Copy-Item "bin\Release\net48-windows\*.dll" -Destination $contentsDir -Force
     Write-Host " - Plugin DLL(s) deployed to: $contentsDir" -ForegroundColor Green
+
+    # Also deploy to local Program Files if exists
+    $pf = "${env:ProgramFiles}\Autodesk\Navisworks Manage 2024\Plugins\AutomatedClashRunner"
+    if (Test-Path $pf) {
+        Copy-Item "bin\Release\net48-windows\*.dll" -Destination $pf -Force
+        if (Test-Path "en-US") { Copy-Item "en-US" -Destination "$pf\en-US" -Recurse -Force }
+        if (Test-Path "Images") { Copy-Item "Images" -Destination "$pf\Images" -Recurse -Force }
+        Write-Host " - Plugin DLL(s) deployed to Program Files: $pf" -ForegroundColor Green
+    }
 } catch {
     Write-Host " [WARN] Navisworks is currently running and locking the DLL in AppData." -ForegroundColor Yellow
     Write-Host " [HINT] Close Navisworks and re-run build_all.ps1 or run AutomatedClashRunner_Installer.exe to update." -ForegroundColor Yellow

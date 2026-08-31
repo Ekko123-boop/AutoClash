@@ -8,9 +8,9 @@ using AutomatedClashRunner.Views;
 
 namespace AutomatedClashRunner
 {
-    [Plugin("RimoRibbonCommands", "RIMO", DisplayName = "Rimo Tools", ToolTip = "Rimo Clash Automation Tools")]
+    [Plugin("RimoRibbonCommands", "RIMO", DisplayName = "Rimo", ToolTip = "Rimo Clash Automation Tools")]
     [RibbonLayout("RimoRibbon.xaml")]
-    [RibbonTab("ID_RIMO_TAB", DisplayName = "Rimo")]
+    [RibbonTab("Rimo")]
     [Command("ID_RIMO_CMD_MATRIX", DisplayName = "Clash Matrix", Icon = "Images\\icon_matrix_16.png", LargeIcon = "Images\\icon_matrix_32.png", ToolTip = "Launch Clash Matrix generator and Tools Test runner")]
     [Command("ID_RIMO_CMD_DISTILL", DisplayName = "Distill Clashes", Icon = "Images\\icon_distill_16.png", LargeIcon = "Images\\icon_distill_32.png", ToolTip = "Spatial element grouping & clash cluster distillation")]
     [Command("ID_RIMO_CMD_VIEWPOINTS", DisplayName = "Create Viewpoints", Icon = "Images\\icon_viewpoints_16.png", LargeIcon = "Images\\icon_viewpoints_32.png", ToolTip = "Generate filtered saved viewpoints for clash results")]
