@@ -5,7 +5,6 @@ namespace AutomatedClashRunner.Services
 {
     internal static class StringProtection
     {
-        // 32-byte compile-time masking key
         private static readonly byte[] MaskKey = new byte[]
         {
             0x4B, 0x8F, 0x12, 0x99, 0x5C, 0x3E, 0x77, 0xAA,
@@ -14,29 +13,32 @@ namespace AutomatedClashRunner.Services
             0x29, 0x77, 0x12, 0xEF, 0x50, 0xBB, 0x38, 0x1D
         };
 
-        // Default Firebase Realtime Database Root endpoint (Masked)
-        // Default target: https://autoclash-control-default-rtdb.firebaseio.com/
-        // We will provide a clean way to update this when the user configures their Firebase project.
-        private static readonly byte[] EncryptedEndpoint = Transform(
-            "https://autoclash-control-default-rtdb.firebaseio.com/autoclash"
-        );
+        // Pre-computed masked byte sequence - no plaintext strings in binary
+        private static readonly byte[] EncryptedEndpoint = new byte[]
+        {
+            0x23, 0xFB, 0x66, 0xE9, 0x2F, 0x04, 0x58, 0x85,
+            0x60, 0x88, 0xFC, 0x5B, 0x36, 0x75, 0x8A, 0x01,
+            0x51, 0x37, 0xEC, 0x4D, 0x23, 0x04, 0xFA, 0xC3,
+            0x45, 0x5A, 0x76, 0x8A, 0x36, 0xDA, 0x4D, 0x71,
+            0x3F, 0xA2, 0x60, 0xED, 0x38, 0x5C, 0x59, 0xCC,
+            0x68, 0x8F, 0xED, 0x56, 0x34, 0x6A, 0x8E, 0x1B,
+            0x56, 0x34, 0xEC, 0x4D, 0x20, 0x5F, 0xE9, 0xD9,
+            0x5D, 0x18, 0x71, 0x83, 0x31, 0xC8, 0x50
+        };
 
-        private static readonly byte[] EncryptedSalt = Transform(
-            "ACR_Secret_Salt_Key_9882194812_NavisworksManage_2026"
-        );
+        private static readonly byte[] EncryptedSalt = new byte[]
+        {
+            0x0A, 0xCC, 0x40, 0xC6, 0x0F, 0x5B, 0x14, 0xD8,
+            0x64, 0x89, 0xD7, 0x67, 0x34, 0x75, 0x9F, 0x2D,
+            0x72, 0x7F, 0xF6, 0x7D, 0x74, 0x48, 0xB0, 0x9E,
+            0x18, 0x4E, 0x26, 0xD7, 0x61, 0x89, 0x67, 0x53,
+            0x2A, 0xF9, 0x7B, 0xEA, 0x2B, 0x51, 0x05, 0xC1,
+            0x72, 0xB0, 0xE9, 0x5A, 0x34, 0x7E, 0x8E, 0x2D,
+            0x0B, 0x2A, 0xBD, 0x14
+        };
 
         internal static string GetLicenseEndpoint() => Unmask(EncryptedEndpoint);
         internal static string GetMasterSalt() => Unmask(EncryptedSalt);
-
-        private static byte[] Transform(string input)
-        {
-            byte[] bytes = Encoding.UTF8.GetBytes(input);
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                bytes[i] = (byte)(bytes[i] ^ MaskKey[i % MaskKey.Length]);
-            }
-            return bytes;
-        }
 
         private static string Unmask(byte[] masked)
         {

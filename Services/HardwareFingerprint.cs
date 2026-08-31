@@ -131,12 +131,12 @@ namespace AutomatedClashRunner.Services
         {
             try
             {
-                using (var key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64)
-                    .OpenSubKey(@"SOFTWARE\Microsoft\Cryptography"))
+                using (var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var subKey = baseKey?.OpenSubKey(@"SOFTWARE\Microsoft\Cryptography"))
                 {
-                    if (key != null)
+                    if (subKey != null)
                     {
-                        var guid = key.GetValue("MachineGuid")?.ToString();
+                        var guid = subKey.GetValue("MachineGuid")?.ToString();
                         if (!string.IsNullOrWhiteSpace(guid))
                             return guid;
                     }

@@ -59,41 +59,11 @@ namespace AutomatedClashRunner.Services
             return offlineResult.IsAllowed;
         }
 
-        private static string GetEffectiveEndpoint()
-        {
-            try
-            {
-                string localConfigFile = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "AutomatedClashRunner", "firebase_config.json");
-
-                if (File.Exists(localConfigFile))
-                {
-                    string content = File.ReadAllText(localConfigFile);
-                    var serializer = new JavaScriptSerializer();
-                    var dict = serializer.Deserialize<Dictionary<string, object>>(content);
-                    if (dict != null && dict.ContainsKey("firebase_url"))
-                    {
-                        string customUrl = dict["firebase_url"]?.ToString()?.TrimEnd('/');
-                        if (!string.IsNullOrWhiteSpace(customUrl))
-                        {
-                            if (!customUrl.EndsWith("/autoclash", StringComparison.OrdinalIgnoreCase))
-                                customUrl += "/autoclash";
-                            return customUrl;
-                        }
-                    }
-                }
-            }
-            catch { }
-
-            return StringProtection.GetLicenseEndpoint();
-        }
-
         private static LicenseValidationResult TryOnlineVerification(string hwid, DateTime nowUtc)
         {
             try
             {
-                string rootEndpoint = GetEffectiveEndpoint();
+                string rootEndpoint = StringProtection.GetLicenseEndpoint();
                 if (string.IsNullOrWhiteSpace(rootEndpoint))
                     return null;
 
