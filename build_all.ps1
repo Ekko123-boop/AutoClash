@@ -25,7 +25,7 @@ $staging = "$env:TEMP\acr_bundle_staging"
 if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
 New-Item -ItemType Directory -Force -Path "$staging\Contents\AutomatedClashRunner" | Out-Null
 Copy-Item "PackageContents.xml" -Destination $staging -Force
-Copy-Item "bin\Release\net48-windows\AutomatedClashRunner.dll" -Destination "$staging\Contents\AutomatedClashRunner" -Force
+Copy-Item "bin\Release\net48-windows\*.dll" -Destination "$staging\Contents\AutomatedClashRunner" -Force
 
 $zipDest = "Installer\bundle.zip"
 if (Test-Path $zipDest) { Remove-Item $zipDest -Force }
@@ -46,8 +46,8 @@ if (!(Test-Path $contentsDir)) { New-Item -ItemType Directory -Force -Path $cont
 Copy-Item "PackageContents.xml" -Destination $pluginDir -Force
 
 try {
-    Copy-Item "bin\Release\net48-windows\AutomatedClashRunner.dll" -Destination $contentsDir -Force
-    Write-Host " - Plugin DLL deployed to: $contentsDir" -ForegroundColor Green
+    Copy-Item "bin\Release\net48-windows\*.dll" -Destination $contentsDir -Force
+    Write-Host " - Plugin DLL(s) deployed to: $contentsDir" -ForegroundColor Green
 } catch {
     Write-Host " [WARN] Navisworks is currently running and locking the DLL in AppData." -ForegroundColor Yellow
     Write-Host " [HINT] Close Navisworks and re-run build_all.ps1 or run AutomatedClashRunner_Installer.exe to update." -ForegroundColor Yellow

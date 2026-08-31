@@ -98,11 +98,15 @@ namespace AutomatedClashRunner.Installer
                             string pluginsDir = Path.Combine(nwDir, @"Plugins\AutomatedClashRunner");
                             if (!Directory.Exists(pluginsDir)) Directory.CreateDirectory(pluginsDir);
                             
-                            string destDll = Path.Combine(pluginsDir, "AutomatedClashRunner.dll");
-                            File.Copy(sourceDll, destDll, true);
-                            
-                            // Unblock
-                            try { File.Delete(destDll + ":Zone.Identifier"); } catch { }
+                            string sourceContents = Path.Combine(tempDir, @"Contents\AutomatedClashRunner");
+                            if (!Directory.Exists(sourceContents)) sourceContents = Path.Combine(tempDir, @"Contents");
+
+                            foreach (string file in Directory.GetFiles(sourceContents))
+                            {
+                                string destFile = Path.Combine(pluginsDir, Path.GetFileName(file));
+                                File.Copy(file, destFile, true);
+                                try { File.Delete(destFile + ":Zone.Identifier"); } catch { }
+                            }
                             
                             paths.Add(Path.GetFileName(nwDir));
                             installedCount++;
