@@ -69,3 +69,9 @@ Open Developer PowerShell or command prompt and run:
 .\build_all.ps1
 ```
 This single script builds the `net48-windows` plugin DLL, deploys it to your Navisworks ApplicationPlugins folder, and compiles the standalone `AutomatedClashRunner_Installer.exe`.
+
+---
+
+## Architecture Note: Multi-Version Support
+Unlike other Navisworks addins that utilize massive Multi-Folder `Contents/2022`, `Contents/2023` directory structures, this plugin compiles into a **single, unified binary** supporting Navisworks 2022-2026.
+This is achieved by natively compiling against the **Navisworks 2023 API via NuGet**, injecting `<SpecificVersion>False</SpecificVersion>` to allow dynamic .NET CLR upgrades in 2024+, and utilizing `System.Reflection` to dynamically invoke newer features (like `TestsViewpointForResult`) if they are detected in the host engine.
