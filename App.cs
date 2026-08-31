@@ -90,9 +90,14 @@ namespace AutomatedClashRunner
             return new CommandState
             {
                 IsVisible = true,
-                IsEnabled = !Autodesk.Navisworks.Api.Application.IsAutomated,
+                IsEnabled = true,
                 IsChecked = false
             };
+        }
+
+        public override bool CanExecuteRibbonTab(string name)
+        {
+            return true;
         }
     }
 
