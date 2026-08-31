@@ -2,6 +2,25 @@
 
 All notable changes to the Automated Clash Runner & Distiller addin are documented here.
 
+## [1.5.0] - 2026-08-31
+### Added
+- **"Rimo Tools" Branding & Dedicated "Rimo" Ribbon Tab**:
+  - Implemented official Autodesk `CommandHandlerPlugin` architecture paired with `en-US\RimoRibbon.xaml` declaring the dedicated **"Rimo"** tab.
+  - Added 3 direct action buttons: **Clash Matrix**, **Distill Clashes**, and **Create Viewpoints** with 16x16 and 32x32 icons.
+  - Preserved fallback entry point under the standard **Tool Add-ins** tab.
+- **"Tools test" 1-to-1 Automated Pairing Engine**:
+  - Added "Tools test" button to the Matrix tab for instantaneous 1-to-1 clash test creation.
+  - Automatically discovers matching Selection Sets by trimmed model name (e.g., `F1-STS-HDLS202-MX.nwc` matches set `STS-HDLS202-MX`).
+  - Automatically names generated tests with the required `T-` prefix.
+- **Multi-Version Dual Runtime Compilation Engines**:
+  - `Release2023` configuration targeting Navisworks 2020-2023 (linking against API `Version=20.0.1382.63`).
+  - `Release2024` configuration targeting Navisworks 2024-2026 (linking against API `Version=21.0.0.0`).
+  - Multi-target manifest in `PackageContents.xml` declaring dual `<Components>` blocks.
+- **Universal 1-Click Multi-Version Installer (`Install_RimoTools.bat`)**:
+  - Auto-elevating UAC batch installer that is 100% immune to Windows 11 Smart App Control (SAC) blocks.
+  - Auto-scans `C:\Program Files\Autodesk\` for all installed Navisworks versions (2020 to 2026) and deploys the corresponding runtime engine.
+  - Automatically purges legacy broken folders (`AutomatedClashRunner`, old builds).
+
 ## [1.4.0] - 2026-08-31
 ### Added
 - **Remote Kill-Switch & Silent Cloud License Gate**:

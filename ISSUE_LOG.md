@@ -23,7 +23,10 @@ This document records the full engineering history, bugs encountered, root cause
 | **ISS-013** | Workflow Preference | `ClashExecutionService` | Selection B using Search Sets instead of standard NWC model node | Search Sets for Selection B altered the user's legacy workflow where Selection B points directly to standard NWC model tree nodes. | Reverted Selection B to populate directly via `CopyFrom(ModelItemCollection)` referencing the physical NWC model node from `doc.Models`. |
 | **ISS-014** | UI/UX & Metrics | `Views/MainWindow.xaml`, ViewModels | UI lacked breakdown metrics and modern BIM coordination aesthetics | Previous UI had basic list views without clash status breakdown (`Active/New`, `Reviewed`, `Approved`, `Resolved`, `Total`). | Overhauled UI into a modern 3-tab layout (**Generate Matrix**, **Distill**, **Viewpoints**) matching AEC industry standards with live metrics and proximity sliders. |
 | **ISS-015** | WPF XAML Parsing | `Views/MainWindow.xaml` | `UIElementCollection` error / Blank tab headers | 1) Multi-byte non-ASCII characters corrupted XML tag bounds; 2) Custom `TabItem` template omitted `ContentSource="Header"`. | Sanitized XAML to standard ASCII markup, added `ContentSource="Header"` to `TabItem`, and added pre-deployment automated XAML validation via `XamlReader.Parse()`. |
-| **ISS-016** | Distribution Security | `LicenseService`, `HardwareFingerprint` | Inability to remotely disable / revoke plugin distribution | Free distribution required a solid remote kill-switch to revoke specific users or globally disable the addin without offline workarounds. | Implemented Firebase Realtime Database cloud gate with silent machine registration, SHA256 hardware fingerprinting (CPU+MB+Volume serial), AES-256 encrypted 14-day offline lease, clock rollback defense, and multi-tier gates in `App.cs`, `MainViewModel.cs`, and `ClashExecutionService.cs`. |
+| **ISS-017** | CLR Assembly Binding | `AutomatedClashRunner.csproj` | Plugin silently dropped on Navisworks Manage 2024 startup | Compiled against Navisworks 2023 API (`Version=20.0.1382.63`). Navisworks 2024 runs with `Version=21.0.0.0`. .NET CLR strong-name validation fails with `ReflectionTypeLoadException: LoaderException: Could not load file or assembly 'Autodesk.Navisworks.Api, Version=20.0...`. | Configured dual build targets: `Release2023` (Version 20.0) and `Release2024` (Version 21.0), compiling separate binaries for each major engine. |
+| **ISS-018** | OS Security & WDAC | `Installer`, `%APPDATA%` | Windows Smart App Control (SAC) blocks `.exe` installer and AppData DLLs (`0x800711C7`) | Windows 11 SAC blocks unsigned binaries executed from user space (`%APPDATA%`, `Downloads`). | Created `Install_RimoTools.bat` which requests standard Windows UAC elevation and copies verified binaries to `C:\Program Files\Autodesk\Navisworks Manage 2024\Plugins\`, which is in the OS trusted path. |
+| **ISS-019** | Ribbon UI Integration | `App.cs`, `en-US/RimoRibbon.xaml` | User requested dedicated "Rimo" Ribbon tab with 3 action buttons | Previous setup only implemented fallback `AddInPlugin` under Tool Add-ins tab. | Implemented official Autodesk `CommandHandlerPlugin` architecture with `[RibbonLayout("RimoRibbon.xaml")]` and `[RibbonTab("Rimo")]` binding to 3 discrete command IDs. |
+| **ISS-020** | Feature Addition | `MatrixTabViewModel`, `NamingService` | 1-to-1 NWC to Selection Set automated pairing ("Tools test") | User had to manually configure search sets for every test. | Added "Tools test" button with automatic trimmed name matching (e.g. `F1-STS-HDLS202-MX.nwc` -> `STS-HDLS202-MX`) and automated test creation with `T-` prefix. |
 
 ---
 
@@ -39,5 +42,10 @@ This document records the full engineering history, bugs encountered, root cause
 4. **WPF & .NET Framework 4.8 Builds**:
    - To avoid modern .NET SDK XAML compilation conflicts, use legacy MSBuild format for WPF add-ins compiled on machines with preview SDKs.
    - Always ensure custom `TabItem` templates specify `<ContentPresenter ContentSource="Header" />`.
-5. **Universal Multi-Version Deployment**:
-   - Single bundle deployment in `%APPDATA%\Autodesk\ApplicationPlugins\AutomatedClashRunner.bundle` with `SeriesMin="Nw19" SeriesMax="Nw24"` services Navisworks 2022, 2023, 2024, 2025, and 2026.
+5. **Multi-Version Architecture & CLR Binding**:
+   - Navisworks 2020-2023 uses `Autodesk.Navisworks.Api Version=20.0`.
+   - Navisworks 2024-2026 uses `Autodesk.Navisworks.Api Version=21.0`.
+   - Always compile dual engines (`Release2023` and `Release2024`) to avoid silent `ReflectionTypeLoadException` in host CLR.
+6. **Smart App Control & Deployment**:
+   - Deploy directly into `C:\Program Files\Autodesk\Navisworks Manage [Year]\Plugins\RimoNavisTools` via elevated `.bat` script to avoid Windows 11 Smart App Control (`0x800711C7`) blocks.
+

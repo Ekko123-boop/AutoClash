@@ -1,4 +1,4 @@
-# Automated Clash Runner — Troubleshooting & FAQ
+# Rimo Tools — Troubleshooting & Technical Diagnostics
 
 ## 1. Where are the log files located?
 Diagnostic logs are automatically written to:
@@ -8,7 +8,39 @@ If you encounter unexpected behavior, inspect this file to view detailed stack t
 
 ---
 
-## 2. Navisworks SelectionSourceCollection Crash
+## 2. Navisworks 2024 Plugin Disappearance (CLR Major Version Mismatch)
+### Symptom
+Plugin appears in Navisworks 2023 but is completely invisible in Navisworks Manage 2024 (neither the Ribbon tab nor the Add-ins tab appears).
+### Root Cause (Forensic Analysis)
+When an assembly is compiled referencing `Autodesk.Navisworks.Api` v20.0 (Navisworks 2023), its assembly manifest binds to `Version=20.0.1382.63`. Navisworks Manage 2024 runs with `Version=21.0.0.0`. Because Navisworks does not include backward binding redirects in `Roamer.exe.config`, the .NET CLR throws:
+```text
+ReflectionTypeLoadException: LoaderException: Could not load file or assembly 'Autodesk.Navisworks.Api, Version=20.0.1382.63...'
+```
+Navisworks catches this internally during plugin discovery and silently drops the plugin.
+### Solution
+We compile dual runtime engines:
+- **`Release2023`** targeting Navisworks 2020–2023 (`Version 20.0`)
+- **`Release2024`** targeting Navisworks 2024–2026 (`Version 21.0`)
+`Install_RimoTools.bat` automatically deploys the matching version to each Navisworks installation.
+
+---
+
+## 3. Windows Smart App Control (SAC) Blocking Installer or AppData DLLs (0x800711C7)
+### Symptom
+- Windows Smart App Control blocks the `.exe` installer.
+- Navisworks ignores `.dll` files placed in `%APPDATA%\Autodesk\ApplicationPlugins\`.
+- PowerShell reflection test returns:
+```text
+Exception from HRESULT: 0x800711C7 (An Application Control policy has blocked this file)
+```
+### Root Cause
+Windows 11 Smart App Control (SAC) enforces strict code integrity on newly compiled binaries running in user space (`%APPDATA%`, `%TEMP%`, `Downloads`) unless they are digitally signed with an EV certificate.
+### Solution
+`C:\Program Files\` is in Windows Defender / Smart App Control's trusted path whitelist. Running **`Install_RimoTools.bat`** with Administrator privileges places the binaries in `C:\Program Files\Autodesk\Navisworks Manage 2024\Plugins\RimoNavisTools\`, bypassing Smart App Control restrictions completely without requiring code signing.
+
+---
+
+## 4. Navisworks SelectionSourceCollection Crash
 ### Symptom
 `System.AccessViolationException` when creating a clash test.
 ### Cause
@@ -18,7 +50,7 @@ We bypass the constructor and directly add `SelectionSource` items to the pre-in
 
 ---
 
-## 3. Coordinate System & Distiller Proximity
+## 5. Coordinate System & Distiller Proximity
 ### Symptom
 Clash grouping distances feel inaccurate or different depending on whether the project is in feet or millimeters.
 ### Cause
@@ -28,7 +60,7 @@ Our grouping engine converts the slider's foot value directly to meters using `m
 
 ---
 
-## 4. Selection B Stale After Model Reload
+## 6. Selection B Stale After Model Reload
 ### Symptom
 After reloading an appended `.nwc` model, clash tests in Clash Detective say "No items in Selection B".
 ### Cause
@@ -38,38 +70,9 @@ Our tool creates a SelectionSet for the model and links it to `SelectionB` via `
 
 ---
 
-## 5. Plugin Not Appearing in Navisworks (Missing DLL Dependencies)
-### Symptom
-Plugin completely fails to appear in the Navisworks Add-ins tab, despite being placed in the correct `ApplicationPlugins` folder.
-### Cause
-If the project uses third-party NuGet packages (like `System.Drawing.Common`), compiling the project might not automatically copy these dependencies into the bundle. When Navisworks tries to load the main plugin, the CLR checks for dependencies, fails to find them, and throws a silent `FileNotFoundException`.
-### Solution
-Ensure `build_all.ps1` or the installer explicitly bundles all output `*.dll` files alongside the main plugin file in the `.bundle` folder.
+## 7. Fast Installation Guide
+1. Make sure all Navisworks instances are closed.
+2. Right-click `Install_RimoTools.bat` and select **Run as Administrator** (or double-click).
+3. The script detects all versions from 2020 to 2026 and deploys the appropriate engine automatically.
+4. Launch Navisworks Manage.
 
----
-
-## 6. Plugin Fails to Load in Older Navisworks Versions (Assembly Binding)
-### Symptom
-Plugin loads successfully on the developer's machine (e.g., Navisworks 2024), but silently fails to appear on a user's machine running an older version (e.g., Navisworks 2023).
-### Cause
-By default, MSBuild sets `SpecificVersion=True` for referenced Navisworks assemblies. If compiled against 2024 API (v21.0.0.0), the CLR demands this exact version and will instantly reject loading into 2023 (v20.0.0.0).
-### Solution
-In the `.csproj`, explicitly add `<SpecificVersion>False</SpecificVersion>` to all Autodesk dependencies. Furthermore, always compile against the API of the **oldest** Navisworks version you intend to support (e.g., Navisworks 2022/2023).
-
----
-
-## 7. Backward Compatibility Crashes (MissingMethodException)
-### Symptom
-Plugin completely fails to load in older Navisworks, or crashes midway, with a `MissingMethodException`.
-### Cause
-Newer Navisworks APIs introduce methods that do not exist in older versions. For example, `DocumentClashTests.TestsViewpointForResult()` was added in Navisworks 2024. If your plugin calls this, the JIT compiler will fail to load the plugin on 2023 because the method signature doesn't exist in the host engine.
-### Solution
-Use `System.Reflection` to dynamically invoke newer methods inside a `try/catch` block, allowing the plugin to gracefully bypass the functionality on older engines while retaining it on newer ones.
-
----
-
-## 8. Basic Installation Issues
-1. Ensure Autodesk Navisworks Manage is closed.
-2. Run `AutomatedClashRunner_Installer.exe` (Run as Administrator if necessary).
-3. Check `%APPDATA%\Autodesk\ApplicationPlugins\AutomatedClashRunner.bundle\PackageContents.xml` exists.
-4. Launch Navisworks Manage and look under the **Add-ins / Tool Add-ins** tab.

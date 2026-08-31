@@ -81,13 +81,31 @@ namespace AutomatedClashRunner.Installer
                 int installedCount = 0;
                 List<string> paths = new List<string>();
 
+                // Clean legacy AutomatedClashRunner folders if present
+                try
+                {
+                    string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                    string oldGlobalBundle = Path.Combine(progData, @"Autodesk\ApplicationPlugins\AutomatedClashRunner.bundle");
+                    if (Directory.Exists(oldGlobalBundle)) Directory.Delete(oldGlobalBundle, true);
+                }
+                catch { }
+
+                try
+                {
+                    string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                    string oldUserBundle = Path.Combine(appData, @"Autodesk\ApplicationPlugins\AutomatedClashRunner.bundle");
+                    if (Directory.Exists(oldUserBundle)) Directory.Delete(oldUserBundle, true);
+                }
+                catch { }
+
                 // 1. Deploy to Global ApplicationPlugins (ProgramData)
                 try
                 {
                     string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-                    string globalBundle = Path.Combine(progData, @"Autodesk\ApplicationPlugins\AutomatedClashRunner.bundle");
+                    string globalBundle = Path.Combine(progData, @"Autodesk\ApplicationPlugins\RimoTools.bundle");
+                    if (Directory.Exists(globalBundle)) Directory.Delete(globalBundle, true);
                     CopyDirectory(tempDir, globalBundle);
-                    paths.Add("Global ApplicationPlugins");
+                    paths.Add("Global ApplicationPlugins (RimoTools.bundle)");
                     installedCount++;
                 }
                 catch { }
@@ -96,14 +114,15 @@ namespace AutomatedClashRunner.Installer
                 try
                 {
                     string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                    string userBundle = Path.Combine(appData, @"Autodesk\ApplicationPlugins\AutomatedClashRunner.bundle");
+                    string userBundle = Path.Combine(appData, @"Autodesk\ApplicationPlugins\RimoTools.bundle");
+                    if (Directory.Exists(userBundle)) Directory.Delete(userBundle, true);
                     CopyDirectory(tempDir, userBundle);
-                    paths.Add("User ApplicationPlugins");
+                    paths.Add("User ApplicationPlugins (RimoTools.bundle)");
                     installedCount++;
                 }
                 catch { }
 
-                // 3. Beast Mode: Deploy directly to Navisworks Plugins directories (Guaranteed Load)
+                // 3. Deploy directly to Navisworks Plugins directories (Program Files)
                 string programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
                 string autodeskDir = Path.Combine(programFiles, "Autodesk");
                 
@@ -113,14 +132,20 @@ namespace AutomatedClashRunner.Installer
                     {
                         try
                         {
-                            string pluginsDir = Path.Combine(nwDir, @"Plugins\AutomatedClashRunner");
-                            if (!Directory.Exists(pluginsDir)) Directory.CreateDirectory(pluginsDir);
-                            
-                            string sourceContents = Path.Combine(tempDir, @"Contents\AutomatedClashRunner");
-                            if (!Directory.Exists(sourceContents)) sourceContents = Path.Combine(tempDir, @"Contents");
+                            // Clean legacy folder
+                            string oldPluginsDir = Path.Combine(nwDir, @"Plugins\AutomatedClashRunner");
+                            if (Directory.Exists(oldPluginsDir)) Directory.Delete(oldPluginsDir, true);
 
-                            CopyDirectory(sourceContents, pluginsDir);
+                            string pluginsDir = Path.Combine(nwDir, @"Plugins\RimoTools");
+                            if (Directory.Exists(pluginsDir)) Directory.Delete(pluginsDir, true);
+                            Directory.CreateDirectory(pluginsDir);
                             
+                            string sourceContents = Path.Combine(tempDir, @"Contents");
+                            if (Directory.Exists(sourceContents))
+                            {
+                                CopyDirectory(sourceContents, pluginsDir);
+                            }
+
                             paths.Add(Path.GetFileName(nwDir));
                             installedCount++;
                         }
@@ -133,7 +158,7 @@ namespace AutomatedClashRunner.Installer
 
                 if (installedCount > 0)
                 {
-                    string msg = "Automated Clash Runner was successfully installed!\n\nDeployed to:\n- " + string.Join("\n- ", paths);
+                    string msg = "Rimo tools was successfully installed!\n\nDeployed to:\n- " + string.Join("\n- ", paths);
                     MessageBox(IntPtr.Zero, msg, "Installation Complete", 0x40);
                 }
                 else

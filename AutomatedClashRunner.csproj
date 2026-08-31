@@ -7,18 +7,41 @@
     <ProjectGuid>{A3D73A9E-C0B1-4A59-86BC-92DB4032F51C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>AutomatedClashRunner</RootNamespace>
-    <AssemblyName>AutomatedClashRunner</AssemblyName>
+    <AssemblyName>RimoNavisTools</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
+  <!-- Default Release (2024) -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\net48-windows\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;Version2024</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <!-- 2023 Dedicated Target -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release2023|x64' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\2023\</OutputPath>
+    <DefineConstants>TRACE;Version2023</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <!-- 2024 Dedicated Target -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release2024|x64' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\2024\</OutputPath>
+    <DefineConstants>TRACE;Version2024</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>x64</PlatformTarget>
@@ -39,6 +62,10 @@
     <Reference Include="System.Runtime">
       <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\Facades\System.Runtime.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <!-- 2023 Assemblies -->
+  <ItemGroup Condition=" '$(Configuration)' == 'Release2023' ">
     <Reference Include="Autodesk.Navisworks.Api">
       <HintPath>lib\2023\Api\lib\net48\Autodesk.Navisworks.Api.dll</HintPath>
       <Private>False</Private>
@@ -60,11 +87,31 @@
       <SpecificVersion>False</SpecificVersion>
     </Reference>
   </ItemGroup>
-  
-  <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
-  </ItemGroup>
 
+  <!-- 2024 Assemblies (Default / Release / Release2024) -->
+  <ItemGroup Condition=" '$(Configuration)' != 'Release2023' ">
+    <Reference Include="Autodesk.Navisworks.Api">
+      <HintPath>lib\2024\Autodesk.Navisworks.Api.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="Autodesk.Navisworks.ComApi">
+      <HintPath>lib\2024\Autodesk.Navisworks.ComApi.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="Autodesk.Navisworks.Interop.ComApi">
+      <HintPath>lib\2024\Autodesk.Navisworks.Interop.ComApi.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="Autodesk.Navisworks.Clash">
+      <HintPath>lib\2024\Autodesk.Navisworks.Clash.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+  </ItemGroup>
+  
   <ItemGroup>
     <Compile Include="**\*.cs" Exclude="obj\**\*.cs;bin\**\*.cs;Installer\**\*.cs" />
   </ItemGroup>

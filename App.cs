@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Interop;
-using System.Windows.Media.Imaging;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Plugins;
 using AutomatedClashRunner.Services;
@@ -12,7 +11,68 @@ using AutomatedClashRunner.Views;
 
 namespace AutomatedClashRunner
 {
-    [Plugin("AutomatedClashRunner", "ACR", DisplayName = "Automated Clash Runner", ToolTip = "Automated Model Clash Runner & Distiller")]
+    // =========================================================================
+    // 1. Dedicated "Rimo" Ribbon Tab via Official Navisworks CommandHandlerPlugin
+    // =========================================================================
+    [Plugin("RimoNavisRibbon", "RIMO", DisplayName = "Rimo tools")]
+    [RibbonLayout("RimoRibbon.xaml")]
+    [RibbonTab("Rimo", DisplayName = "Rimo")]
+    [Command("ID_RIMO_CMD_MATRIX",
+             DisplayName = "Clash Matrix",
+             Icon = "Images\\icon_matrix_16.png",
+             LargeIcon = "Images\\icon_matrix_32.png",
+             ToolTip = "Launch Clash Matrix generator and Tools Test runner")]
+    [Command("ID_RIMO_CMD_DISTILL",
+             DisplayName = "Distill Clashes",
+             Icon = "Images\\icon_distill_16.png",
+             LargeIcon = "Images\\icon_distill_32.png",
+             ToolTip = "Spatial element grouping & clash cluster distillation")]
+    [Command("ID_RIMO_CMD_VIEWPOINTS",
+             DisplayName = "Create Viewpoints",
+             Icon = "Images\\icon_viewpoints_16.png",
+             LargeIcon = "Images\\icon_viewpoints_32.png",
+             ToolTip = "Generate filtered saved viewpoints for clash results")]
+    public class RimoRibbonCommandHandler : CommandHandlerPlugin
+    {
+        public override int ExecuteCommand(string name, params string[] parameters)
+        {
+            switch (name)
+            {
+                case "ID_RIMO_CMD_MATRIX":
+                    App.LaunchApp(0);
+                    break;
+                case "ID_RIMO_CMD_DISTILL":
+                    App.LaunchApp(1);
+                    break;
+                case "ID_RIMO_CMD_VIEWPOINTS":
+                    App.LaunchApp(2);
+                    break;
+                default:
+                    App.LaunchApp(0);
+                    break;
+            }
+            return 0;
+        }
+
+        public override CommandState CanExecuteCommand(string commandId)
+        {
+            var state = new CommandState();
+            state.IsVisible = true;
+            state.IsEnabled = true;
+            state.IsChecked = true;
+            return state;
+        }
+
+        public override bool CanExecuteRibbonTab(string name)
+        {
+            return true;
+        }
+    }
+
+    // =========================================================================
+    // 2. Tool Add-ins Tab Fallback Plugin
+    // =========================================================================
+    [Plugin("RimoNavisAddin", "RIMO", DisplayName = "Rimo tools", ToolTip = "Automated Model Clash Runner & Distiller")]
     [AddInPlugin(AddInLocation.AddIn)]
     public class App : AddInPlugin
     {
@@ -33,8 +93,8 @@ namespace AutomatedClashRunner
                     if (licenseResult.IsRevoked)
                     {
                         DialogService.Instance.ShowWarning(
-                            licenseResult.Message ?? "Your access license for Automated Clash Runner has been disabled by the administrator.",
-                            "Rimo Tools - License Notice");
+                            licenseResult.Message ?? "Your access license for Rimo tools has been disabled by the administrator.",
+                            "Rimo tools - License Notice");
                     }
                     return;
                 }
@@ -75,38 +135,6 @@ namespace AutomatedClashRunner
                 LoggerService.LogErrorStatic($"Unhandled exception in plugin execution:\n{sb}");
                 DialogService.Instance.ShowError($"Fatal error: {ex.Message}\n\nDetails:\n{ex.InnerException?.Message}");
             }
-        }
-    }
-
-    [Plugin("RimoRibbonWatcher", "RIMO", DisplayName = "Rimo Ribbon Watcher", ToolTip = "Initializes the dedicated Rimo Ribbon tab")]
-    public class RimoRibbonWatcher : EventWatcherPlugin
-    {
-        private System.Windows.Forms.Timer _timer;
-        private int _attempts;
-
-        public override void OnLoaded()
-        {
-            _attempts = 0;
-            _timer = new System.Windows.Forms.Timer { Interval = 300 };
-            _timer.Tick += (s, e) =>
-            {
-                _attempts++;
-                bool success = DynamicRibbonService.TryInitializeRibbon(App.LaunchApp);
-                if (success || _attempts > 40) // Stop polling after success or 12 seconds
-                {
-                    _timer.Stop();
-                    _timer.Dispose();
-                    _timer = null;
-                }
-            };
-            _timer.Start();
-        }
-
-        public override void OnUnloading()
-        {
-            _timer?.Stop();
-            _timer?.Dispose();
-            _timer = null;
         }
     }
 }

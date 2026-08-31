@@ -2,22 +2,36 @@
 <ApplicationPackage
     SchemaVersion="1.0"
     AutodeskProduct="Navisworks"
-    Name="AutomatedClashRunner"
-    AppVersion="1.2.0"
-    Description="Automated Model Clash Runner and Distiller for Navisworks"
+    Name="RimoNavisTools"
+    AppVersion="1.4.0"
+    Description="Rimo tools - Automated Model Clash Runner and Distiller for Navisworks"
     ProductType="Application">
 
-    <CompanyDetails Name="Custom" />
+    <CompanyDetails Name="Rimo" />
 
-    <Components Description="Main Plugin">
+    <!-- Navisworks 2020-2023 Components -->
+    <Components Description="Navisworks 2020-2023">
         <RuntimeRequirements
             OS="Win64"
             Platform="NAVMAN|NAVSIM"
-            SeriesMin="Nw19"
-            SeriesMax="Nw26" />
+            SeriesMin="Nw17"
+            SeriesMax="Nw20" />
         <ComponentEntry
-            AppName="AutomatedClashRunner"
-            ModuleName="./Contents/AutomatedClashRunner/AutomatedClashRunner.dll"
+            AppName="Rimo tools"
+            ModuleName="./Contents/2023/RimoNavisTools.dll"
+            AppType="ManagedPlugin" />
+    </Components>
+
+    <!-- Navisworks 2024-2026 Components -->
+    <Components Description="Navisworks 2024-2026">
+        <RuntimeRequirements
+            OS="Win64"
+            Platform="NAVMAN|NAVSIM"
+            SeriesMin="Nw21"
+            SeriesMax="Nw24" />
+        <ComponentEntry
+            AppName="Rimo tools"
+            ModuleName="./Contents/2024/RimoNavisTools.dll"
             AppType="ManagedPlugin" />
     </Components>
 </ApplicationPackage>

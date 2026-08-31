@@ -1,5 +1,5 @@
 # =====================================================================
-# AutomatedClashRunner - Full End-to-End Build & Deployment Script
+# Rimo Tools - Full End-to-End Build & Deployment Script
 # =====================================================================
 $ErrorActionPreference = "Stop"
 
@@ -14,73 +14,59 @@ if (!$msbuild -or !(Test-Path $msbuild)) {
 }
 Write-Host "Using MSBuild: $msbuild" -ForegroundColor Green
 
-# 1. Build Plugin DLL
-Write-Host ">>> 1. Building AutomatedClashRunner.dll (Release x64)..." -ForegroundColor Cyan
-& $msbuild "AutomatedClashRunner.csproj" -p:Configuration=Release -p:Platform=x64
-if ($LASTEXITCODE -ne 0) { throw "Plugin build failed." }
+# 1. Clean output directories
+if (Test-Path "bin") { Remove-Item "bin" -Recurse -Force }
+if (Test-Path "obj") { Remove-Item "obj" -Recurse -Force }
 
-# 2. Package bundle.zip for Installer
-Write-Host ">>> 2. Packaging bundle.zip..." -ForegroundColor Cyan
-$staging = "$env:TEMP\acr_bundle_staging"
-if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
-New-Item -ItemType Directory -Force -Path "$staging\Contents\AutomatedClashRunner" | Out-Null
-Copy-Item "PackageContents.xml" -Destination $staging -Force
-Copy-Item "bin\Release\net48-windows\*.dll" -Destination "$staging\Contents\AutomatedClashRunner" -Force
+# 2. Build Multi-Version Plugin DLLs
+Write-Host ">>> 1. Building Navisworks 2023 Engine (Release2023)..." -ForegroundColor Cyan
+& $msbuild "AutomatedClashRunner.csproj" -p:Configuration=Release2023 -p:Platform=x64
+if ($LASTEXITCODE -ne 0) { throw "2023 Plugin build failed." }
 
-if (Test-Path "en-US") {
-    Copy-Item "en-US" -Destination "$staging\Contents\AutomatedClashRunner\en-US" -Recurse -Force
-    Copy-Item "en-US" -Destination "$staging\en-US" -Recurse -Force
-}
-if (Test-Path "Images") {
-    Copy-Item "Images" -Destination "$staging\Contents\AutomatedClashRunner\Images" -Recurse -Force
-    Copy-Item "Images" -Destination "$staging\Images" -Recurse -Force
-}
+Write-Host ">>> 2. Building Navisworks 2024 Engine (Release2024)..." -ForegroundColor Cyan
+& $msbuild "AutomatedClashRunner.csproj" -p:Configuration=Release2024 -p:Platform=x64
+if ($LASTEXITCODE -ne 0) { throw "2024 Plugin build failed." }
 
-$zipDest = "Installer\bundle.zip"
-if (Test-Path $zipDest) { Remove-Item $zipDest -Force }
-Compress-Archive -Path "$staging\*" -DestinationPath $zipDest -Force
+# 3. Direct AppData Deployment: Multi-Version ApplicationPlugins Bundle
+Write-Host ">>> 3. Deploying Multi-Version RimoNavisTools.bundle to Navisworks ApplicationPlugins..." -ForegroundColor Cyan
+$bundleDir = "$env:APPDATA\Autodesk\ApplicationPlugins\RimoNavisTools.bundle"
+if (Test-Path $bundleDir) { Remove-Item $bundleDir -Recurse -Force }
 
-# 3. Build Standalone Installer EXE
-Write-Host ">>> 3. Building AutomatedClashRunner_Installer.exe..." -ForegroundColor Cyan
-& $msbuild "Installer\Installer.csproj" -p:Configuration=Release -p:Platform=x64
-if ($LASTEXITCODE -ne 0) { throw "Installer build failed." }
+$contentsDir2023 = "$bundleDir\Contents\2023"
+$contentsDir2024 = "$bundleDir\Contents\2024"
+New-Item -ItemType Directory -Force -Path $contentsDir2023 | Out-Null
+New-Item -ItemType Directory -Force -Path $contentsDir2024 | Out-Null
 
-Copy-Item "Installer\bin\Release\AutomatedClashRunner_Installer.exe" -Destination "AutomatedClashRunner_Installer.exe" -Force
-
-# 4. Deploy to local AppData (if Navisworks is not locking it)
-Write-Host ">>> 4. Deploying plugin bundle to Navisworks ApplicationPlugins..." -ForegroundColor Cyan
-$pluginDir = "$env:APPDATA\Autodesk\ApplicationPlugins\AutomatedClashRunner.bundle"
-$contentsDir = "$pluginDir\Contents\AutomatedClashRunner"
-if (!(Test-Path $contentsDir)) { New-Item -ItemType Directory -Force -Path $contentsDir | Out-Null }
-Copy-Item "PackageContents.xml" -Destination $pluginDir -Force
+Copy-Item "PackageContents.xml" -Destination $bundleDir -Force
+Copy-Item "bin\Release\2023\*.dll" -Destination $contentsDir2023 -Force
+Copy-Item "bin\Release\2024\*.dll" -Destination $contentsDir2024 -Force
 
 if (Test-Path "en-US") {
-    Copy-Item "en-US" -Destination "$contentsDir\en-US" -Recurse -Force
-    Copy-Item "en-US" -Destination "$pluginDir\en-US" -Recurse -Force
+    Copy-Item "en-US" -Destination "$contentsDir2023\en-US" -Recurse -Force
+    Copy-Item "en-US" -Destination "$contentsDir2024\en-US" -Recurse -Force
+    Copy-Item "en-US" -Destination "$bundleDir\en-US" -Recurse -Force
 }
 if (Test-Path "Images") {
-    Copy-Item "Images" -Destination "$contentsDir\Images" -Recurse -Force
-    Copy-Item "Images" -Destination "$pluginDir\Images" -Recurse -Force
+    Copy-Item "Images" -Destination "$contentsDir2023\Images" -Recurse -Force
+    Copy-Item "Images" -Destination "$contentsDir2024\Images" -Recurse -Force
+    Copy-Item "Images" -Destination "$bundleDir\Images" -Recurse -Force
 }
+Get-ChildItem $bundleDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
+Write-Host " - Multi-Version Bundle deployed to: $bundleDir" -ForegroundColor Green
 
-try {
-    Copy-Item "bin\Release\net48-windows\*.dll" -Destination $contentsDir -Force
-    Write-Host " - Plugin DLL(s) deployed to: $contentsDir" -ForegroundColor Green
+# 4. Direct AppData Deployment: Navisworks Manage 2024 User Plugins Directory
+Write-Host ">>> 4. Deploying to Navisworks Manage 2024 User Plugins Directory..." -ForegroundColor Cyan
+$userPluginsDir = "$env:APPDATA\Autodesk\Navisworks Manage 2024\Plugins\RimoNavisTools"
+if (Test-Path $userPluginsDir) { Remove-Item $userPluginsDir -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $userPluginsDir | Out-Null
+Copy-Item "bin\Release\2024\*.dll" -Destination $userPluginsDir -Force
+if (Test-Path "en-US") { Copy-Item "en-US" -Destination "$userPluginsDir\en-US" -Recurse -Force }
+if (Test-Path "Images") { Copy-Item "Images" -Destination "$userPluginsDir\Images" -Recurse -Force }
+Get-ChildItem $userPluginsDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
+Write-Host " - User Plugin deployed to: $userPluginsDir" -ForegroundColor Green
 
-    # Also deploy to local Program Files if exists
-    $pf = "${env:ProgramFiles}\Autodesk\Navisworks Manage 2024\Plugins\AutomatedClashRunner"
-    if (Test-Path $pf) {
-        Copy-Item "bin\Release\net48-windows\*.dll" -Destination $pf -Force
-        if (Test-Path "en-US") { Copy-Item "en-US" -Destination "$pf\en-US" -Recurse -Force }
-        if (Test-Path "Images") { Copy-Item "Images" -Destination "$pf\Images" -Recurse -Force }
-        Write-Host " - Plugin DLL(s) deployed to Program Files: $pf" -ForegroundColor Green
-    }
-} catch {
-    Write-Host " [WARN] Navisworks is currently running and locking the DLL in AppData." -ForegroundColor Yellow
-    Write-Host " [HINT] Close Navisworks and re-run build_all.ps1 or run AutomatedClashRunner_Installer.exe to update." -ForegroundColor Yellow
-}
+Write-Host "====================================================================" -ForegroundColor Green
+Write-Host "MULTI-VERSION BUILD & PACKAGING COMPLETE (2020-2026 READY)!" -ForegroundColor Green
+Write-Host " - 1-Click Multi-Version Installer ready at: Install_RimoTools.bat" -ForegroundColor Green
+Write-Host "====================================================================" -ForegroundColor Green
 
-Write-Host "=======================================================" -ForegroundColor Green
-Write-Host "BUILD & PACKAGING COMPLETE!" -ForegroundColor Green
-Write-Host " - Installer ready at: AutomatedClashRunner_Installer.exe" -ForegroundColor Green
-Write-Host "=======================================================" -ForegroundColor Green
