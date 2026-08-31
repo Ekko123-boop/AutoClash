@@ -17,7 +17,7 @@
             SeriesMax="Nw26" />
         <ComponentEntry
             AppName="AutomatedClashRunner"
-            ModuleName="./Contents/AutomatedClashRunner.dll"
+            ModuleName="./Contents/AutomatedClashRunner/AutomatedClashRunner.dll"
             AppType="ManagedPlugin" />
     </Components>
 </ApplicationPackage>

@@ -1,4 +1,4 @@
-﻿# =====================================================================
+# =====================================================================
 # AutomatedClashRunner - Full End-to-End Build & Deployment Script
 # =====================================================================
 $ErrorActionPreference = "Stop"
@@ -23,9 +23,9 @@ if ($LASTEXITCODE -ne 0) { throw "Plugin build failed." }
 Write-Host ">>> 2. Packaging bundle.zip..." -ForegroundColor Cyan
 $staging = "$env:TEMP\acr_bundle_staging"
 if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
-New-Item -ItemType Directory -Force -Path "$staging\Contents" | Out-Null
+New-Item -ItemType Directory -Force -Path "$staging\Contents\AutomatedClashRunner" | Out-Null
 Copy-Item "PackageContents.xml" -Destination $staging -Force
-Copy-Item "bin\Release\net48-windows\AutomatedClashRunner.dll" -Destination "$staging\Contents" -Force
+Copy-Item "bin\Release\net48-windows\AutomatedClashRunner.dll" -Destination "$staging\Contents\AutomatedClashRunner" -Force
 
 $zipDest = "Installer\bundle.zip"
 if (Test-Path $zipDest) { Remove-Item $zipDest -Force }
@@ -41,7 +41,7 @@ Copy-Item "Installer\bin\Release\AutomatedClashRunner_Installer.exe" -Destinatio
 # 4. Deploy to local AppData (if Navisworks is not locking it)
 Write-Host ">>> 4. Deploying plugin bundle to Navisworks ApplicationPlugins..." -ForegroundColor Cyan
 $pluginDir = "$env:APPDATA\Autodesk\ApplicationPlugins\AutomatedClashRunner.bundle"
-$contentsDir = "$pluginDir\Contents"
+$contentsDir = "$pluginDir\Contents\AutomatedClashRunner"
 if (!(Test-Path $contentsDir)) { New-Item -ItemType Directory -Force -Path $contentsDir | Out-Null }
 Copy-Item "PackageContents.xml" -Destination $pluginDir -Force
 
