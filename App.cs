@@ -16,6 +16,26 @@ namespace AutomatedClashRunner
         {
             try
             {
+                // ===== PRIMARY LICENSE & REMOTE KILL-SWITCH GATE =====
+                var licenseResult = LicenseService.Validate();
+                if (!licenseResult.IsAllowed)
+                {
+                    if (licenseResult.IsRevoked)
+                    {
+                        DialogService.Instance.ShowWarning(
+                            licenseResult.Message ?? "Your access license for Automated Clash Runner has been disabled by the administrator.",
+                            "Automated Clash Runner - License Notice");
+                    }
+                    else
+                    {
+                        DialogService.Instance.ShowWarning(
+                            licenseResult.Message ?? "Please connect to the internet to authorize Automated Clash Runner.",
+                            "Automated Clash Runner");
+                    }
+                    return 0;
+                }
+                // =====================================================
+
                 if (Autodesk.Navisworks.Api.Application.IsAutomated)
                     return 0;
 

@@ -33,6 +33,12 @@ namespace AutomatedClashRunner.Services
             Action<string, int, int> progressCallback = null)
         {
             var result = new ExecutionResult();
+            if (!LicenseService.QuickValidate())
+            {
+                result.FailedTests.Add("License authorization expired or invalidated. Please connect to internet to refresh.");
+                return result;
+            }
+
             if (doc == null || doc.IsClear)
             {
                 result.FailedTests.Add("Active document is not available or is empty.");

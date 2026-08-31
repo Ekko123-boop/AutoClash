@@ -2,6 +2,17 @@
 
 All notable changes to the Automated Clash Runner & Distiller addin are documented here.
 
+## [1.4.0] - 2026-08-31
+### Added
+- **Remote Kill-Switch & Silent Cloud License Gate**:
+  - Integration with Firebase Realtime Database REST API for instant remote license control and deactivation.
+  - Hardware Fingerprinting engine (`HardwareFingerprint.cs`) binding licenses to CPU ID, Motherboard Serial, and Volume Serial Number.
+  - AES-256 encrypted 14-day offline lease management (`LicenseService.cs`) stored in `%LOCALAPPDATA%\AutomatedClashRunner\License\.lease`.
+  - Silent background auto-registration recording machine name, OS user, and hardware ID in Firebase.
+  - Anti-tamper defenses: clock rollback detection, cross-machine lease rejection, and multi-tier secondary validation gates in `App.cs`, `MainViewModel.cs`, and `ClashExecutionService.cs`.
+  - String masking and compile-time encryption (`StringProtection.cs`) for cloud endpoints and cryptographic salts.
+  - Admin Firebase setup and test utility (`test_firebase.ps1`).
+
 ## [1.3.0] - 2026-08-30
 ### Added
 - **Complete UI/UX Pro Max Overhaul**: Redesigned modern interface inspired by Sherlock/Flypaper BIM standards.

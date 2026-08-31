@@ -35,6 +35,12 @@ Supports **Autodesk Navisworks Manage 2022, 2023, 2024, 2025, and 2026**.
 - **Rich Results Dialog**: Visual color-coded summary (Green ✓ for success, Amber ⚠ for skipped, Red ✗ for errors).
 - **Clipboard & CSV Export**: One-click export to clipboard or `.csv` spreadsheet for BIM coordination tracking.
 
+### 5. Remote License Control & Kill-Switch
+- **Cloud Administration**: Instant authorization or revocation via Firebase Realtime Database.
+- **Hardware-Locked**: Fingerprints host CPU, motherboard, and system volume serial.
+- **14-Day Offline Grace**: Auto-renews silently on connected launches; locks if offline > 14 days or revoked.
+- **Anti-Tampering**: Clock rollback detection and deep execution gates.
+
 ---
 
 ## Installation & Distribution

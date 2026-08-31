@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows.Input;
 using AutomatedClashRunner.Services;
 using AutomatedClashRunner.Services.Interfaces;
@@ -38,6 +38,19 @@ namespace AutomatedClashRunner.ViewModels
             ViewpointsTab = new ViewpointsTabViewModel(distillerSvc, dialogSvc, loggerSvc);
 
             CancelCommand = new RelayCommand(_ => _closeAction?.Invoke());
+
+            // Secondary background validation check (anti-tamper defense)
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                if (!LicenseService.QuickValidate())
+                {
+                    System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                    {
+                        DialogService.Instance.ShowWarning("License authorization expired or invalidated.", "Automated Clash Runner");
+                        _closeAction?.Invoke();
+                    }));
+                }
+            });
         }
     }
 }
