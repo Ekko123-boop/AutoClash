@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Chuongmep.Navis.Api.Autodesk.Navisworks.Api</id>
+    <version>2023.0.7</version>
+    <authors>chuongmep</authors>
+    <license type="file">License.md</license>
+    <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
+    <icon>images\PackageIcon.png</icon>
+    <description>Library for Navisworks plugin development</description>
+    <tags>navis api navisworks navis api autodesk</tags>
+    <packageTypes>
+      <packageType name="Dependency" />
+    </packageTypes>
+    <repository type="git" url="https://github.com/chuongmep/NavisAPI" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.8" />
+    </dependencies>
+  </metadata>
+</package>

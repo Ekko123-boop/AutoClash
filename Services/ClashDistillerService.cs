@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Navisworks.Api;
@@ -231,7 +231,7 @@ namespace AutomatedClashRunner.Services
                     {
                         if (group.RepresentativeResult == null) continue;
 
-                        var vp = clashData.TestsViewpointForResult(group.RepresentativeResult);
+                        var vp = GetTestsViewpointForResult(clashData, group.RepresentativeResult);
                         if (vp != null)
                         {
                             var svp = new SavedViewpoint(vp) { DisplayName = group.DisplayName };
@@ -243,7 +243,7 @@ namespace AutomatedClashRunner.Services
                     // Process Raw Results (if any)
                     foreach (var raw in matchingRaw)
                     {
-                        var vp = clashData.TestsViewpointForResult(raw);
+                        var vp = GetTestsViewpointForResult(clashData, raw);
                         if (vp != null)
                         {
                             var svp = new SavedViewpoint(vp) { DisplayName = raw.DisplayName };
@@ -261,6 +261,26 @@ namespace AutomatedClashRunner.Services
             }
 
             return viewpointsCreated;
+        }
+        private Viewpoint GetTestsViewpointForResult(DocumentClashTests clashData, ClashResult result)
+        {
+            try
+            {
+                // In Navisworks 2024+, TestsViewpointForResult exists on DocumentClashTests.
+                // In Navisworks 2023, this method does not exist.
+                var method = typeof(DocumentClashTests).GetMethod("TestsViewpointForResult", 
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                
+                if (method != null)
+                {
+                    return method.Invoke(clashData, new object[] { result }) as Viewpoint;
+                }
+            }
+            catch
+            {
+                // Fallback or ignore if reflection fails
+            }
+            return null; // Return null on 2023 so it degrades gracefully without crashing
         }
     }
 }

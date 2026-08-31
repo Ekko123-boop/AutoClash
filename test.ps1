@@ -1,0 +1,1 @@
+ = [Reflection.Assembly]::LoadFrom((Resolve-Path 'lib\2023\Clash\lib\net48\Autodesk.Navisworks.Clash.dll').Path); $asm.GetTypes() | Where-Object {$_.Name -like '*ClashTests*'} | Select-Object FullName
