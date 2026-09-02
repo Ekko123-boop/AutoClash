@@ -243,6 +243,35 @@
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
         </Style>
 
+        <!-- Modern Multi-Select ListViewItem Style binding row selection to IsSelected -->
+        <Style x:Key="MultiSelectListViewItemStyle" TargetType="ListViewItem">
+            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Padding" Value="4,2"/>
+            <Setter Property="Margin" Value="0,1"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#F0F9FF"/>
+                    <Setter Property="BorderBrush" Value="#BAE6FD"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F8FAFC"/>
+                </Trigger>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsSelected" Value="True"/>
+                        <Condition Property="IsMouseOver" Value="True"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="Background" Value="#E0F2FE"/>
+                    <Setter Property="BorderBrush" Value="#7DD3FC"/>
+                </MultiTrigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- Modern TabItem Style with Header ContentSource -->
         <Style x:Key="ModernTabItem" TargetType="TabItem">
             <Setter Property="Padding" Value="18,10"/>
@@ -343,7 +372,10 @@
                                          Text="{Binding SearchTextModels, UpdateSourceTrigger=PropertyChanged}"/>
                             </DockPanel>
 
-                            <ListView x:Name="ListViewModels" Grid.Row="2" ItemsSource="{Binding ModelsView}" BorderBrush="#E2E8F0" Background="#FFFFFF">
+                            <ListView x:Name="ListViewModels" Grid.Row="2" ItemsSource="{Binding ModelsView}" 
+                                      SelectionMode="Extended"
+                                      ItemContainerStyle="{StaticResource MultiSelectListViewItemStyle}"
+                                      BorderBrush="#E2E8F0" Background="#FFFFFF">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Margin="0,3">
@@ -388,7 +420,10 @@
                                          Text="{Binding SearchTextSets, UpdateSourceTrigger=PropertyChanged}"/>
                             </DockPanel>
 
-                            <ListView x:Name="ListViewSearchSets" Grid.Row="2" ItemsSource="{Binding SearchSetsView}" BorderBrush="#E2E8F0" Background="#FFFFFF">
+                            <ListView x:Name="ListViewSearchSets" Grid.Row="2" ItemsSource="{Binding SearchSetsView}" 
+                                      SelectionMode="Extended"
+                                      ItemContainerStyle="{StaticResource MultiSelectListViewItemStyle}"
+                                      BorderBrush="#E2E8F0" Background="#FFFFFF">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Margin="0,3">
@@ -493,7 +528,10 @@
 
                     <!-- Main Data Table with Column Counts -->
                     <Border Grid.Row="1" Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Margin="0,0,0,10">
-                        <ListView x:Name="ListViewDistillerTests" ItemsSource="{Binding TestsView}" BorderThickness="0" Background="Transparent">
+                        <ListView x:Name="ListViewDistillerTests" ItemsSource="{Binding TestsView}" 
+                                  SelectionMode="Extended"
+                                  ItemContainerStyle="{StaticResource MultiSelectListViewItemStyle}"
+                                  BorderThickness="0" Background="Transparent">
                             <ListView.View>
                                 <GridView ColumnHeaderContainerStyle="{StaticResource CleanGridViewHeader}">
                                     <GridViewColumn Width="40">
@@ -631,7 +669,10 @@
                     </DockPanel>
 
                     <Border Grid.Row="1" Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Margin="0,0,0,10">
-                        <ListView x:Name="ListViewViewpointsTests" ItemsSource="{Binding TestsView}" BorderThickness="0" Background="Transparent">
+                        <ListView x:Name="ListViewViewpointsTests" ItemsSource="{Binding TestsView}" 
+                                  SelectionMode="Extended"
+                                  ItemContainerStyle="{StaticResource MultiSelectListViewItemStyle}"
+                                  BorderThickness="0" Background="Transparent">
                             <ListView.View>
                                 <GridView ColumnHeaderContainerStyle="{StaticResource CleanGridViewHeader}">
                                     <GridViewColumn Width="40">
