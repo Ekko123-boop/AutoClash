@@ -60,6 +60,26 @@ Our grouping engine converts the slider's foot value directly to meters using `m
 
 ---
 
+## 6. Base Build Selection Set Not Found
+### Symptom
+Clicking **Base Build** reports: `"No 'Base Build' (or 'BaseBuild') Selection Set found in the document."`
+### Cause
+The Base Build clash runner requires a Selection Set or Search Set named `Base Build` (or `BaseBuild`, case-insensitive) in the document.
+### Solution
+Create a Selection Set or Search Set named `Base Build` in Navisworks containing the base build elements. The addin will immediately detect it upon execution.
+
+---
+
+## 7. WPF XAML Local Type Compilation Blocked by Smart App Control (0x800711C7)
+### Symptom
+MSBuild fails during `MarkupCompilePass2` with `error MC2000: An Application Control policy has blocked this file. (Exception from HRESULT: 0x800711C7)`.
+### Cause
+When XAML files reference local types via `xmlns:views="clr-namespace:..."`, WPF triggers `MarkupCompilePass2` which attempts to load the temporary compiled assembly using `Assembly.LoadFrom`. On Windows 11 with Smart App Control, this triggers SAC policy error `0x800711C7`.
+### Solution
+Apply attached behaviors and custom behavior wiring programmatically in code-behind (`MainWindow.xaml.cs`) instead of XAML markup, keeping XAML free of local type reflection and preventing `MarkupCompilePass2` from attempting runtime loading.
+
+---
+
 ## 6. Selection B Stale After Model Reload
 ### Symptom
 After reloading an appended `.nwc` model, clash tests in Clash Detective say "No items in Selection B".

@@ -47,18 +47,21 @@ Rimo Tools (`RimoNavisTools.dll`) is a modular, high-reliability Autodesk Navisw
 - Recursively traverses `doc.Models` up to depth 20.
 - Extracts leaf `.nwc` discipline models.
 - Wraps them in `ModelSourceNode` with full property notification change guards.
+- **`GetSiblingNwcs`**: Traverses up from a target NWC to find the enclosing `.nwd` parent container, collects all sibling `.nwc` models under that container, and excludes the target NWC itself to prevent self-clashing duplicates.
 
 ### 2.2 SearchSetService
 - Traverses the active document's `SelectionSets.RootItem` hierarchy.
 - Creates/ensures a designated `Tests` folder in the Navisworks Sets tree.
 - Instantiates static `SelectionSet` objects for discovered `.nwc` items.
+- **`GenerateSiblingSearchSet`**: Generates a static `SelectionSet` containing all sibling `.nwc` models under the parent NWD, files it into the `Tests` folder, and handles automatic version naming on collision.
 
 ### 2.3 NamingService
-- Strips file extension and leading project code before the first hyphen (e.g. `F1-STS-HDLS202-MX.nwc` → `STS-HDLS202-MX`).
+- Strips file extension and leading project code before the first hyphen or underscore (e.g. `F1-STS-HDLS202-MX.nwc` → `STS-HDLS202-MX`).
 - Computes clash test names based on the target manual set:
   - If manual set name is `Base Build` or `BaseBuild` → `STS-HDLS202-MX`
   - Any other manual set → `T-STS-HDLS202-MX`
 - **Tools Test Naming**: `GetToolsTestClashName` prefixes generated 1-to-1 test names with `T-` (e.g., `T-STS-HDLS202-MX`).
+- **Base Build Naming**: `GetBaseBuildClashName` produces clean trimmed model code without `T-` prefix.
 
 ### 2.4 ClashExecutionService
 - **Full Matrix Run**: Builds Cartesian product between selected Models and manual Search Sets, skipping duplicates.
@@ -66,6 +69,10 @@ Rimo Tools (`RimoNavisTools.dll`) is a modular, high-reliability Autodesk Navisw
   - For each selected NWC model, automatically discovers its corresponding Selection Set by trimmed name matching (e.g. `F1-STS-HDLS202-MX.nwc` matches Selection Set `STS-HDLS202-MX`).
   - Sets Selection A to the matching Selection Set and Selection B to the physical NWC model item.
   - Automatically names test with `T-` prefix.
+- **Base Build Clash Runner**:
+  - Automatically identifies the document's `Base Build` / `BaseBuild` Selection Set.
+  - Sets Selection A to Base Build and Selection B to the direct NWC model item.
+  - Names generated clash tests with the clean model code (no `T-` prefix).
 - Bypasses the known Navisworks `new SelectionSourceCollection()` constructor crash.
 - Executes tests and gathers execution outcomes into `ExecutionResult`.
 
@@ -73,6 +80,11 @@ Rimo Tools (`RimoNavisTools.dll`) is a modular, high-reliability Autodesk Navisw
 - **ReRunTests**: Runs tests against updated model geometry.
 - **GroupByElement**: Identifies master named ancestor items in Selection A and applies single-link spatial clustering with the proximity slider (converting feet to Navisworks internal meters via `maxProximityFt * 0.3048`). Moves items in reverse index order to prevent index shifting.
 - **ExportViewpoints**: Generates native viewpoints for matching clash results/groups based on active status filters (`New`, `Active`, `Reviewed`, `Approved`, `Resolved`), filing them under dedicated test folders or optional timestamped master folders in `SavedViewpoints`.
+
+### 2.6 ShiftClickBehavior & ISelectableItem
+- Enables rapid range selection on all 4 WPF `ListView` controls across all tabs (Models, Search Sets, Distiller Tests, Viewpoints Tests).
+- Users can click any row or checkbox, then hold `Shift` and click a second row/checkbox to select or deselect the entire range at once.
+- Attached in code-behind to preserve complete immunity against Windows 11 Smart App Control (`0x800711C7`) build-time XAML reflection blocks.
 
 ### 2.6 LoggerService
 - Thread-safe, timestamped logging with auto-rotation (10MB threshold) stored in `%LOCALAPPDATA%\AutomatedClashRunner\Logs\session_YYYY-MM-DD.log`.

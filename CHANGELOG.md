@@ -2,6 +2,28 @@
 
 All notable changes to the Automated Clash Runner & Distiller addin are documented here.
 
+## [1.6.0] - 2026-09-02
+### Added
+- **"Base Build" Automated Clash Test Runner**:
+  - Added dedicated orange action button `Base Build ({0} NWCs)` on the Generate Matrix tab.
+  - Automatically identifies the document's `Base Build` (or `BaseBuild`) Selection/Search Set.
+  - Sets Selection A = Base Build and Selection B = direct selected NWC model.
+  - Generates clash tests using clean model codes without the `T-` prefix (e.g. `F1-STS-HDLS201-DR.nwc` -> `STS-HDLS201-DR`).
+- **Automated Sibling Selection Set Generator ("Generate Sets")**:
+  - Added `Generate Sets` button to the Generate Matrix tab.
+  - For each selected NWC (e.g., `F1-STS-HDLS202-MX.nwc` under `F1-MEI - A&B.nwd`), automatically traverses the hierarchy to find the enclosing `.nwd` parent container.
+  - Collects all sibling `.nwc` models under that container **excluding the selected NWC itself** (eliminating self-clashing duplicates).
+  - Creates static Selection Sets named with the trimmed model code (e.g., `STS-HDLS202-MX`) under a organized `Tests` folder in Navisworks Selection Sets.
+  - Instantly refreshes the UI Search Sets list so sets are immediately ready for Tools Test or Matrix execution.
+- **Shift + Click Range Multi-Selection Support**:
+  - Implemented `ShiftClickBehavior` attached behavior and `ISelectableItem` interface across all 4 ListViews (Models, Search Sets, Distiller Tests, Viewpoints Tests).
+  - Allows single-click row checking and Shift+Click range selection.
+- **Standalone GUI Multi-Version Installer & Uninstaller (`RimoTools_Installer.exe`)**:
+  - Modern dark-themed Windows Forms UI with auto-detection of all installed Navisworks versions (2020 through 2026).
+  - Features 1-Click "Install / Update" and 1-Click "Uninstall" buttons.
+  - Embeds both Navisworks 2023 and 2024+ payloads in a single self-contained executable.
+  - Supports silent command-line flags (`/install`, `/silent`, `/uninstall`).
+
 ## [1.5.0] - 2026-08-31
 ### Added
 - **"Rimo Tools" Branding & Dedicated "Rimo" Ribbon Tab**:
