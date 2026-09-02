@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 
 namespace AutomatedClashRunner.Views
 {
@@ -7,6 +7,11 @@ namespace AutomatedClashRunner.Views
         public MainWindow()
         {
             InitializeComponent();
+
+            ShiftClickBehavior.SetIsEnabled(ListViewModels, true);
+            ShiftClickBehavior.SetIsEnabled(ListViewSearchSets, true);
+            ShiftClickBehavior.SetIsEnabled(ListViewDistillerTests, true);
+            ShiftClickBehavior.SetIsEnabled(ListViewViewpointsTests, true);
         }
     }
 }

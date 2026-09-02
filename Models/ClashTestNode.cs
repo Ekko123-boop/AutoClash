@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Autodesk.Navisworks.Api;
@@ -6,7 +6,7 @@ using Autodesk.Navisworks.Api.Clash;
 
 namespace AutomatedClashRunner.Models
 {
-    public class ClashTestNode : INotifyPropertyChanged
+    public class ClashTestNode : INotifyPropertyChanged, ISelectableItem
     {
         public ClashTest OriginalTest { get; }
 

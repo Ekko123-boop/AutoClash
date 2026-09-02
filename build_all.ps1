@@ -96,13 +96,17 @@ Write-Host " - Multi-Version Bundle deployed to: $bundleDir" -ForegroundColor Gr
 # 6. Direct AppData Deployment: Navisworks Manage 2024 User Plugins Directory
 Write-Host ">>> 6. Deploying to Navisworks Manage 2024 User Plugins Directory..." -ForegroundColor Cyan
 $userPluginsDir = "$env:APPDATA\Autodesk\Navisworks Manage 2024\Plugins\RimoNavisTools"
-if (Test-Path $userPluginsDir) { Remove-Item $userPluginsDir -Recurse -Force }
-New-Item -ItemType Directory -Force -Path $userPluginsDir | Out-Null
-Copy-Item "bin\Release\2024\*.dll" -Destination $userPluginsDir -Force
-if (Test-Path "en-US") { Copy-Item "en-US" -Destination "$userPluginsDir\en-US" -Recurse -Force }
-if (Test-Path "Images") { Copy-Item "Images" -Destination "$userPluginsDir\Images" -Recurse -Force }
-Get-ChildItem $userPluginsDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
-Write-Host " - User Plugin deployed to: $userPluginsDir" -ForegroundColor Green
+try {
+    if (Test-Path $userPluginsDir) { Remove-Item $userPluginsDir -Recurse -Force -ErrorAction SilentlyContinue }
+    New-Item -ItemType Directory -Force -Path $userPluginsDir | Out-Null
+    Copy-Item "bin\Release\2024\*.dll" -Destination $userPluginsDir -Force
+    if (Test-Path "en-US") { Copy-Item "en-US" -Destination "$userPluginsDir\en-US" -Recurse -Force }
+    if (Test-Path "Images") { Copy-Item "Images" -Destination "$userPluginsDir\Images" -Recurse -Force }
+    Get-ChildItem $userPluginsDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
+    Write-Host " - User Plugin deployed to: $userPluginsDir" -ForegroundColor Green
+} catch {
+    Write-Host " - Note: $userPluginsDir was partially locked (Navisworks running). Bundle in ApplicationPlugins was updated." -ForegroundColor Yellow
+}
 
 Write-Host "====================================================================" -ForegroundColor Green
 Write-Host "ALL BUILDS & INSTALLERS 100% COMPLETE (2020-2026 READY)!" -ForegroundColor Green

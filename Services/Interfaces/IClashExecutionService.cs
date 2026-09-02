@@ -22,5 +22,12 @@ namespace AutomatedClashRunner.Services.Interfaces
             ClashTestType testType = ClashTestType.Clearance,
             double tolerance = 0.0,
             Action<string, int, int> progressCallback = null);
+
+        ExecutionResult RunBaseBuildTest(
+            Document doc,
+            List<ModelSourceNode> models,
+            ClashTestType testType = ClashTestType.Clearance,
+            double tolerance = 0.0,
+            Action<string, int, int> progressCallback = null);
     }
 }

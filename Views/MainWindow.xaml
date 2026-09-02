@@ -155,6 +155,40 @@
             </Style.Triggers>
         </Style>
 
+        <!-- Primary Orange Accent Button Style for Base Build -->
+        <Style x:Key="PrimaryOrangeButton" TargetType="Button">
+            <Setter Property="Padding" Value="18,8"/>
+            <Setter Property="Background" Value="#D97706"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#B45309"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F59E0B"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#94A3B8"/>
+                    <Setter Property="Opacity" Value="0.6"/>
+                    <Setter Property="Cursor" Value="Arrow"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- Mini Selection Button -->
         <Style x:Key="MiniButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
             <Setter Property="Padding" Value="7,3"/>
@@ -309,7 +343,7 @@
                                          Text="{Binding SearchTextModels, UpdateSourceTrigger=PropertyChanged}"/>
                             </DockPanel>
 
-                            <ListView Grid.Row="2" ItemsSource="{Binding ModelsView}" BorderBrush="#E2E8F0" Background="#FFFFFF">
+                            <ListView x:Name="ListViewModels" Grid.Row="2" ItemsSource="{Binding ModelsView}" BorderBrush="#E2E8F0" Background="#FFFFFF">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Margin="0,3">
@@ -354,7 +388,7 @@
                                          Text="{Binding SearchTextSets, UpdateSourceTrigger=PropertyChanged}"/>
                             </DockPanel>
 
-                            <ListView Grid.Row="2" ItemsSource="{Binding SearchSetsView}" BorderBrush="#E2E8F0" Background="#FFFFFF">
+                            <ListView x:Name="ListViewSearchSets" Grid.Row="2" ItemsSource="{Binding SearchSetsView}" BorderBrush="#E2E8F0" Background="#FFFFFF">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Margin="0,3">
@@ -394,12 +428,18 @@
                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
                             <Button Content="Refresh Models" Command="{Binding RefreshModelsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
                             <Button Content="Refresh Sets" Command="{Binding RefreshSearchSetsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
-                            <Button Content="Clear All" Command="{Binding ClearAllCommand}" Style="{StaticResource SecondaryButton}"/>
+                            <Button Content="Clear All" Command="{Binding ClearAllCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
+                            <Button Content="Generate Sets" Command="{Binding GenerateSelectionSetsCommand}" Style="{StaticResource SecondaryButton}"
+                                    ToolTip="Auto-create Selection Sets for each selected NWC containing all sibling NWCs under the same parent NWD (excluding the NWC itself). Sets are placed in the 'Tests' folder."/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Content="Cancel" Command="{Binding DataContext.CancelCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
                                     Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
+                            <Button Command="{Binding BaseBuildTestCommand}" Style="{StaticResource PrimaryOrangeButton}" Margin="0,0,10,0"
+                                    ToolTip="Runs clash tests for each selected NWC against the 'Base Build' Selection Set (no T- prefix).">
+                                <TextBlock Text="{Binding SelectedModelCount, StringFormat='Base Build ({0} NWCs)'}"/>
+                            </Button>
                             <Button Command="{Binding ToolsTestCommand}" Style="{StaticResource PrimaryBlueButton}" Margin="0,0,10,0"
                                     ToolTip="Automatically pairs each selected NWC model with its corresponding Selection Set (T- prefix) and runs 1-to-1 clash tests.">
                                 <TextBlock Text="{Binding SelectedModelCount, StringFormat='Tools test ({0} NWCs)'}"/>
@@ -453,7 +493,7 @@
 
                     <!-- Main Data Table with Column Counts -->
                     <Border Grid.Row="1" Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Margin="0,0,0,10">
-                        <ListView ItemsSource="{Binding TestsView}" BorderThickness="0" Background="Transparent">
+                        <ListView x:Name="ListViewDistillerTests" ItemsSource="{Binding TestsView}" BorderThickness="0" Background="Transparent">
                             <ListView.View>
                                 <GridView ColumnHeaderContainerStyle="{StaticResource CleanGridViewHeader}">
                                     <GridViewColumn Width="40">
@@ -591,7 +631,7 @@
                     </DockPanel>
 
                     <Border Grid.Row="1" Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Margin="0,0,0,10">
-                        <ListView ItemsSource="{Binding TestsView}" BorderThickness="0" Background="Transparent">
+                        <ListView x:Name="ListViewViewpointsTests" ItemsSource="{Binding TestsView}" BorderThickness="0" Background="Transparent">
                             <ListView.View>
                                 <GridView ColumnHeaderContainerStyle="{StaticResource CleanGridViewHeader}">
                                     <GridViewColumn Width="40">

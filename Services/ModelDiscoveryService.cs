@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Autodesk.Navisworks.Api;
 using AutomatedClashRunner.Models;
@@ -71,6 +71,76 @@ namespace AutomatedClashRunner.Services
             foreach (var child in item.Children)
             {
                 FindModelNodes(child, newParent, nodes, depth + 1);
+            }
+        }
+
+        public List<ModelItem> GetSiblingNwcs(Document doc, ModelSourceNode targetNwc)
+        {
+            var siblings = new List<ModelItem>();
+            if (doc == null || targetNwc?.OriginalModelItem == null) return siblings;
+
+            try
+            {
+                // 1. Walk up to find the enclosing NWD container (or direct parent)
+                ModelItem container = null;
+                ModelItem current = targetNwc.OriginalModelItem.Parent;
+                while (current != null)
+                {
+                    string dName = current.DisplayName ?? string.Empty;
+                    if (dName.EndsWith(".nwd", StringComparison.OrdinalIgnoreCase))
+                    {
+                        container = current;
+                        break;
+                    }
+                    current = current.Parent;
+                }
+
+                // If no .nwd container found in ancestry, use immediate parent
+                if (container == null)
+                {
+                    container = targetNwc.OriginalModelItem.Parent;
+                }
+
+                if (container == null)
+                {
+                    _logger.LogWarning($"No parent container found for model item: {targetNwc.DisplayName}");
+                    return siblings;
+                }
+
+                // 2. Collect all .nwc items under this container
+                var allNwcs = new List<ModelItem>();
+                CollectNwcItems(container, allNwcs, 0);
+
+                // 3. Exclude the target NWC itself
+                foreach (var item in allNwcs)
+                {
+                    if (item == targetNwc.OriginalModelItem) continue;
+                    if (string.Equals(item.DisplayName, targetNwc.DisplayName, StringComparison.OrdinalIgnoreCase)) continue;
+                    siblings.Add(item);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error finding sibling NWCs for {targetNwc.DisplayName}", ex);
+            }
+
+            return siblings;
+        }
+
+        private void CollectNwcItems(ModelItem item, List<ModelItem> nwcItems, int depth)
+        {
+            if (item == null || depth > MaxRecursionDepth) return;
+
+            string name = item.DisplayName;
+            if (!string.IsNullOrEmpty(name) && name.EndsWith(".nwc", StringComparison.OrdinalIgnoreCase))
+            {
+                nwcItems.Add(item);
+                return;
+            }
+
+            foreach (var child in item.Children)
+            {
+                CollectNwcItems(child, nwcItems, depth + 1);
             }
         }
     }

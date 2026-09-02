@@ -125,6 +125,8 @@ namespace AutomatedClashRunner.ViewModels
 
         public bool IsRunEnabled => ExpectedTestCount > 0 && !IsBusy;
         public bool IsToolsTestEnabled => SelectedModelCount > 0 && !IsBusy;
+        public bool IsBaseBuildTestEnabled => SelectedModelCount > 0 && !IsBusy;
+        public bool IsGenerateSetsEnabled => SelectedModelCount > 0 && !IsBusy;
 
         public ICommand RefreshModelsCommand { get; }
         public ICommand RefreshSearchSetsCommand { get; }
@@ -135,6 +137,8 @@ namespace AutomatedClashRunner.ViewModels
         public ICommand ClearAllCommand { get; }
         public ICommand RunCommand { get; }
         public ICommand ToolsTestCommand { get; }
+        public ICommand BaseBuildTestCommand { get; }
+        public ICommand GenerateSelectionSetsCommand { get; }
 
         public MatrixTabViewModel(
             IModelDiscoveryService modelDiscovery,
@@ -167,6 +171,8 @@ namespace AutomatedClashRunner.ViewModels
             ClearAllCommand = new RelayCommand(_ => ClearAllSelections());
             RunCommand = new RelayCommand(_ => RunClashTests(), _ => IsRunEnabled);
             ToolsTestCommand = new RelayCommand(_ => RunToolsTests(), _ => IsToolsTestEnabled);
+            BaseBuildTestCommand = new RelayCommand(_ => RunBaseBuildTests(), _ => IsBaseBuildTestEnabled);
+            GenerateSelectionSetsCommand = new RelayCommand(_ => GenerateSelectionSets(), _ => IsGenerateSetsEnabled);
 
             LoadModels();
             LoadSearchSets();
@@ -287,12 +293,16 @@ namespace AutomatedClashRunner.ViewModels
             OnPropertyChanged(nameof(ExpectedTestCount));
             OnPropertyChanged(nameof(IsRunEnabled));
             OnPropertyChanged(nameof(IsToolsTestEnabled));
+            OnPropertyChanged(nameof(IsBaseBuildTestEnabled));
+            OnPropertyChanged(nameof(IsGenerateSetsEnabled));
             OnPropertyChanged(nameof(ModelSelectionSummary));
             OnPropertyChanged(nameof(SetSelectionSummary));
             OnPropertyChanged(nameof(HasNoModels));
             OnPropertyChanged(nameof(HasNoSets));
             (RunCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (ToolsTestCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (BaseBuildTestCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (GenerateSelectionSetsCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
         private void SelectAllVisibleModels(bool isSelected)
@@ -423,6 +433,139 @@ namespace AutomatedClashRunner.ViewModels
             {
                 _logger.LogError("Fatal error in tools clash test execution", ex);
                 _dialogService.ShowError($"Tools test execution failed: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+                ProgressText = string.Empty;
+                ProgressBarValue = 0;
+            }
+        }
+
+        private void RunBaseBuildTests()
+        {
+            var selectedModels = AllModels.Where(x => x.IsSelected && x.IsSelectable).ToList();
+            if (selectedModels.Count == 0)
+            {
+                _dialogService.ShowWarning("Please select at least one NWC Model from the left panel.", "No Models Selected");
+                return;
+            }
+
+            bool confirm = _dialogService.ShowConfirmation(
+                $"Run Base Build clash test for {selectedModels.Count} selected model(s)?\n\nEach model will be clashed against the 'Base Build' Selection Set.\n\nClash Type: {SelectedClashType}\nTolerance: {Tolerance:F4} m\nNaming: Model Code without T- prefix",
+                "Confirm Base Build Clash Test Execution");
+
+            if (!confirm) return;
+
+            var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
+            IsBusy = true;
+            ProgressText = "Initializing Base Build Tests...";
+            ProgressBarValue = 0;
+            ProgressBarMax = selectedModels.Count;
+
+            try
+            {
+                var result = _clashExecution.RunBaseBuildTest(
+                    doc,
+                    selectedModels,
+                    SelectedClashType,
+                    Tolerance,
+                    (status, current, total) =>
+                    {
+                        ProgressText = status;
+                        ProgressBarValue = current;
+                        ProgressBarMax = total;
+                    });
+
+                _dialogService.ShowSummary(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Fatal error in base build clash test execution", ex);
+                _dialogService.ShowError($"Base build test execution failed: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+                ProgressText = string.Empty;
+                ProgressBarValue = 0;
+            }
+        }
+
+        private void GenerateSelectionSets()
+        {
+            var selectedModels = AllModels.Where(x => x.IsSelected && x.IsSelectable).ToList();
+            if (selectedModels.Count == 0)
+            {
+                _dialogService.ShowWarning("Please select at least one NWC Model from the left panel.", "No Models Selected");
+                return;
+            }
+
+            bool confirm = _dialogService.ShowConfirmation(
+                $"Generate Selection Sets for {selectedModels.Count} selected NWC model(s)?\n\nFor each selected NWC, a Selection Set will be created containing all sibling NWCs under the same parent NWD (excluding the selected NWC itself).\n\nGenerated sets will be placed in the 'Tests' folder in Selection Sets.",
+                "Confirm Selection Set Generation");
+
+            if (!confirm) return;
+
+            var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
+            if (doc == null || doc.IsClear)
+            {
+                _dialogService.ShowError("Active document is not available or is empty.");
+                return;
+            }
+
+            IsBusy = true;
+            ProgressText = "Generating Selection Sets...";
+            ProgressBarValue = 0;
+            ProgressBarMax = selectedModels.Count;
+
+            var result = new ExecutionResult();
+            int current = 0;
+
+            try
+            {
+                using (var trans = doc.BeginTransaction("Automated Generate Selection Sets"))
+                {
+                    var testsFolder = _searchSets.EnsureTestsFolder(doc);
+                    bool anyCreated = false;
+
+                    foreach (var model in selectedModels)
+                    {
+                        current++;
+                        ProgressText = $"Generating set for {model.DisplayName} ({current}/{selectedModels.Count})...";
+                        ProgressBarValue = current;
+
+                        var siblings = _modelDiscovery.GetSiblingNwcs(doc, model);
+                        if (siblings.Count == 0)
+                        {
+                            string warnMsg = $"{model.DisplayName}: No sibling NWCs found under parent NWD.";
+                            result.FailedTests.Add(warnMsg);
+                            _logger.LogWarning(warnMsg);
+                            continue;
+                        }
+
+                        var set = _searchSets.GenerateSiblingSearchSet(doc, model, siblings, testsFolder, result);
+                        if (set != null)
+                        {
+                            anyCreated = true;
+                        }
+                    }
+
+                    if (anyCreated)
+                    {
+                        trans.Commit();
+                    }
+                }
+
+                // Refresh search sets list to display newly generated sets
+                LoadSearchSets();
+
+                _dialogService.ShowSummary(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Fatal error in generating selection sets", ex);
+                _dialogService.ShowError($"Selection Set generation failed: {ex.Message}");
             }
             finally
             {

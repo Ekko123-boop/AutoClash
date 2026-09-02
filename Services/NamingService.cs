@@ -57,5 +57,11 @@ namespace AutomatedClashRunner.Services
             }
             return "T-" + trimmedCode;
         }
+
+        public string GetBaseBuildClashName(string modelDisplayName)
+        {
+            // Base Build tests use the trimmed model code directly, no T- prefix
+            return GetTrimmedModelCode(modelDisplayName);
+        }
     }
 }

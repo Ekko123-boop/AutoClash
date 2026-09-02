@@ -254,5 +254,133 @@ namespace AutomatedClashRunner.Services
 
             return result;
         }
+
+        public ExecutionResult RunBaseBuildTest(
+            Document doc,
+            List<ModelSourceNode> models,
+            ClashTestType testType = ClashTestType.Clearance,
+            double tolerance = 0.0,
+            Action<string, int, int> progressCallback = null)
+        {
+            var result = new ExecutionResult();
+            if (!LicenseService.QuickValidate())
+            {
+                result.FailedTests.Add("License authorization expired or invalidated. Please connect to internet to refresh.");
+                return result;
+            }
+
+            if (doc == null || doc.IsClear)
+            {
+                result.FailedTests.Add("Active document is not available or is empty.");
+                return result;
+            }
+
+            var documentClash = doc.GetClash();
+            if (documentClash == null)
+            {
+                result.FailedTests.Add("Clash Detective is not available in this Navisworks edition.");
+                return result;
+            }
+
+            var clashTests = documentClash.TestsData;
+            var allSets = _searchSets.GetManualSearchSets(doc)
+                .Where(s => !s.IsFolder && s.OriginalSavedItem != null)
+                .ToList();
+
+            // Find the "Base Build" selection/search set
+            var baseBuildSet = allSets.FirstOrDefault(s =>
+                string.Equals(s.DisplayName?.Trim(), "Base Build", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(s.DisplayName?.Trim(), "BaseBuild", StringComparison.OrdinalIgnoreCase));
+
+            // Secondary fallback: ends with "Base Build" or contains "Base Build"
+            if (baseBuildSet == null)
+            {
+                baseBuildSet = allSets.FirstOrDefault(s =>
+                    s.DisplayName != null && (
+                        s.DisplayName.Trim().EndsWith("Base Build", StringComparison.OrdinalIgnoreCase) ||
+                        s.DisplayName.Trim().EndsWith("BaseBuild", StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (baseBuildSet == null || baseBuildSet.OriginalSavedItem == null)
+            {
+                string failMsg = "No 'Base Build' (or 'BaseBuild') Selection Set found in the document.";
+                result.FailedTests.Add(failMsg);
+                _logger.LogWarning(failMsg);
+                return result;
+            }
+
+            int total = models.Count;
+            int current = 0;
+            bool anySucceeded = false;
+
+            using (var trans = doc.BeginTransaction("Automated Base Build Clash Test Run"))
+            {
+                foreach (var model in models)
+                {
+                    current++;
+                    if (model?.OriginalModelItem == null) continue;
+
+                    string rawName = model.DisplayName;
+                    string testName = _naming.GetBaseBuildClashName(rawName);
+
+                    progressCallback?.Invoke($"Running base build test: {testName} ({current}/{total})", current, total);
+
+                    // Check if test already exists in Clash Detective
+                    bool exists = clashTests.Tests.Any(t => string.Equals(t.DisplayName, testName, StringComparison.OrdinalIgnoreCase));
+                    if (exists)
+                    {
+                        result.SkippedTests.Add(testName);
+                        _logger.Log($"Skipped existing clash test: {testName}");
+                        continue;
+                    }
+
+                    try
+                    {
+                        var test = new ClashTest
+                        {
+                            DisplayName = testName,
+                            TestType = testType,
+                            Tolerance = tolerance
+                        };
+
+                        // Selection A: Base Build Selection / Search Set
+                        var sourceA = doc.SelectionSets.CreateSelectionSource(baseBuildSet.OriginalSavedItem);
+                        test.SelectionA.Selection.SelectionSources.Add(sourceA);
+
+                        // Selection B: Direct Selected NWC Model Node
+                        var itemsB = new ModelItemCollection { model.OriginalModelItem };
+                        test.SelectionB.Selection.CopyFrom(itemsB);
+
+                        clashTests.TestsAddCopy(test);
+                        var addedTest = clashTests.Tests.LastOrDefault() as ClashTest;
+
+                        if (addedTest != null)
+                        {
+                            clashTests.TestsRunTest(addedTest);
+                            result.SuccessfulTests.Add(testName);
+                            anySucceeded = true;
+                            _logger.Log($"Successfully executed base build clash test: {testName} [Base Build vs Model: {rawName}]");
+                        }
+                        else
+                        {
+                            result.FailedTests.Add($"{testName}: Failed to register test copy in Clash Detective.");
+                            _logger.LogWarning($"Failed to register test copy for: {testName}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        result.FailedTests.Add($"{testName}: {ex.Message}");
+                        _logger.LogError($"Error executing base build clash test '{testName}'", ex);
+                    }
+                }
+
+                if (anySucceeded)
+                {
+                    trans.Commit();
+                }
+            }
+
+            return result;
+        }
     }
 }

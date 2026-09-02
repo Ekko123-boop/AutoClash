@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Navisworks.Api;
@@ -132,6 +132,66 @@ namespace AutomatedClashRunner.Services
             }
 
             result?.GeneratedSets.Add($"Tests > {finalName}");
+            return addedSet;
+        }
+
+        public SelectionSet GenerateSiblingSearchSet(
+            Document doc,
+            ModelSourceNode targetNwc,
+            List<ModelItem> siblingNwcs,
+            FolderItem testsFolder,
+            ExecutionResult result)
+        {
+            if (doc == null || targetNwc?.OriginalModelItem == null || siblingNwcs == null || siblingNwcs.Count == 0)
+                return null;
+
+            string baseName = _naming.GetTrimmedModelCode(targetNwc.DisplayName);
+
+            // Versioning logic within Tests folder
+            string finalName = baseName;
+            int version = 2;
+            if (testsFolder != null)
+            {
+                while (testsFolder.Children.Any(x => string.Equals(x.DisplayName, finalName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    finalName = $"{baseName} ({version++})";
+                }
+            }
+
+            // Create a Static Set directly referencing all sibling NWC model items
+            var modelColl = new ModelItemCollection();
+            foreach (var sibling in siblingNwcs)
+            {
+                if (sibling != null) modelColl.Add(sibling);
+            }
+
+            var newSet = new SelectionSet(modelColl) { DisplayName = finalName };
+            doc.SelectionSets.AddCopy(newSet);
+
+            // AddCopy always places the newly created item as the last child of RootItem
+            var addedSet = doc.SelectionSets.RootItem.Children.LastOrDefault() as SelectionSet;
+
+            // Move to Tests folder if available
+            if (addedSet != null && testsFolder != null)
+            {
+                try
+                {
+                    int rootIndex = doc.SelectionSets.RootItem.Children.IndexOf(addedSet);
+                    if (rootIndex >= 0)
+                    {
+                        doc.SelectionSets.Move(doc.SelectionSets.RootItem, rootIndex, testsFolder, testsFolder.Children.Count);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Failed to move SelectionSet '{finalName}' into 'Tests' folder: {ex.Message}");
+                }
+            }
+
+            string setNamePath = testsFolder != null ? $"Tests > {finalName}" : finalName;
+            result?.GeneratedSets.Add($"{setNamePath} ({siblingNwcs.Count} models)");
+            _logger.Log($"Generated sibling Selection Set '{setNamePath}' containing {siblingNwcs.Count} sibling NWCs (excluding {targetNwc.DisplayName}).");
+
             return addedSet;
         }
     }

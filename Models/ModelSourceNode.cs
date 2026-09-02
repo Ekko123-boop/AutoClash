@@ -1,10 +1,10 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Autodesk.Navisworks.Api;
 
 namespace AutomatedClashRunner.Models
 {
-    public class ModelSourceNode : INotifyPropertyChanged
+    public class ModelSourceNode : INotifyPropertyChanged, ISelectableItem
     {
         private bool _isSelected;
         public bool IsSelected
