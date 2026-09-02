@@ -461,11 +461,35 @@
                     <!-- Footer Action Bar -->
                     <DockPanel Grid.Row="2" Grid.ColumnSpan="2">
                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                            <Button Content="Refresh Models" Command="{Binding RefreshModelsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
-                            <Button Content="Refresh Sets" Command="{Binding RefreshSearchSetsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
-                            <Button Content="Clear All" Command="{Binding ClearAllCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
-                            <Button Content="Generate Sets" Command="{Binding GenerateSelectionSetsCommand}" Style="{StaticResource SecondaryButton}"
-                                    ToolTip="Auto-create Selection Sets for each selected NWC containing all sibling NWCs under the same parent NWD (excluding the NWC itself). Sets are placed in the 'Tests' folder."/>
+                            <Button Command="{Binding RefreshModelsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+                                          Fill="#475569" Width="13" Height="13" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Refresh Models" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding RefreshSearchSetsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+                                          Fill="#475569" Width="13" Height="13" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Refresh Sets" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding ClearAllCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                          Fill="#64748B" Width="11" Height="11" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Clear All" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding GenerateSelectionSetsCommand}" Style="{StaticResource SecondaryButton}"
+                                    ToolTip="Auto-create Selection Sets for each selected NWC containing all sibling NWCs under the same parent NWD (excluding the NWC itself). Sets are placed in the 'Tests' folder.">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9.07l-9-7-9 7 1.63 1.27L12 16zm0-11.47L17.74 9 12 13.47 6.26 9 12 4.53z"
+                                          Fill="#0284C7" Width="14" Height="14" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Generate Sets" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -473,14 +497,26 @@
                                     Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
                             <Button Command="{Binding BaseBuildTestCommand}" Style="{StaticResource PrimaryOrangeButton}" Margin="0,0,10,0"
                                     ToolTip="Runs clash tests for each selected NWC against the 'Base Build' Selection Set (no T- prefix).">
-                                <TextBlock Text="{Binding SelectedModelCount, StringFormat='Base Build ({0} NWCs)'}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"
+                                          Fill="White" Width="14" Height="14" Stretch="Uniform" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding SelectedModelCount, StringFormat='Base Build ({0} NWCs)'}" VerticalAlignment="Center"/>
+                                </StackPanel>
                             </Button>
                             <Button Command="{Binding ToolsTestCommand}" Style="{StaticResource PrimaryBlueButton}" Margin="0,0,10,0"
                                     ToolTip="Automatically pairs each selected NWC model with its corresponding Selection Set (T- prefix) and runs 1-to-1 clash tests.">
-                                <TextBlock Text="{Binding SelectedModelCount, StringFormat='Tools test ({0} NWCs)'}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"
+                                          Fill="White" Width="14" Height="14" Stretch="Uniform" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding SelectedModelCount, StringFormat='Tools test ({0} NWCs)'}" VerticalAlignment="Center"/>
+                                </StackPanel>
                             </Button>
                             <Button Command="{Binding RunCommand}" Style="{StaticResource PrimaryGreenButton}">
-                                <TextBlock Text="{Binding ExpectedTestCount, StringFormat='Run Clash Matrix ({0} Tests)'}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M8 5v14l11-7z"
+                                          Fill="White" Width="13" Height="13" Stretch="Uniform" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding ExpectedTestCount, StringFormat='Run Clash Matrix ({0} Tests)'}" VerticalAlignment="Center"/>
+                                </StackPanel>
                             </Button>
                         </StackPanel>
                     </DockPanel>
@@ -630,13 +666,37 @@
 
                     <DockPanel Grid.Row="3">
                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                            <Button Content="Refresh Tests" Command="{Binding RefreshTestsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
-                            <Button Content="Re-Run Selected" Command="{Binding ReRunSelectedCommand}" Style="{StaticResource SecondaryButton}"/>
+                            <Button Command="{Binding RefreshTestsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+                                          Fill="#475569" Width="13" Height="13" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Refresh Tests" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding ReRunSelectedCommand}" Style="{StaticResource SecondaryButton}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M8 5v14l11-7z"
+                                          Fill="#0284C7" Width="11" Height="11" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Re-Run Selected" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Distill Selected Test(s)" Command="{Binding DistillSelectedCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
-                            <Button Content="Distill All Tests" Command="{Binding DistillAllCommand}" Style="{StaticResource PrimaryGreenButton}"/>
+                            <Button Command="{Binding DistillSelectedCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"
+                                          Fill="#475569" Width="13" Height="13" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Distill Selected Test(s)" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding DistillAllCommand}" Style="{StaticResource PrimaryGreenButton}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"
+                                          Fill="White" Width="13" Height="13" Stretch="Uniform" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Distill All Tests" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </DockPanel>
                 </Grid>
@@ -764,11 +824,29 @@
                     </Border>
 
                     <DockPanel Grid.Row="3">
-                        <Button Content="Refresh Tests" Command="{Binding RefreshTestsCommand}" Style="{StaticResource SecondaryButton}" DockPanel.Dock="Left"/>
+                        <Button Command="{Binding RefreshTestsCommand}" Style="{StaticResource SecondaryButton}" DockPanel.Dock="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+                                      Fill="#475569" Width="13" Height="13" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Refresh Tests" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Create Viewpoints for Selected Test(s)" Command="{Binding CreateViewpointsSelectedCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
-                            <Button Content="Create Viewpoints for All Tests" Command="{Binding CreateViewpointsAllCommand}" Style="{StaticResource PrimaryGreenButton}"/>
+                            <Button Command="{Binding CreateViewpointsSelectedCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M12 12m-3.2 0a3.2 3.2 0 1 0 6.4 0 3.2 3.2 0 1 0-6.4 0M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"
+                                          Fill="#475569" Width="14" Height="14" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Create Viewpoints for Selected Test(s)" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding CreateViewpointsAllCommand}" Style="{StaticResource PrimaryGreenButton}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M12 12m-3.2 0a3.2 3.2 0 1 0 6.4 0 3.2 3.2 0 1 0-6.4 0M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"
+                                          Fill="White" Width="14" Height="14" Stretch="Uniform" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Create Viewpoints for All Tests" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </DockPanel>
                 </Grid>
