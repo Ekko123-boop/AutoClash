@@ -12,39 +12,39 @@ using AutomatedClashRunner.Views;
 namespace AutomatedClashRunner
 {
     // =========================================================================
-    // 1. Dedicated "Rimo" Ribbon Tab via Official Navisworks CommandHandlerPlugin
+    // 1. Dedicated "Cypher" Ribbon Tab via Official Navisworks CommandHandlerPlugin
     // =========================================================================
-    [Plugin("RimoNavisRibbon", "RIMO", DisplayName = "Rimo tools")]
-    [RibbonLayout("RimoRibbon.xaml")]
-    [RibbonTab("Rimo", DisplayName = "Rimo")]
-    [Command("ID_RIMO_CMD_MATRIX",
+    [Plugin("CypherNavisRibbon", "CYPH", DisplayName = "Cypher Tools")]
+    [RibbonLayout("CypherRibbon.xaml")]
+    [RibbonTab("Cypher", DisplayName = "Cypher")]
+    [Command("ID_CYPHER_CMD_MATRIX",
              DisplayName = "Clash Matrix",
              Icon = "Images\\icon_matrix_16.png",
              LargeIcon = "Images\\icon_matrix_32.png",
              ToolTip = "Launch Clash Matrix generator and Tools Test runner")]
-    [Command("ID_RIMO_CMD_DISTILL",
+    [Command("ID_CYPHER_CMD_DISTILL",
              DisplayName = "Distill Clashes",
              Icon = "Images\\icon_distill_16.png",
              LargeIcon = "Images\\icon_distill_32.png",
              ToolTip = "Spatial element grouping & clash cluster distillation")]
-    [Command("ID_RIMO_CMD_VIEWPOINTS",
+    [Command("ID_CYPHER_CMD_VIEWPOINTS",
              DisplayName = "Create Viewpoints",
              Icon = "Images\\icon_viewpoints_16.png",
              LargeIcon = "Images\\icon_viewpoints_32.png",
              ToolTip = "Generate filtered saved viewpoints for clash results")]
-    public class RimoRibbonCommandHandler : CommandHandlerPlugin
+    public class CypherRibbonCommandHandler : CommandHandlerPlugin
     {
         public override int ExecuteCommand(string name, params string[] parameters)
         {
             switch (name)
             {
-                case "ID_RIMO_CMD_MATRIX":
+                case "ID_CYPHER_CMD_MATRIX":
                     App.LaunchApp(0);
                     break;
-                case "ID_RIMO_CMD_DISTILL":
+                case "ID_CYPHER_CMD_DISTILL":
                     App.LaunchApp(1);
                     break;
-                case "ID_RIMO_CMD_VIEWPOINTS":
+                case "ID_CYPHER_CMD_VIEWPOINTS":
                     App.LaunchApp(2);
                     break;
                 default:
@@ -72,7 +72,7 @@ namespace AutomatedClashRunner
     // =========================================================================
     // 2. Tool Add-ins Tab Fallback Plugin
     // =========================================================================
-    [Plugin("RimoNavisAddin", "RIMO", DisplayName = "Rimo tools", ToolTip = "Automated Model Clash Runner & Distiller")]
+    [Plugin("CypherNavisAddin", "CYPH", DisplayName = "Cypher Tools", ToolTip = "Automated Model Clash Runner & Distiller")]
     [AddInPlugin(AddInLocation.AddIn)]
     public class App : AddInPlugin
     {
@@ -93,8 +93,8 @@ namespace AutomatedClashRunner
                     if (licenseResult.IsRevoked)
                     {
                         DialogService.Instance.ShowWarning(
-                            licenseResult.Message ?? "Your access license for Rimo tools has been disabled by the administrator.",
-                            "Rimo tools - License Notice");
+                            licenseResult.Message ?? "Your access license for Cypher Tools has been disabled by the administrator.",
+                            "Cypher Tools - License Notice");
                     }
                     return;
                 }

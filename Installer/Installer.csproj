@@ -7,7 +7,7 @@
     <ProjectGuid>{B78E1C23-4567-4DEF-8901-23456789ABCD}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <RootNamespace>AutomatedClashRunner.Installer</RootNamespace>
-    <AssemblyName>RimoTools_Installer</AssemblyName>
+    <AssemblyName>CypherTools_Installer</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

@@ -1,5 +1,5 @@
 # =====================================================================
-# Rimo Tools - Full End-to-End Build & Deployment Script
+# Cypher Tools - Full End-to-End Build & Deployment Script
 # =====================================================================
 $ErrorActionPreference = "Stop"
 
@@ -29,7 +29,7 @@ if ($LASTEXITCODE -ne 0) { throw "2024 Plugin build failed." }
 
 # 3. Package Multi-Version bundle.zip for Standalone Installer
 Write-Host ">>> 3. Staging and Packaging Multi-Version bundle.zip..." -ForegroundColor Cyan
-$staging = "$env:TEMP\rimotools_bundle_staging"
+$staging = "$env:TEMP\cyphertools_bundle_staging"
 if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
 
 $stgContents2023 = "$staging\Contents\2023"
@@ -57,18 +57,18 @@ if (Test-Path $zipDest) { Remove-Item $zipDest -Force }
 Compress-Archive -Path "$staging\*" -DestinationPath $zipDest -Force
 Remove-Item $staging -Recurse -Force
 
-# 4. Build Standalone Installer EXE (RimoTools_Installer.exe)
-Write-Host ">>> 4. Compiling Modern Standalone RimoTools_Installer.exe..." -ForegroundColor Cyan
+# 4. Build Standalone Installer EXE (CypherTools_Installer.exe)
+Write-Host ">>> 4. Compiling Modern Standalone CypherTools_Installer.exe..." -ForegroundColor Cyan
 & $msbuild "Installer\Installer.csproj" -p:Configuration=Release -p:Platform=x64
 if ($LASTEXITCODE -ne 0) { throw "Installer build failed." }
 
-Copy-Item "Installer\bin\Release\RimoTools_Installer.exe" -Destination "RimoTools_Installer.exe" -Force
-Get-Item "RimoTools_Installer.exe" | Unblock-File -ErrorAction SilentlyContinue
-Write-Host " - Standalone Installer ready at: RimoTools_Installer.exe" -ForegroundColor Green
+Copy-Item "Installer\bin\Release\CypherTools_Installer.exe" -Destination "CypherTools_Installer.exe" -Force
+Get-Item "CypherTools_Installer.exe" | Unblock-File -ErrorAction SilentlyContinue
+Write-Host " - Standalone Installer ready at: CypherTools_Installer.exe" -ForegroundColor Green
 
 # 5. Direct AppData Deployment: Multi-Version ApplicationPlugins Bundle
-Write-Host ">>> 5. Deploying Multi-Version RimoNavisTools.bundle to Navisworks ApplicationPlugins..." -ForegroundColor Cyan
-$bundleDir = "$env:APPDATA\Autodesk\ApplicationPlugins\RimoNavisTools.bundle"
+Write-Host ">>> 5. Deploying Multi-Version CypherNavisTools.bundle to Navisworks ApplicationPlugins..." -ForegroundColor Cyan
+$bundleDir = "$env:APPDATA\Autodesk\ApplicationPlugins\CypherNavisTools.bundle"
 if (Test-Path $bundleDir) { Remove-Item $bundleDir -Recurse -Force }
 
 $contentsDir2023 = "$bundleDir\Contents\2023"
@@ -95,7 +95,7 @@ Write-Host " - Multi-Version Bundle deployed to: $bundleDir" -ForegroundColor Gr
 
 # 6. Direct AppData Deployment: Navisworks Manage 2024 User Plugins Directory
 Write-Host ">>> 6. Deploying to Navisworks Manage 2024 User Plugins Directory..." -ForegroundColor Cyan
-$userPluginsDir = "$env:APPDATA\Autodesk\Navisworks Manage 2024\Plugins\RimoNavisTools"
+$userPluginsDir = "$env:APPDATA\Autodesk\Navisworks Manage 2024\Plugins\CypherNavisTools"
 try {
     if (Test-Path $userPluginsDir) { Remove-Item $userPluginsDir -Recurse -Force -ErrorAction SilentlyContinue }
     New-Item -ItemType Directory -Force -Path $userPluginsDir | Out-Null
@@ -110,8 +110,8 @@ try {
 
 Write-Host "====================================================================" -ForegroundColor Green
 Write-Host "ALL BUILDS & INSTALLERS 100% COMPLETE (2020-2026 READY)!" -ForegroundColor Green
-Write-Host " - Standalone EXE Installer: RimoTools_Installer.exe" -ForegroundColor Green
-Write-Host " - Universal Batch Installer: Install_RimoTools.bat" -ForegroundColor Green
-Write-Host " - Clean Uninstaller Batch:   Uninstall_RimoTools.bat" -ForegroundColor Green
+Write-Host " - Standalone EXE Installer: CypherTools_Installer.exe" -ForegroundColor Green
+Write-Host " - Universal Batch Installer: Install_CypherTools.bat" -ForegroundColor Green
+Write-Host " - Clean Uninstaller Batch:   Uninstall_CypherTools.bat" -ForegroundColor Green
 Write-Host "====================================================================" -ForegroundColor Green
 

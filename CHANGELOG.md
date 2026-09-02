@@ -18,7 +18,7 @@ All notable changes to the Automated Clash Runner & Distiller addin are document
 - **Shift + Click Range Multi-Selection Support**:
   - Implemented `ShiftClickBehavior` attached behavior and `ISelectableItem` interface across all 4 ListViews (Models, Search Sets, Distiller Tests, Viewpoints Tests).
   - Allows single-click row checking and Shift+Click range selection.
-- **Standalone GUI Multi-Version Installer & Uninstaller (`RimoTools_Installer.exe`)**:
+- **Standalone GUI Multi-Version Installer & Uninstaller (`CypherTools_Installer.exe`)**:
   - Modern dark-themed Windows Forms UI with auto-detection of all installed Navisworks versions (2020 through 2026).
   - Features 1-Click "Install / Update" and 1-Click "Uninstall" buttons.
   - Embeds both Navisworks 2023 and 2024+ payloads in a single self-contained executable.
@@ -26,8 +26,8 @@ All notable changes to the Automated Clash Runner & Distiller addin are document
 
 ## [1.5.0] - 2026-08-31
 ### Added
-- **"Rimo Tools" Branding & Dedicated "Rimo" Ribbon Tab**:
-  - Implemented official Autodesk `CommandHandlerPlugin` architecture paired with `en-US\RimoRibbon.xaml` declaring the dedicated **"Rimo"** tab.
+- **"Cypher Tools" Branding & Dedicated "Cypher" Ribbon Tab**:
+  - Implemented official Autodesk `CommandHandlerPlugin` architecture paired with `en-US\CypherRibbon.xaml` declaring the dedicated **"Cypher"** tab.
   - Added 3 direct action buttons: **Clash Matrix**, **Distill Clashes**, and **Create Viewpoints** with 16x16 and 32x32 icons.
   - Preserved fallback entry point under the standard **Tool Add-ins** tab.
 - **"Tools test" 1-to-1 Automated Pairing Engine**:

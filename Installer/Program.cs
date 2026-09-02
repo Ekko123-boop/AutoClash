@@ -58,7 +58,7 @@ namespace AutomatedClashRunner.Installer
 
         private void InitializeComponent()
         {
-            this.Text = "Rimo Tools Setup (Navisworks 2020-2026)";
+            this.Text = "Cypher Tools Setup (Navisworks 2020-2026)";
             this.Size = new Size(580, 560);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -77,7 +77,7 @@ namespace AutomatedClashRunner.Installer
 
             lblHeader = new Label
             {
-                Text = "⚡ RIMO TOOLS SETUP",
+                Text = "⚡ CYPHER TOOLS SETUP",
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold),
                 ForeColor = Color.White,
                 Location = new Point(20, 16),
@@ -249,7 +249,7 @@ namespace AutomatedClashRunner.Installer
             {
                 Log("=== Installation Completed Successfully! ===");
                 MessageBox.Show(
-                    "Rimo Tools has been successfully installed!\n\nYou can now launch Autodesk Navisworks.",
+                    "Cypher Tools has been successfully installed!\n\nYou can now launch Autodesk Navisworks.",
                     "Installation Complete",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
@@ -278,7 +278,7 @@ namespace AutomatedClashRunner.Installer
             }
 
             var confirm = MessageBox.Show(
-                "Are you sure you want to completely uninstall Rimo Tools from all Navisworks versions?",
+                "Are you sure you want to completely uninstall Cypher Tools from all Navisworks versions?",
                 "Confirm Uninstall",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
@@ -296,7 +296,7 @@ namespace AutomatedClashRunner.Installer
 
             Log("=== Uninstallation Completed! ===");
             MessageBox.Show(
-                "Rimo Tools has been completely removed from all Navisworks versions.",
+                "Cypher Tools has been completely removed from all Navisworks versions.",
                 "Uninstall Complete",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
@@ -349,7 +349,7 @@ namespace AutomatedClashRunner.Installer
                     return false;
                 }
 
-                string tempDir = Path.Combine(Path.GetTempPath(), "RimoInstall_" + Guid.NewGuid().ToString("N").Substring(0, 8));
+                string tempDir = Path.Combine(Path.GetTempPath(), "CypherInstall_" + Guid.NewGuid().ToString("N").Substring(0, 8));
                 Directory.CreateDirectory(tempDir);
                 log("Extracting installation payload...");
 
@@ -372,7 +372,7 @@ namespace AutomatedClashRunner.Installer
                 try
                 {
                     string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-                    string globalBundle = Path.Combine(progData, @"Autodesk\ApplicationPlugins\RimoNavisTools.bundle");
+                    string globalBundle = Path.Combine(progData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
                     if (Directory.Exists(globalBundle)) Directory.Delete(globalBundle, true);
                     CopyDirectory(tempDir, globalBundle);
                     log("✓ Deployed Global ApplicationPlugins Bundle (ProgramData)");
@@ -386,7 +386,7 @@ namespace AutomatedClashRunner.Installer
                 try
                 {
                     string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                    string userBundle = Path.Combine(appData, @"Autodesk\ApplicationPlugins\RimoNavisTools.bundle");
+                    string userBundle = Path.Combine(appData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
                     if (Directory.Exists(userBundle)) Directory.Delete(userBundle, true);
                     CopyDirectory(tempDir, userBundle);
                     log("✓ Deployed User ApplicationPlugins Bundle (AppData)");
@@ -407,12 +407,14 @@ namespace AutomatedClashRunner.Installer
                     try
                     {
                         // Clean legacy folders
-                        string old1 = Path.Combine(nwDir, @"Plugins\AutomatedClashRunner");
-                        if (Directory.Exists(old1)) Directory.Delete(old1, true);
-                        string old2 = Path.Combine(nwDir, @"Plugins\RimoTools");
-                        if (Directory.Exists(old2)) Directory.Delete(old2, true);
+                        string[] legacy = { "AutomatedClashRunner", "RimoTools", "RimoNavisTools", "CypherTools" };
+                        foreach (var leg in legacy)
+                        {
+                            string old = Path.Combine(nwDir, "Plugins", leg);
+                            if (Directory.Exists(old)) Directory.Delete(old, true);
+                        }
 
-                        string targetPlugin = Path.Combine(nwDir, @"Plugins\RimoNavisTools");
+                        string targetPlugin = Path.Combine(nwDir, @"Plugins\CypherNavisTools");
                         if (Directory.Exists(targetPlugin)) Directory.Delete(targetPlugin, true);
                         Directory.CreateDirectory(targetPlugin);
 
@@ -462,7 +464,7 @@ namespace AutomatedClashRunner.Installer
             var installedDirs = GetInstalledNavisworksDirectories();
             foreach (string nwDir in installedDirs)
             {
-                string[] targets = { "RimoNavisTools", "RimoTools", "AutomatedClashRunner" };
+                string[] targets = { "CypherNavisTools", "CypherTools", "RimoNavisTools", "RimoTools", "AutomatedClashRunner" };
                 foreach (var t in targets)
                 {
                     string p = Path.Combine(nwDir, "Plugins", t);
@@ -475,7 +477,7 @@ namespace AutomatedClashRunner.Installer
 
             // 2. ProgramData
             string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-            string[] bundles = { "RimoNavisTools.bundle", "RimoTools.bundle", "AutomatedClashRunner.bundle" };
+            string[] bundles = { "CypherNavisTools.bundle", "CypherTools.bundle", "RimoNavisTools.bundle", "RimoTools.bundle", "AutomatedClashRunner.bundle" };
             foreach (var b in bundles)
             {
                 string p = Path.Combine(progData, @"Autodesk\ApplicationPlugins", b);
@@ -493,6 +495,19 @@ namespace AutomatedClashRunner.Installer
                 if (Directory.Exists(p))
                 {
                     try { Directory.Delete(p, true); log($"✓ Removed AppData\\...\\{b}"); } catch { }
+                }
+            }
+
+            // Clean AppData user plugin folders
+            foreach (var nwDir in Directory.GetDirectories(appData, "Navisworks Manage*"))
+            {
+                foreach (var t in new[] { "CypherNavisTools", "CypherTools", "RimoNavisTools", "RimoTools" })
+                {
+                    string p = Path.Combine(nwDir, "Plugins", t);
+                    if (Directory.Exists(p))
+                    {
+                        try { Directory.Delete(p, true); log($"✓ Removed AppData\\{Path.GetFileName(nwDir)}\\Plugins\\{t}"); } catch { }
+                    }
                 }
             }
         }

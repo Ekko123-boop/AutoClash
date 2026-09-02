@@ -1,14 +1,14 @@
-# Rimo Tools — Technical & Architectural Documentation
+# Cypher Tools — Technical & Architectural Documentation
 
 ## 1. System Overview & Architecture
 
-Rimo Tools (`RimoNavisTools.dll`) is a modular, high-reliability Autodesk Navisworks Manage add-in designed with a clean MVVM (Model-View-ViewModel) architecture.
+Cypher Tools (`CypherNavisTools.dll`) is a modular, high-reliability Autodesk Navisworks Manage add-in designed with a clean MVVM (Model-View-ViewModel) architecture.
 
 ### High-Level Layers
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                   Dedicated Ribbon UI & WPF                 │
-│  - "Rimo" Ribbon Tab (Clash Matrix, Distill, Viewpoints)    │
+│  - "Cypher" Ribbon Tab (Clash Matrix, Distill, Viewpoints)  │
 │  - MainWindow.xaml (TabControl: Matrix, Distill, Viewpoints)│
 │  - SummaryDialog.xaml (Color-coded items & CSV Export)      │
 └──────────────────────────────┬──────────────────────────────┘
@@ -84,12 +84,13 @@ Rimo Tools (`RimoNavisTools.dll`) is a modular, high-reliability Autodesk Navisw
 ### 2.6 ShiftClickBehavior & ISelectableItem
 - Enables rapid range selection on all 4 WPF `ListView` controls across all tabs (Models, Search Sets, Distiller Tests, Viewpoints Tests).
 - Users can click any row or checkbox, then hold `Shift` and click a second row/checkbox to select or deselect the entire range at once.
+- TwoWay bound to `IsSelected` on `ListViewItem` container and data models for synchronized row and checkbox updates.
 - Attached in code-behind to preserve complete immunity against Windows 11 Smart App Control (`0x800711C7`) build-time XAML reflection blocks.
 
-### 2.6 LoggerService
+### 2.7 LoggerService
 - Thread-safe, timestamped logging with auto-rotation (10MB threshold) stored in `%LOCALAPPDATA%\AutomatedClashRunner\Logs\session_YYYY-MM-DD.log`.
 
-### 2.7 LicenseService & Hardware Fingerprinting (Remote Kill-Switch)
+### 2.8 LicenseService & Hardware Fingerprinting (Remote Kill-Switch)
 - **Cloud Backend**: Connected via REST to Firebase Realtime Database.
 - **Hardware Fingerprint**: Deterministic SHA-256 hash derived from `Win32_Processor.ProcessorId`, `Win32_BaseBoard.SerialNumber`, system volume serial, and `MachineGuid`.
 - **Silent Auto-Registration**: Quietly registers user name, computer name, OS, and HWID upon first connection.
@@ -107,25 +108,25 @@ Rimo Tools (`RimoNavisTools.dll`) is a modular, high-reliability Autodesk Navisw
 
 ### 3.1 Dual Compilation Engines
 Because .NET Framework 4.8 enforces strict CLR strong-name version binding on `Autodesk.Navisworks.Api`:
-- **Navisworks 2020 - 2023 Target (`Release2023`)**: Compiles against `Version 20.0.1382.63` (`lib\2023\`). Output: `bin\Release\2023\RimoNavisTools.dll`.
-- **Navisworks 2024 - 2026 Target (`Release2024`)**: Compiles against `Version 21.0.0.0` (`lib\2024\`). Output: `bin\Release\2024\RimoNavisTools.dll`.
+- **Navisworks 2020 - 2023 Target (`Release2023`)**: Compiles against `Version 20.0.1382.63` (`lib\2023\`). Output: `bin\Release\2023\CypherNavisTools.dll`.
+- **Navisworks 2024 - 2026 Target (`Release2024`)**: Compiles against `Version 21.0.0.0` (`lib\2024\`). Output: `bin\Release\2024\CypherNavisTools.dll`.
 
 ### 3.2 Universal Multi-Version Manifest (`PackageContents.xml`)
 ```xml
 <Components Description="Navisworks 2020-2023">
     <RuntimeRequirements OS="Win64" Platform="NAVMAN|NAVSIM" SeriesMin="Nw17" SeriesMax="Nw20" />
-    <ComponentEntry AppName="Rimo tools" ModuleName="./Contents/2023/RimoNavisTools.dll" AppType="ManagedPlugin" />
+    <ComponentEntry AppName="Cypher Tools" ModuleName="./Contents/2023/CypherNavisTools.dll" AppType="ManagedPlugin" />
 </Components>
 <Components Description="Navisworks 2024-2026">
     <RuntimeRequirements OS="Win64" Platform="NAVMAN|NAVSIM" SeriesMin="Nw21" SeriesMax="Nw24" />
-    <ComponentEntry AppName="Rimo tools" ModuleName="./Contents/2024/RimoNavisTools.dll" AppType="ManagedPlugin" />
+    <ComponentEntry AppName="Cypher Tools" ModuleName="./Contents/2024/CypherNavisTools.dll" AppType="ManagedPlugin" />
 </Components>
 ```
 
-### 3.3 Universal 1-Click Multi-Version Installer (`Install_RimoTools.bat`)
+### 3.3 Universal 1-Click Multi-Version Installer (`Install_CypherTools.bat`)
 - Immune to Windows Smart App Control (SAC) blocks.
 - Requests Administrator UAC elevation.
 - Automatically discovers all installed Navisworks versions under `C:\Program Files\Autodesk\Navisworks*` and installs the matching engine (2023 vs 2024+).
-- Deploys the multi-version bundle to `%ProgramData%\Autodesk\ApplicationPlugins\RimoNavisTools.bundle\`.
+- Deploys the multi-version bundle to `%ProgramData%\Autodesk\ApplicationPlugins\CypherNavisTools.bundle\`.
 - Automatically removes legacy broken plugin folders.
 

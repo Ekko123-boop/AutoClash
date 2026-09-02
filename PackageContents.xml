@@ -2,12 +2,12 @@
 <ApplicationPackage
     SchemaVersion="1.0"
     AutodeskProduct="Navisworks"
-    Name="RimoNavisTools"
-    AppVersion="1.4.0"
-    Description="Rimo tools - Automated Model Clash Runner and Distiller for Navisworks"
+    Name="CypherNavisTools"
+    AppVersion="1.6.0"
+    Description="Cypher Tools - Automated Model Clash Runner and Distiller for Navisworks"
     ProductType="Application">
 
-    <CompanyDetails Name="Rimo" />
+    <CompanyDetails Name="Cypher" />
 
     <!-- Navisworks 2020-2023 Components -->
     <Components Description="Navisworks 2020-2023">
@@ -17,8 +17,8 @@
             SeriesMin="Nw17"
             SeriesMax="Nw20" />
         <ComponentEntry
-            AppName="Rimo tools"
-            ModuleName="./Contents/2023/RimoNavisTools.dll"
+            AppName="Cypher Tools"
+            ModuleName="./Contents/2023/CypherNavisTools.dll"
             AppType="ManagedPlugin" />
     </Components>
 
@@ -30,8 +30,8 @@
             SeriesMin="Nw21"
             SeriesMax="Nw24" />
         <ComponentEntry
-            AppName="Rimo tools"
-            ModuleName="./Contents/2024/RimoNavisTools.dll"
+            AppName="Cypher Tools"
+            ModuleName="./Contents/2024/CypherNavisTools.dll"
             AppType="ManagedPlugin" />
     </Components>
 </ApplicationPackage>

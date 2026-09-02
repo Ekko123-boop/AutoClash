@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.IO;
 using System.Linq;
@@ -38,52 +38,53 @@ namespace AutomatedClashRunner.Services
                 var tabsProp = ribbon.GetType().GetProperty("Tabs");
                 var tabsList = (IList)tabsProp.GetValue(ribbon, null);
 
-                // Check if Rimo tab already exists
-                object rimoTab = null;
+                // Check if Cypher tab already exists
+                object cypherTab = null;
                 foreach (var t in tabsList)
                 {
                     var title = (string)t.GetType().GetProperty("Title")?.GetValue(t, null);
                     var id = (string)t.GetType().GetProperty("Id")?.GetValue(t, null);
-                    if (string.Equals(title, "Rimo", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(id, "ID_RIMO_TAB", StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(title, "Cypher", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(id, "ID_CYPHER_TAB", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(title, "Rimo", StringComparison.OrdinalIgnoreCase))
                     {
-                        rimoTab = t;
+                        cypherTab = t;
                         break;
                     }
                 }
 
-                if (rimoTab == null)
+                if (cypherTab == null)
                 {
-                    rimoTab = Activator.CreateInstance(ribbonTabType);
-                    ribbonTabType.GetProperty("Title")?.SetValue(rimoTab, "Rimo", null);
-                    ribbonTabType.GetProperty("Id")?.SetValue(rimoTab, "ID_RIMO_TAB", null);
-                    tabsList.Add(rimoTab);
+                    cypherTab = Activator.CreateInstance(ribbonTabType);
+                    ribbonTabType.GetProperty("Title")?.SetValue(cypherTab, "Cypher", null);
+                    ribbonTabType.GetProperty("Id")?.SetValue(cypherTab, "ID_CYPHER_TAB", null);
+                    tabsList.Add(cypherTab);
                 }
 
                 // Check Panels
-                var panelsProp = rimoTab.GetType().GetProperty("Panels");
-                var panelsList = (IList)panelsProp.GetValue(rimoTab, null);
+                var panelsProp = cypherTab.GetType().GetProperty("Panels");
+                var panelsList = (IList)panelsProp.GetValue(cypherTab, null);
 
-                object rimoPanel = null;
+                object cypherPanel = null;
                 foreach (var p in panelsList)
                 {
                     var src = p.GetType().GetProperty("Source")?.GetValue(p, null);
                     var title = (string)src?.GetType().GetProperty("Title")?.GetValue(src, null);
                     if (string.Equals(title, "Clash Automation", StringComparison.OrdinalIgnoreCase))
                     {
-                        rimoPanel = p;
+                        cypherPanel = p;
                         break;
                     }
                 }
 
-                if (rimoPanel == null)
+                if (cypherPanel == null)
                 {
                     var panelSource = Activator.CreateInstance(ribbonPanelSourceType);
                     ribbonPanelSourceType.GetProperty("Title")?.SetValue(panelSource, "Clash Automation", null);
 
-                    rimoPanel = Activator.CreateInstance(ribbonPanelType);
-                    ribbonPanelType.GetProperty("Source")?.SetValue(rimoPanel, panelSource, null);
-                    panelsList.Add(rimoPanel);
+                    cypherPanel = Activator.CreateInstance(ribbonPanelType);
+                    ribbonPanelType.GetProperty("Source")?.SetValue(cypherPanel, panelSource, null);
+                    panelsList.Add(cypherPanel);
 
                     var itemsProp = panelSource.GetType().GetProperty("Items");
                     var itemsList = (IList)itemsProp.GetValue(panelSource, null);
@@ -92,7 +93,7 @@ namespace AutomatedClashRunner.Services
 
                     // Button 1: Clash Matrix (Target Tab 0)
                     object btnMatrix = CreateRibbonButton(ribbonButtonType, ribbonItemSizeType,
-                        "Clash\nMatrix", "ID_RIMO_CMD_MATRIX", "Launch Clash Matrix generator and Tools Test runner",
+                        "Clash\nMatrix", "ID_CYPHER_CMD_MATRIX", "Launch Clash Matrix generator and Tools Test runner",
                         Path.Combine(asmDir, "Images", "icon_matrix_32.png"),
                         Path.Combine(asmDir, "Images", "icon_matrix_16.png"),
                         () => launchCallback(0));
@@ -100,7 +101,7 @@ namespace AutomatedClashRunner.Services
 
                     // Button 2: Distill Clashes (Target Tab 1)
                     object btnDistill = CreateRibbonButton(ribbonButtonType, ribbonItemSizeType,
-                        "Distill\nClashes", "ID_RIMO_CMD_DISTILL", "Spatial element grouping & clash cluster distillation",
+                        "Distill\nClashes", "ID_CYPHER_CMD_DISTILL", "Spatial element grouping & clash cluster distillation",
                         Path.Combine(asmDir, "Images", "icon_distill_32.png"),
                         Path.Combine(asmDir, "Images", "icon_distill_16.png"),
                         () => launchCallback(1));
@@ -108,7 +109,7 @@ namespace AutomatedClashRunner.Services
 
                     // Button 3: Create Viewpoints (Target Tab 2)
                     object btnViewpoints = CreateRibbonButton(ribbonButtonType, ribbonItemSizeType,
-                        "Create\nViewpoints", "ID_RIMO_CMD_VIEWPOINTS", "Generate filtered saved viewpoints for clash results",
+                        "Create\nViewpoints", "ID_CYPHER_CMD_VIEWPOINTS", "Generate filtered saved viewpoints for clash results",
                         Path.Combine(asmDir, "Images", "icon_viewpoints_32.png"),
                         Path.Combine(asmDir, "Images", "icon_viewpoints_16.png"),
                         () => launchCallback(2));

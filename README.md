@@ -1,4 +1,4 @@
-# Rimo Tools — Automated Model Clash Runner & Distiller for Autodesk Navisworks
+# Cypher Tools — Automated Model Clash Runner & Distiller for Autodesk Navisworks
 
 An enterprise-grade, high-performance Autodesk Navisworks add-in designed for BIM Coordinators and VDC Engineers. It automates clash matrix generation, 1-to-1 automated model-to-set test generation ("Tools test"), dynamic search-set creation, spatial clash grouping by element, and viewpoint generation for reviewed clashes.
 
@@ -8,7 +8,7 @@ Supports **Autodesk Navisworks Manage 2020, 2021, 2022, 2023, 2024, 2025, and 20
 
 ## Key Capabilities
 
-### 1. Dedicated "Rimo" Ribbon Tab
+### 1. Dedicated "Cypher" Ribbon Tab
 - Clean native ribbon tab with large icons for **Clash Matrix**, **Distill Clashes**, and **Create Viewpoints**.
 - Direct fallback registration in the standard **Tool Add-ins** tab.
 
@@ -56,19 +56,18 @@ Supports **Autodesk Navisworks Manage 2020, 2021, 2022, 2023, 2024, 2025, and 20
 
 ## Installation & Distribution
 
-### Graphical Standalone Installer & Uninstaller (`RimoTools_Installer.exe`)
+### Graphical Standalone Installer & Uninstaller (`CypherTools_Installer.exe`)
 - Modern dark-themed graphical installer with auto-detection of all Navisworks versions (2020 through 2026).
 - One-click **Install / Update** and one-click **Uninstall**.
 - Contains both 2023 and 2024+ engine payloads in a single executable.
-- Supports silent command line installation: `RimoTools_Installer.exe /install` or `/uninstall`.
+- Supports silent command line installation: `CypherTools_Installer.exe /install` or `/uninstall`.
 
-### 1-Click Universal Batch Installer (`Install_RimoTools.bat`)
-Right-click **`Install_RimoTools.bat`** and select **Run as Administrator**:
+### 1-Click Universal Batch Installer (`Install_CypherTools.bat`)
+Right-click **`Install_CypherTools.bat`** and select **Run as Administrator**:
 - 100% immune to Windows Smart App Control (SAC) blocks.
 - Auto-detects all installed Navisworks editions and deploys matching binaries.
 - Auto-removes legacy broken plugin folders.
-- Clean uninstallation via **`Uninstall_RimoTools.bat`**.
-- Immune to Windows Smart App Control (SAC) blocks.
+- Clean uninstallation via **`Uninstall_CypherTools.bat`**.
 
 ---
 
@@ -85,4 +84,4 @@ Open Developer PowerShell or command prompt and run:
 ```powershell
 .\build_all.ps1
 ```
-This script compiles both the Navisworks 2023 engine and the Navisworks 2024 engine, packages the multi-version `RimoNavisTools.bundle`, and prepares `Install_RimoTools.bat`.
+This script compiles both the Navisworks 2023 engine and the Navisworks 2024 engine, packages the multi-version `CypherNavisTools.bundle`, and builds `CypherTools_Installer.exe`.

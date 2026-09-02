@@ -1,4 +1,4 @@
-# Rimo Tools — Troubleshooting & Technical Diagnostics
+# Cypher Tools — Troubleshooting & Technical Diagnostics
 
 ## 1. Where are the log files located?
 Diagnostic logs are automatically written to:
@@ -21,7 +21,7 @@ Navisworks catches this internally during plugin discovery and silently drops th
 We compile dual runtime engines:
 - **`Release2023`** targeting Navisworks 2020–2023 (`Version 20.0`)
 - **`Release2024`** targeting Navisworks 2024–2026 (`Version 21.0`)
-`Install_RimoTools.bat` automatically deploys the matching version to each Navisworks installation.
+`Install_CypherTools.bat` (or `CypherTools_Installer.exe`) automatically deploys the matching version to each Navisworks installation.
 
 ---
 
@@ -36,7 +36,7 @@ Exception from HRESULT: 0x800711C7 (An Application Control policy has blocked th
 ### Root Cause
 Windows 11 Smart App Control (SAC) enforces strict code integrity on newly compiled binaries running in user space (`%APPDATA%`, `%TEMP%`, `Downloads`) unless they are digitally signed with an EV certificate.
 ### Solution
-`C:\Program Files\` is in Windows Defender / Smart App Control's trusted path whitelist. Running **`Install_RimoTools.bat`** with Administrator privileges places the binaries in `C:\Program Files\Autodesk\Navisworks Manage 2024\Plugins\RimoNavisTools\`, bypassing Smart App Control restrictions completely without requiring code signing.
+`C:\Program Files\` is in Windows Defender / Smart App Control's trusted path whitelist. Running **`Install_CypherTools.bat`** with Administrator privileges places the binaries in `C:\Program Files\Autodesk\Navisworks Manage 2024\Plugins\CypherNavisTools\`, bypassing Smart App Control restrictions completely without requiring code signing.
 
 ---
 
@@ -80,7 +80,7 @@ Apply attached behaviors and custom behavior wiring programmatically in code-beh
 
 ---
 
-## 6. Selection B Stale After Model Reload
+## 8. Selection B Stale After Model Reload
 ### Symptom
 After reloading an appended `.nwc` model, clash tests in Clash Detective say "No items in Selection B".
 ### Cause
@@ -90,9 +90,9 @@ Our tool creates a SelectionSet for the model and links it to `SelectionB` via `
 
 ---
 
-## 7. Fast Installation Guide
+## 9. Fast Installation Guide
 1. Make sure all Navisworks instances are closed.
-2. Right-click `Install_RimoTools.bat` and select **Run as Administrator** (or double-click).
-3. The script detects all versions from 2020 to 2026 and deploys the appropriate engine automatically.
+2. Run `CypherTools_Installer.exe` or right-click `Install_CypherTools.bat` and select **Run as Administrator**.
+3. The installer detects all versions from 2020 to 2026 and deploys the appropriate engine automatically.
 4. Launch Navisworks Manage.
 
