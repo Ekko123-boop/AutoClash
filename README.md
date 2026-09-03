@@ -1,4 +1,4 @@
-# Cypher Tools — Automated Model Clash Runner & Distiller for Autodesk Navisworks
+﻿# Cypher Tools â€” Automated Model Clash Runner & Distiller for Autodesk Navisworks
 
 An enterprise-grade, high-performance Autodesk Navisworks add-in designed for BIM Coordinators and VDC Engineers. It automates clash matrix generation, 1-to-1 automated model-to-set test generation ("Tools test"), dynamic search-set creation, spatial clash grouping by element, and viewpoint generation for reviewed clashes.
 
@@ -32,7 +32,7 @@ Supports **Autodesk Navisworks Manage 2020, 2021, 2022, 2023, 2024, 2025, and 20
 ### 3. Distill Clashes Tab
 - **Real-Time Breakdown Metrics**: Live numerical columns for `Active/New`, `Reviewed`, `Approved`, `Resolved`, and `Total` clashes for every test.
 - **Searchable Test Overview**: Live, instantaneous search and filter across all tests in Clash Detective.
-- **Focused ⟵——|——⟶ Global Proximity Slider**: Fine-tune spatial clustering range from 1 to 150 ft (precisely mapped to Navisworks internal meter coordinates).
+- **Focused âŸµâ€”â€”|â€”â€”âŸ¶ Global Proximity Slider**: Fine-tune spatial clustering range from 1 to 300 ft (precisely mapped to Navisworks internal meter coordinates).
 - **Spatial Element Grouping**: Groups raw clashes by master named elements in Selection A into clean `{TestName}-{001, 002, ...}` groups.
 - **Batch Actions**: Distill selected tests or one-click `Distill All Tests`.
 
@@ -43,7 +43,7 @@ Supports **Autodesk Navisworks Manage 2020, 2021, 2022, 2023, 2024, 2025, and 20
 - **Batch Creation**: `Create Viewpoints for Selected Test(s)` or `Create Viewpoints for All Tests`.
 
 ### 5. Execution Summary & Reporting
-- **Rich Results Dialog**: Visual color-coded summary (Green ✓ for success, Amber ⚠ for skipped, Red ✗ for errors).
+- **Rich Results Dialog**: Visual color-coded summary (Green âœ“ for success, Amber âš  for skipped, Red âœ— for errors).
 - **Clipboard & CSV Export**: One-click export to clipboard or `.csv` spreadsheet for BIM coordination tracking.
 
 ### 6. Remote License Control & Kill-Switch

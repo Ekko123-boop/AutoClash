@@ -72,6 +72,7 @@ namespace AutomatedClashRunner.Tests
         [InlineData(10.0, 3.048)]
         [InlineData(50.0, 15.24)]
         [InlineData(150.0, 45.72)]
+        [InlineData(300.0, 91.44)]
         public void FeetToMetersConversion_InternalNavisworksMapping_IsExact(double feet, double expectedMeters)
         {
             double meters = feet * 0.3048;

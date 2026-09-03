@@ -54,7 +54,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **TC-09** | Live Breakdown Metrics Sync | Navigate to "Distill Clashes" tab. Inspect Clash Detective tests. | Live columns for `Active/New`, `Reviewed`, `Approved`, `Resolved`, and `Total` match Autodesk Clash Detective counts exactly. | **READY FOR LIVE RUN** |
 | **TC-10** | Dynamic Search & Filter | Enter query in Distill Clashes search box (e.g., "HVAC" or "STS"). | Table filters instantaneously as user types without UI stutter or thread locking. | **READY FOR LIVE RUN** |
-| **TC-11** | Spatial Proximity Clustering | Adjust proximity slider (1 ft to 150 ft) and click "Distill Selected" or "Distill All". | 1. Converts ft to internal Navisworks meters (`* 0.3048`).<br>2. Identifies master element in Selection A.<br>3. Groups clashes within proximity into `{TestName}-{001, 002...}`.<br>4. Reverse-index insertion prevents collection corruption. | **PASSED (Algorithm Verified)** |
+| **TC-11** | Spatial Proximity Clustering | Adjust proximity slider (1 ft to 300 ft) and click "Distill Selected" or "Distill All". | 1. Converts ft to internal Navisworks meters (`* 0.3048`).<br>2. Identifies master element in Selection A.<br>3. Groups clashes within proximity into `{TestName}-{001, 002...}`.<br>4. Reverse-index insertion prevents collection corruption. | **PASSED (Algorithm Verified)** |
 
 ---
 
