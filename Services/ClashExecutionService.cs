@@ -97,7 +97,9 @@ namespace AutomatedClashRunner.Services
                             test.SelectionB.Selection.CopyFrom(itemsB);
 
                             clashTests.TestsAddCopy(test);
-                            var addedTest = clashTests.Tests.LastOrDefault() as ClashTest;
+                            var addedTest = clashTests.Tests.OfType<ClashTest>()
+                                .FirstOrDefault(t => string.Equals(t.DisplayName, testName, StringComparison.OrdinalIgnoreCase))
+                                ?? clashTests.Tests.LastOrDefault() as ClashTest;
 
                             if (addedTest != null)
                             {
@@ -224,7 +226,9 @@ namespace AutomatedClashRunner.Services
                         test.SelectionB.Selection.CopyFrom(itemsB);
 
                         clashTests.TestsAddCopy(test);
-                        var addedTest = clashTests.Tests.LastOrDefault() as ClashTest;
+                        var addedTest = clashTests.Tests.OfType<ClashTest>()
+                            .FirstOrDefault(t => string.Equals(t.DisplayName, testName, StringComparison.OrdinalIgnoreCase))
+                            ?? clashTests.Tests.LastOrDefault() as ClashTest;
 
                         if (addedTest != null)
                         {
@@ -352,7 +356,9 @@ namespace AutomatedClashRunner.Services
                         test.SelectionB.Selection.CopyFrom(itemsB);
 
                         clashTests.TestsAddCopy(test);
-                        var addedTest = clashTests.Tests.LastOrDefault() as ClashTest;
+                        var addedTest = clashTests.Tests.OfType<ClashTest>()
+                            .FirstOrDefault(t => string.Equals(t.DisplayName, testName, StringComparison.OrdinalIgnoreCase))
+                            ?? clashTests.Tests.LastOrDefault() as ClashTest;
 
                         if (addedTest != null)
                         {

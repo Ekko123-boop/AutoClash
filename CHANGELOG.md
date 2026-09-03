@@ -2,6 +2,27 @@
 
 All notable changes to the Automated Clash Runner & Distiller addin are documented here.
 
+## [1.7.0] - 2026-09-03
+### Added
+- **License Notice & Clear Error Messaging**:
+  - `App.cs` now displays a descriptive warning dialog for all license denial scenarios (uninitialized offline lease, grace period expiration, clock tampering, revoked license) rather than silently exiting.
+- **Navisworks 2023 Viewpoint Generation Fallback**:
+  - Added active document camera viewpoint fallback in `ClashDistillerService` for Navisworks 2020-2023 where `TestsViewpointForResult` is unavailable.
+- **UI Responsiveness & Dispatcher Pumping**:
+  - Added STA dispatcher render pumping (`DoEvents()`) across all batch clash and selection set generation routines in `MatrixTabViewModel`, preventing "(Not Responding)" UI freezes.
+- **In-Place Selection Set Overwrites**:
+  - Re-running "Generate Sets" now cleanly replaces outdated sibling sets with the same model code inside the `Tests` folder, preventing duplicate proliferation of `(2)`, `(3)`, etc.
+- **Accurate Installer Version Targeting & Validation**:
+  - `CypherTools_Installer.exe` now strictly respects the user-checked Navisworks versions in the UI list.
+  - Accurate installation status reporting that validates directory operations and reports failures properly.
+  - Automatic purging of conflicting legacy standalone plugin folders in AppData.
+
+### Changed
+- Migrated local data storage (logs, license leases) to `%LOCALAPPDATA%\CypherNavisTools\` with automatic migration of existing `.lease` files.
+- Replaced corrupted mojibake emoji in `SummaryDialog.xaml` with a clean SVG vector icon.
+- Replaced non-deterministic `LastOrDefault()` clash test lookups with deterministic name queries in `ClashExecutionService`.
+- Updated main window title, header text, and badge from legacy "ACR" to "CYPH" and "Cypher Tools".
+
 ## [1.6.0] - 2026-09-02
 ### Added
 - **"Base Build" Automated Clash Test Runner**:

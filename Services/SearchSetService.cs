@@ -94,16 +94,17 @@ namespace AutomatedClashRunner.Services
 
             string baseName = _naming.GetTrimmedModelCode(modelNode.DisplayName);
 
-            // Versioning logic within Tests folder
-            string finalName = baseName;
-            int version = 2;
+            // Clean up previous set with same name in Tests folder to prevent (2), (3) proliferation
             if (testsFolder != null)
             {
-                while (testsFolder.Children.Any(x => string.Equals(x.DisplayName, finalName, StringComparison.OrdinalIgnoreCase)))
+                var existing = testsFolder.Children.FirstOrDefault(x => string.Equals(x.DisplayName, baseName, StringComparison.OrdinalIgnoreCase));
+                if (existing != null)
                 {
-                    finalName = $"{baseName} ({version++})";
+                    try { doc.SelectionSets.Remove(testsFolder, existing); } catch { }
                 }
             }
+
+            string finalName = baseName;
 
             // Create a Static Set directly referencing the discovered model item
             var modelColl = new ModelItemCollection { modelNode.OriginalModelItem };
@@ -111,8 +112,10 @@ namespace AutomatedClashRunner.Services
             
             doc.SelectionSets.AddCopy(newSet);
 
-            // AddCopy always places the newly created item as the last child of RootItem
-            var addedSet = doc.SelectionSets.RootItem.Children.LastOrDefault() as SelectionSet;
+            // AddCopy places the newly created item as a child of RootItem
+            var addedSet = doc.SelectionSets.RootItem.Children.OfType<SelectionSet>()
+                .FirstOrDefault(s => string.Equals(s.DisplayName, finalName, StringComparison.OrdinalIgnoreCase))
+                ?? doc.SelectionSets.RootItem.Children.LastOrDefault() as SelectionSet;
 
             // Move to Tests folder if available
             if (addedSet != null && testsFolder != null)
@@ -147,16 +150,17 @@ namespace AutomatedClashRunner.Services
 
             string baseName = _naming.GetTrimmedModelCode(targetNwc.DisplayName);
 
-            // Versioning logic within Tests folder
-            string finalName = baseName;
-            int version = 2;
+            // Clean up previous set with same name in Tests folder to prevent (2), (3) proliferation
             if (testsFolder != null)
             {
-                while (testsFolder.Children.Any(x => string.Equals(x.DisplayName, finalName, StringComparison.OrdinalIgnoreCase)))
+                var existing = testsFolder.Children.FirstOrDefault(x => string.Equals(x.DisplayName, baseName, StringComparison.OrdinalIgnoreCase));
+                if (existing != null)
                 {
-                    finalName = $"{baseName} ({version++})";
+                    try { doc.SelectionSets.Remove(testsFolder, existing); } catch { }
                 }
             }
+
+            string finalName = baseName;
 
             // Create a Static Set directly referencing all sibling NWC model items
             var modelColl = new ModelItemCollection();
@@ -168,8 +172,10 @@ namespace AutomatedClashRunner.Services
             var newSet = new SelectionSet(modelColl) { DisplayName = finalName };
             doc.SelectionSets.AddCopy(newSet);
 
-            // AddCopy always places the newly created item as the last child of RootItem
-            var addedSet = doc.SelectionSets.RootItem.Children.LastOrDefault() as SelectionSet;
+            // AddCopy places the newly created item as a child of RootItem
+            var addedSet = doc.SelectionSets.RootItem.Children.OfType<SelectionSet>()
+                .FirstOrDefault(s => string.Equals(s.DisplayName, finalName, StringComparison.OrdinalIgnoreCase))
+                ?? doc.SelectionSets.RootItem.Children.LastOrDefault() as SelectionSet;
 
             // Move to Tests folder if available
             if (addedSet != null && testsFolder != null)

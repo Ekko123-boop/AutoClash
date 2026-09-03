@@ -93,20 +93,19 @@ if (Test-Path "Images") {
 Get-ChildItem $bundleDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
 Write-Host " - Multi-Version Bundle deployed to: $bundleDir" -ForegroundColor Green
 
-# 6. Direct AppData Deployment: Navisworks Manage 2024 User Plugins Directory
-Write-Host ">>> 6. Deploying to Navisworks Manage 2024 User Plugins Directory..." -ForegroundColor Cyan
-$userPluginsDir = "$env:APPDATA\Autodesk\Navisworks Manage 2024\Plugins\CypherNavisTools"
-try {
-    if (Test-Path $userPluginsDir) { Remove-Item $userPluginsDir -Recurse -Force -ErrorAction SilentlyContinue }
-    New-Item -ItemType Directory -Force -Path $userPluginsDir | Out-Null
-    Copy-Item "bin\Release\2024\*.dll" -Destination $userPluginsDir -Force
-    if (Test-Path "en-US") { Copy-Item "en-US" -Destination "$userPluginsDir\en-US" -Recurse -Force }
-    if (Test-Path "Images") { Copy-Item "Images" -Destination "$userPluginsDir\Images" -Recurse -Force }
-    Get-ChildItem $userPluginsDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
-    Write-Host " - User Plugin deployed to: $userPluginsDir" -ForegroundColor Green
-} catch {
-    Write-Host " - Note: $userPluginsDir was partially locked (Navisworks running). Bundle in ApplicationPlugins was updated." -ForegroundColor Yellow
+# 6. Clean Standalone User Plugins Directory (eliminating duplicate plugin loading)
+Write-Host ">>> 6. Ensuring Clean User Plugins Directory (eliminating duplicate loading)..." -ForegroundColor Cyan
+$legacyUserPlugins = @(
+    "$env:APPDATA\Autodesk\Navisworks Manage 2024\Plugins\CypherNavisTools",
+    "$env:APPDATA\Autodesk\Navisworks Manage 2024\Plugins\RimoNavisTools",
+    "$env:APPDATA\Autodesk\Navisworks Manage 2024\Plugins\AutomatedClashRunner"
+)
+foreach ($dir in $legacyUserPlugins) {
+    if (Test-Path $dir) {
+        Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
+Write-Host " - Standalone user plugins cleaned. Bundle active in ApplicationPlugins." -ForegroundColor Green
 
 Write-Host "====================================================================" -ForegroundColor Green
 Write-Host "ALL BUILDS & INSTALLERS 100% COMPLETE (2020-2026 READY)!" -ForegroundColor Green

@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 using System.Drawing;
 using System.Diagnostics;
@@ -240,7 +241,13 @@ namespace AutomatedClashRunner.Installer
             progressBar.Value = 10;
             Log("=== Starting Installation ===");
 
-            bool success = await Task.Run(() => InstallerEngine.PerformInstall(Log));
+            var selectedTargets = new List<string>();
+            foreach (var item in clbVersions.CheckedItems)
+            {
+                selectedTargets.Add(item.ToString());
+            }
+
+            bool success = await Task.Run(() => InstallerEngine.PerformInstall(Log, selectedTargets));
 
             progressBar.Value = 100;
             SetControlsEnabled(true);
@@ -326,12 +333,15 @@ namespace AutomatedClashRunner.Installer
             return list;
         }
 
-        public static bool PerformInstall(Action<string> logger)
+        public static bool PerformInstall(Action<string> logger, List<string> selectedTargets = null)
         {
             Action<string> log = logger ?? ((m) => { });
 
             try
             {
+                int successCount = 0;
+                int failureCount = 0;
+
                 var assembly = Assembly.GetExecutingAssembly();
                 Stream stream = null;
                 foreach (var name in assembly.GetManifestResourceNames())
@@ -368,32 +378,41 @@ namespace AutomatedClashRunner.Installer
                     }
                 }
 
-                // 1. Deploy Global ProgramData ApplicationPlugins bundle
-                try
-                {
-                    string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-                    string globalBundle = Path.Combine(progData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
-                    if (Directory.Exists(globalBundle)) Directory.Delete(globalBundle, true);
-                    CopyDirectory(tempDir, globalBundle);
-                    log("✓ Deployed Global ApplicationPlugins Bundle (ProgramData)");
-                }
-                catch (Exception ex)
-                {
-                    log($"⚠ Warning deploying global bundle: {ex.Message}");
-                }
+                bool deployGlobal = selectedTargets == null || selectedTargets.Count == 0 ||
+                    selectedTargets.Any(x => x.IndexOf("Global Bundle", StringComparison.OrdinalIgnoreCase) >= 0);
 
-                // 2. Deploy User AppData ApplicationPlugins bundle
-                try
+                if (deployGlobal)
                 {
-                    string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                    string userBundle = Path.Combine(appData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
-                    if (Directory.Exists(userBundle)) Directory.Delete(userBundle, true);
-                    CopyDirectory(tempDir, userBundle);
-                    log("✓ Deployed User ApplicationPlugins Bundle (AppData)");
-                }
-                catch (Exception ex)
-                {
-                    log($"⚠ Warning deploying user bundle: {ex.Message}");
+                    // 1. Deploy Global ProgramData ApplicationPlugins bundle
+                    try
+                    {
+                        string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                        string globalBundle = Path.Combine(progData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
+                        if (Directory.Exists(globalBundle)) Directory.Delete(globalBundle, true);
+                        CopyDirectory(tempDir, globalBundle);
+                        log("✓ Deployed Global ApplicationPlugins Bundle (ProgramData)");
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        log($"⚠ Warning deploying global bundle: {ex.Message}");
+                        failureCount++;
+                    }
+
+                    // 2. Deploy User AppData ApplicationPlugins bundle
+                    try
+                    {
+                        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                        string userBundle = Path.Combine(appData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
+                        if (Directory.Exists(userBundle)) Directory.Delete(userBundle, true);
+                        CopyDirectory(tempDir, userBundle);
+                        log("✓ Deployed User ApplicationPlugins Bundle (AppData)");
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        log($"⚠ Warning deploying user bundle: {ex.Message}");
+                    }
                 }
 
                 // 3. Deploy to Program Files Navisworks Plugins directories
@@ -401,6 +420,15 @@ namespace AutomatedClashRunner.Installer
                 foreach (string nwDir in installedDirs)
                 {
                     string nwName = Path.GetFileName(nwDir);
+                    bool isTargeted = selectedTargets == null || selectedTargets.Count == 0 ||
+                        selectedTargets.Any(x => x.IndexOf(nwName, StringComparison.OrdinalIgnoreCase) >= 0);
+
+                    if (!isTargeted)
+                    {
+                        log($"Skipping {nwName} (unselected in installer)");
+                        continue;
+                    }
+
                     bool is2024Plus = nwName.Contains("2024") || nwName.Contains("2025") || nwName.Contains("2026");
                     string engineFolder = is2024Plus ? "2024" : "2023";
 
@@ -438,16 +466,18 @@ namespace AutomatedClashRunner.Installer
                         }
 
                         log($"✓ Installed to {nwName} (Using {engineFolder} Engine)");
+                        successCount++;
                     }
                     catch (Exception ex)
                     {
                         log($"⚠ Error installing to {nwName}: {ex.Message}");
+                        failureCount++;
                     }
                 }
 
                 // Cleanup temp
                 try { Directory.Delete(tempDir, true); } catch { }
-                return true;
+                return successCount > 0;
             }
             catch (Exception ex)
             {

@@ -375,6 +375,7 @@ namespace AutomatedClashRunner.ViewModels
                         ProgressText = status;
                         ProgressBarValue = current;
                         ProgressBarMax = total;
+                        DoEvents();
                     });
 
                 _dialogService.ShowSummary(result);
@@ -425,6 +426,7 @@ namespace AutomatedClashRunner.ViewModels
                         ProgressText = status;
                         ProgressBarValue = current;
                         ProgressBarMax = total;
+                        DoEvents();
                     });
 
                 _dialogService.ShowSummary(result);
@@ -475,6 +477,7 @@ namespace AutomatedClashRunner.ViewModels
                         ProgressText = status;
                         ProgressBarValue = current;
                         ProgressBarMax = total;
+                        DoEvents();
                     });
 
                 _dialogService.ShowSummary(result);
@@ -534,6 +537,7 @@ namespace AutomatedClashRunner.ViewModels
                         current++;
                         ProgressText = $"Generating set for {model.DisplayName} ({current}/{selectedModels.Count})...";
                         ProgressBarValue = current;
+                        DoEvents();
 
                         var siblings = _modelDiscovery.GetSiblingNwcs(doc, model);
                         if (siblings.Count == 0)
@@ -573,6 +577,16 @@ namespace AutomatedClashRunner.ViewModels
                 ProgressText = string.Empty;
                 ProgressBarValue = 0;
             }
+        }
+
+        private static void DoEvents()
+        {
+            try
+            {
+                var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+                dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
+            }
+            catch { }
         }
     }
 }

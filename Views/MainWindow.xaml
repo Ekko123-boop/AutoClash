@@ -1,7 +1,7 @@
 <Window x:Class="AutomatedClashRunner.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Automated Clash Runner &amp; Distiller" 
+        Title="Cypher Tools — Automated Model Clash Runner &amp; Distiller" 
         Height="760" Width="1160" 
         MinHeight="600" MinWidth="950"
         WindowStartupLocation="CenterOwner"
@@ -321,10 +321,10 @@
         <Border Grid.Row="0" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="18,12,18,12">
             <DockPanel>
                 <Border Width="36" Height="36" Background="#00875A" CornerRadius="6" Margin="0,0,12,0" DockPanel.Dock="Left">
-                    <TextBlock Text="ACR" FontWeight="Bold" FontSize="12" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="CYPH" FontWeight="Bold" FontSize="11" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="Automated Clash Runner &amp; Distiller" FontWeight="Bold" FontSize="16" Foreground="#0F172A"/>
+                    <TextBlock Text="Cypher Tools — Clash Runner &amp; Distiller" FontWeight="Bold" FontSize="16" Foreground="#0F172A"/>
                     <TextBlock Text="Autodesk Navisworks Automated Coordination Suite" FontSize="11" Foreground="#64748B"/>
                 </StackPanel>
             </DockPanel>

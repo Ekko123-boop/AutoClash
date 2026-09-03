@@ -23,8 +23,33 @@ namespace AutomatedClashRunner.Services
         private static bool? _sessionAllowed;
         private static readonly string LicenseDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "CypherNavisTools", "License");
+        private static readonly string LegacyLicenseDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "AutomatedClashRunner", "License");
         private static readonly string LeaseFilePath = Path.Combine(LicenseDirectory, ".lease");
+
+        static LicenseService()
+        {
+            MigrateLegacyLease();
+        }
+
+        private static void MigrateLegacyLease()
+        {
+            try
+            {
+                string legacyLease = Path.Combine(LegacyLicenseDirectory, ".lease");
+                if (File.Exists(legacyLease) && !File.Exists(LeaseFilePath))
+                {
+                    if (!Directory.Exists(LicenseDirectory))
+                    {
+                        Directory.CreateDirectory(LicenseDirectory);
+                    }
+                    File.Copy(legacyLease, LeaseFilePath, true);
+                }
+            }
+            catch { }
+        }
 
         public static LicenseValidationResult Validate()
         {
@@ -90,7 +115,7 @@ namespace AutomatedClashRunner.Services
                             DeleteLease();
                             string killMsg = rootData.ContainsKey("kill_message") 
                                 ? rootData["kill_message"]?.ToString() 
-                                : "Automated Clash Runner has been remotely deactivated by administrator.";
+                                : "Cypher Tools has been remotely deactivated by administrator.";
                             return new LicenseValidationResult
                             {
                                 IsAllowed = false,
@@ -142,7 +167,7 @@ namespace AutomatedClashRunner.Services
                                 IsRevoked = true,
                                 Message = !string.IsNullOrWhiteSpace(machineMsg) 
                                     ? machineMsg 
-                                    : "Your access license for Automated Clash Runner has been revoked by the administrator."
+                                    : "Your access license for Cypher Tools has been revoked by the administrator."
                             };
                         }
 
@@ -176,6 +201,7 @@ namespace AutomatedClashRunner.Services
             {
                 var payload = new Dictionary<string, object>
                 {
+                    { "product", "Cypher Tools" },
                     { "last_seen", nowUtc.ToString("o") },
                     { "user", Environment.UserName },
                     { "machine", Environment.MachineName },

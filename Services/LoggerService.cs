@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using AutomatedClashRunner.Services.Interfaces;
 
@@ -9,7 +9,7 @@ namespace AutomatedClashRunner.Services
         private static readonly object _lock = new object();
         private static readonly string _logDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "AutomatedClashRunner", "Logs");
+            "CypherNavisTools", "Logs");
 
         public static LoggerService Instance { get; } = new LoggerService();
 

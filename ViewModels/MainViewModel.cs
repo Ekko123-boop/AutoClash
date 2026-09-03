@@ -49,13 +49,14 @@ namespace AutomatedClashRunner.ViewModels
             CancelCommand = new RelayCommand(_ => _closeAction?.Invoke());
 
             // Secondary background validation check (anti-tamper defense)
+            var uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
             System.Threading.Tasks.Task.Run(() =>
             {
                 if (!LicenseService.QuickValidate())
                 {
-                    System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                    uiDispatcher.BeginInvoke(new Action(() =>
                     {
-                        DialogService.Instance.ShowWarning("License authorization expired or invalidated.", "Automated Clash Runner");
+                        DialogService.Instance.ShowWarning("License authorization expired or invalidated.", "Cypher Tools");
                         _closeAction?.Invoke();
                     }));
                 }

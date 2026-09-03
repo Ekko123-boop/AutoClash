@@ -83,6 +83,11 @@ namespace AutomatedClashRunner.Views
             if (isShift && _anchorIndex.ContainsKey(listView))
             {
                 int anchorIdx = _anchorIndex[listView];
+                if (anchorIdx >= listView.Items.Count)
+                {
+                    anchorIdx = Math.Max(0, listView.Items.Count - 1);
+                }
+
                 if (anchorIdx >= 0 && anchorIdx < listView.Items.Count)
                 {
                     // Target state is the state of the anchor (e.g. true if anchor was selected)

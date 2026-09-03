@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
@@ -16,6 +16,7 @@ namespace AutomatedClashRunner.ViewModels
         public ObservableCollection<SummaryLineItem> Items { get; } = new ObservableCollection<SummaryLineItem>();
 
         public string SummaryHeaderText { get; set; } = "Execution Summary";
+        public string SummarySubtitleText { get; set; } = "Operation execution completed";
 
         public ICommand CopyCommand { get; }
         public ICommand ExportCsvCommand { get; }
@@ -41,10 +42,14 @@ namespace AutomatedClashRunner.ViewModels
             if (result.HasWarningsOrFailures)
             {
                 SummaryHeaderText = "Completed with warnings / errors";
+                SummarySubtitleText = "Review the line items below for warnings or skipped operations.";
             }
             else
             {
                 SummaryHeaderText = "Completed Successfully";
+                SummarySubtitleText = result.GeneratedSets.Count > 0 && result.SuccessfulTests.Count == 0
+                    ? $"{result.GeneratedSets.Count} Selection Set(s) created in 'Tests' folder."
+                    : $"{result.SuccessfulTests.Count} Clash Test(s) executed successfully.";
             }
 
             // Generated Search Sets
@@ -103,12 +108,12 @@ namespace AutomatedClashRunner.ViewModels
                         sb.AppendLine($"\"{item.Category}\",\"{item.Type}\",\"{item.Message.Replace("\"", "\"\"")}\"");
                     }
                     File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8);
-                    MessageBox.Show("Summary exported successfully to CSV!", "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Services.DialogService.Instance.ShowInformation("Summary exported successfully to CSV!", "Export Complete");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to export CSV: {ex.Message}", "Export Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Services.DialogService.Instance.ShowError($"Failed to export CSV: {ex.Message}");
             }
         }
     }

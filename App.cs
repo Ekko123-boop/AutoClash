@@ -90,12 +90,10 @@ namespace AutomatedClashRunner
                 var licenseResult = LicenseService.Validate();
                 if (!licenseResult.IsAllowed)
                 {
-                    if (licenseResult.IsRevoked)
-                    {
-                        DialogService.Instance.ShowWarning(
-                            licenseResult.Message ?? "Your access license for Cypher Tools has been disabled by the administrator.",
-                            "Cypher Tools - License Notice");
-                    }
+                    string msg = !string.IsNullOrWhiteSpace(licenseResult.Message)
+                        ? licenseResult.Message
+                        : "Your access license for Cypher Tools is invalid or expired. Please connect to the internet to authorize.";
+                    DialogService.Instance.ShowWarning(msg, "Cypher Tools - License Notice");
                     return;
                 }
                 // =====================================================

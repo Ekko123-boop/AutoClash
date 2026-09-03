@@ -20,6 +20,13 @@ set "BIN2023=%ROOT%bin\Release\2023"
 set "BIN2024=%ROOT%bin\Release\2024"
 set "COUNT=0"
 
+:: 0. Clean legacy User AppData plugins to prevent duplicate loading
+for /d %%M in ("%APPDATA%\Autodesk\Navisworks Manage*") do (
+    for %%P in (CypherNavisTools CypherTools RimoNavisTools RimoTools AutomatedClashRunner) do (
+        if exist "%%~fM\Plugins\%%P" rmdir /s /q "%%~fM\Plugins\%%P" 2>nul
+    )
+)
+
 :: 1. Global ProgramData Multi-Version Bundle Deployment
 echo [1/3] Deploying Global Multi-Version ApplicationPlugins Bundle...
 set "GLOBAL_BUNDLE=%ProgramData%\Autodesk\ApplicationPlugins\CypherNavisTools.bundle"

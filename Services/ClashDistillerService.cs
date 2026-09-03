@@ -20,6 +20,7 @@ namespace AutomatedClashRunner.Services
 
         public void ReRunTests(Document doc, IEnumerable<ClashTest> tests)
         {
+            if (!LicenseService.QuickValidate()) return;
             if (doc == null || tests == null) return;
 
             var documentClash = doc.GetClash();
@@ -43,6 +44,7 @@ namespace AutomatedClashRunner.Services
         public int GroupByElement(Document doc, IEnumerable<ClashTest> tests, double maxProximityFt)
         {
             int groupsCreated = 0;
+            if (!LicenseService.QuickValidate()) return groupsCreated;
             if (doc == null || tests == null) return groupsCreated;
 
             var documentClash = doc.GetClash();
@@ -168,6 +170,7 @@ namespace AutomatedClashRunner.Services
             bool timestampedFolder = false)
         {
             int viewpointsCreated = 0;
+            if (!LicenseService.QuickValidate()) return viewpointsCreated;
             if (doc == null || tests == null) return viewpointsCreated;
 
             var documentClash = doc.GetClash();
@@ -267,7 +270,6 @@ namespace AutomatedClashRunner.Services
             try
             {
                 // In Navisworks 2024+, TestsViewpointForResult exists on DocumentClashTests.
-                // In Navisworks 2023, this method does not exist.
                 var method = typeof(DocumentClashTests).GetMethod("TestsViewpointForResult", 
                     System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
                 
@@ -278,9 +280,23 @@ namespace AutomatedClashRunner.Services
             }
             catch
             {
-                // Fallback or ignore if reflection fails
+                // Fallback to active document camera on reflection error
             }
-            return null; // Return null on 2023 so it degrades gracefully without crashing
+
+            // Fallback for Navisworks 2023 (or when API method unavailable):
+            try
+            {
+                var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
+                var activeVp = doc?.CurrentViewpoint?.Value;
+                if (activeVp != null)
+                {
+                    var copy = activeVp.CreateCopy();
+                    return copy;
+                }
+            }
+            catch { }
+
+            return null;
         }
     }
 }
