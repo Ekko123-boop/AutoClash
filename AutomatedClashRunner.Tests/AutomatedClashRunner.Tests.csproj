@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>AutomatedClashRunner.Tests</RootNamespace>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="FluentAssertions" Version="6.12.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Management" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="Autodesk.Navisworks.Api">
+      <HintPath>..\lib\2024\Autodesk.Navisworks.Api.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Autodesk.Navisworks.Clash">
+      <HintPath>..\lib\2024\Autodesk.Navisworks.Clash.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Services\NamingService.cs" Link="Linked\NamingService.cs" />
+    <Compile Include="..\Services\HardwareFingerprint.cs" Link="Linked\HardwareFingerprint.cs" />
+    <Compile Include="..\Services\StringProtection.cs" Link="Linked\StringProtection.cs" />
+    <Compile Include="..\Services\Interfaces\INamingService.cs" Link="Linked\INamingService.cs" />
+    <Compile Include="..\Services\Interfaces\ILoggerService.cs" Link="Linked\ILoggerService.cs" />
+    <Compile Include="..\Services\Interfaces\IDialogService.cs" Link="Linked\IDialogService.cs" />
+    <Compile Include="..\Models\ISelectableItem.cs" Link="Linked\ISelectableItem.cs" />
+    <Compile Include="..\Models\ModelSourceNode.cs" Link="Linked\ModelSourceNode.cs" />
+    <Compile Include="..\Models\SearchSetNode.cs" Link="Linked\SearchSetNode.cs" />
+    <Compile Include="..\Models\ExecutionResult.cs" Link="Linked\ExecutionResult.cs" />
+    <Compile Include="..\ViewModels\RelayCommand.cs" Link="Linked\RelayCommand.cs" />
+  </ItemGroup>
+</Project>

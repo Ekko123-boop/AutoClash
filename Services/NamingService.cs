@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using AutomatedClashRunner.Services.Interfaces;
 
@@ -13,18 +13,27 @@ namespace AutomatedClashRunner.Services
             if (string.IsNullOrWhiteSpace(rawFilename)) return string.Empty;
             string name = Path.GetFileNameWithoutExtension(rawFilename).Trim();
             
-            // Delimiter '-' e.g. "F1-STS-HDLS202-MX" -> "STS-HDLS202-MX"
             int firstDash = name.IndexOf('-');
-            if (firstDash >= 0 && firstDash < name.Length - 1)
+            int firstUnderscore = name.IndexOf('_');
+
+            // Find the earliest delimiter if both exist
+            int splitIndex = -1;
+            if (firstDash >= 0 && firstUnderscore >= 0)
             {
-                return name.Substring(firstDash + 1).Trim();
+                splitIndex = Math.Min(firstDash, firstUnderscore);
+            }
+            else if (firstDash >= 0)
+            {
+                splitIndex = firstDash;
+            }
+            else if (firstUnderscore >= 0)
+            {
+                splitIndex = firstUnderscore;
             }
 
-            // Delimiter '_' e.g. "F1_STS-HDLS202-MX" -> "STS-HDLS202-MX"
-            int firstUnderscore = name.IndexOf('_');
-            if (firstUnderscore >= 0 && firstUnderscore < name.Length - 1)
+            if (splitIndex >= 0 && splitIndex < name.Length - 1)
             {
-                return name.Substring(firstUnderscore + 1).Trim();
+                return name.Substring(splitIndex + 1).Trim();
             }
 
             return name;
