@@ -28,6 +28,32 @@ namespace AutomatedClashRunner.Services
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "AutomatedClashRunner", "License");
         private static readonly string LeaseFilePath = Path.Combine(LicenseDirectory, ".lease");
+        private static readonly string RevocationFilePath = Path.Combine(LicenseDirectory, ".revoked");
+
+        private static void SaveRevocation(string message)
+        {
+            try
+            {
+                if (!Directory.Exists(LicenseDirectory))
+                {
+                    Directory.CreateDirectory(LicenseDirectory);
+                }
+                File.WriteAllText(RevocationFilePath, message ?? string.Empty);
+            }
+            catch { }
+        }
+
+        private static void ClearRevocation()
+        {
+            try
+            {
+                if (File.Exists(RevocationFilePath))
+                {
+                    File.Delete(RevocationFilePath);
+                }
+            }
+            catch { }
+        }
 
         static LicenseService()
         {
@@ -115,19 +141,14 @@ namespace AutomatedClashRunner.Services
                             DeleteLease();
                             string killMsg = rootData.ContainsKey("kill_message") 
                                 ? rootData["kill_message"]?.ToString() 
-                                : "Cypher Tools has been remotely deactivated by administrator.";
+                                : "Cypher Tools is temporarily unavailable. Please contact administrator.";
+                            SaveRevocation(killMsg);
                             return new LicenseValidationResult
                             {
                                 IsAllowed = false,
                                 IsRevoked = true,
                                 Message = killMsg
                             };
-                        }
-
-                        int leaseDays = DefaultLeaseDays;
-                        if (rootData.ContainsKey("lease_days") && int.TryParse(rootData["lease_days"]?.ToString(), out int parsedDays))
-                        {
-                            leaseDays = Math.Max(1, parsedDays);
                         }
 
                         // Inspect machines registry
@@ -157,31 +178,32 @@ namespace AutomatedClashRunner.Services
                             }
                         }
 
-                        // If user is explicitly disabled
+                        // If user is explicitly disabled by administrator
                         if (!machineEnabled)
                         {
                             DeleteLease();
+                            string finalMsg = !string.IsNullOrWhiteSpace(machineMsg) 
+                                ? machineMsg 
+                                : "Cypher Tools is temporarily unavailable. Please contact administrator.";
+                            SaveRevocation(finalMsg);
                             return new LicenseValidationResult
                             {
                                 IsAllowed = false,
                                 IsRevoked = true,
-                                Message = !string.IsNullOrWhiteSpace(machineMsg) 
-                                    ? machineMsg 
-                                    : "Your access license for Cypher Tools has been revoked by the administrator."
+                                Message = finalMsg
                             };
                         }
 
+                        // Clear any local revocation marker since access is approved
+                        ClearRevocation();
+
                         // Update or register machine record quietly in background
                         SilentRegisterOrPing(client, rootEndpoint, hwid, machineExists, nowUtc);
-
-                        // Issue new encrypted 14-day offline lease
-                        WriteEncryptedLease(hwid, nowUtc, leaseDays);
 
                         return new LicenseValidationResult
                         {
                             IsAllowed = true,
                             IsRevoked = false,
-                            DaysRemaining = leaseDays,
                             Message = "Authorized"
                         };
                     }
@@ -234,94 +256,36 @@ namespace AutomatedClashRunner.Services
         {
             try
             {
-                if (!File.Exists(LeaseFilePath))
+                // Check if this machine was previously deactivated by administrator
+                if (File.Exists(RevocationFilePath))
                 {
+                    string msg = null;
+                    try { msg = File.ReadAllText(RevocationFilePath); } catch { }
                     return new LicenseValidationResult
                     {
                         IsAllowed = false,
-                        IsRevoked = false,
-                        Message = "No active license lease found. Please connect to the internet once to activate."
+                        IsRevoked = true,
+                        Message = !string.IsNullOrWhiteSpace(msg) 
+                            ? msg 
+                            : "Cypher Tools is temporarily unavailable. Please contact administrator."
                     };
                 }
 
-                byte[] encryptedBytes = File.ReadAllBytes(LeaseFilePath);
-                string plainJson = Decrypt(encryptedBytes, hwid);
-
-                if (string.IsNullOrWhiteSpace(plainJson))
-                {
-                    return new LicenseValidationResult
-                    {
-                        IsAllowed = false,
-                        IsRevoked = false,
-                        Message = "License lease is corrupt or invalid. Please connect to the internet to refresh."
-                    };
-                }
-
-                var serializer = new JavaScriptSerializer();
-                var lease = serializer.Deserialize<Dictionary<string, object>>(plainJson);
-
-                if (lease == null || !lease.ContainsKey("hwid") || lease["hwid"]?.ToString() != hwid)
-                {
-                    return new LicenseValidationResult
-                    {
-                        IsAllowed = false,
-                        IsRevoked = false,
-                        Message = "License lease is bound to a different machine. Please connect to the internet to authorize."
-                    };
-                }
-
-                DateTime expiresUtc = DateTime.Parse(lease["expires"].ToString()).ToUniversalTime();
-                DateTime lastVerifiedUtc = DateTime.Parse(lease["last_verified"].ToString()).ToUniversalTime();
-
-                // Anti-tampering: Clock rollback defense (system clock moved backwards > 2 hours)
-                if (nowUtc < lastVerifiedUtc.AddHours(-2))
-                {
-                    return new LicenseValidationResult
-                    {
-                        IsAllowed = false,
-                        IsRevoked = false,
-                        Message = "System clock anomaly detected. Please synchronize your system clock and connect to the internet."
-                    };
-                }
-
-                if (nowUtc > expiresUtc)
-                {
-                    return new LicenseValidationResult
-                    {
-                        IsAllowed = false,
-                        IsRevoked = false,
-                        Message = "Offline grace period has expired. Please connect to the internet to refresh authorization."
-                    };
-                }
-
-                // Update last verified timestamp in local lease to prevent clock rewind
-                int remainingDays = (int)Math.Ceiling((expiresUtc - nowUtc).TotalDays);
-                lease["last_verified"] = nowUtc.ToString("o");
-                string updatedJson = serializer.Serialize(lease);
-                byte[] reEncrypted = Encrypt(updatedJson, hwid);
-                
-                if (File.Exists(LeaseFilePath))
-                {
-                    File.SetAttributes(LeaseFilePath, FileAttributes.Normal);
-                }
-                File.WriteAllBytes(LeaseFilePath, reEncrypted);
-
+                // Normal offline operation: seamlessly allowed with zero trial or license warnings
                 return new LicenseValidationResult
                 {
                     IsAllowed = true,
                     IsRevoked = false,
-                    DaysRemaining = remainingDays,
-                    Message = "Authorized (Offline Lease)"
+                    Message = "Authorized"
                 };
             }
-            catch (Exception ex)
+            catch
             {
-                LoggerService.LogWarningStatic($"Lease validation failure: {ex.Message}");
                 return new LicenseValidationResult
                 {
-                    IsAllowed = false,
+                    IsAllowed = true,
                     IsRevoked = false,
-                    Message = "License verification failed. Please connect to the internet to authorize."
+                    Message = "Authorized"
                 };
             }
         }

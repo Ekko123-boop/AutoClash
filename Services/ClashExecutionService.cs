@@ -141,7 +141,7 @@ namespace AutomatedClashRunner.Services
             var result = new ExecutionResult();
             if (!LicenseService.QuickValidate())
             {
-                result.FailedTests.Add("License authorization expired or invalidated. Please connect to internet to refresh.");
+                result.FailedTests.Add("Cypher Tools execution disabled by administrator.");
                 return result;
             }
 
@@ -269,7 +269,7 @@ namespace AutomatedClashRunner.Services
             var result = new ExecutionResult();
             if (!LicenseService.QuickValidate())
             {
-                result.FailedTests.Add("License authorization expired or invalidated. Please connect to internet to refresh.");
+                result.FailedTests.Add("Cypher Tools execution disabled by administrator.");
                 return result;
             }
 

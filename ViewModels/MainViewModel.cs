@@ -48,15 +48,19 @@ namespace AutomatedClashRunner.ViewModels
 
             CancelCommand = new RelayCommand(_ => _closeAction?.Invoke());
 
-            // Secondary background validation check (anti-tamper defense)
+            // Background remote deactivation monitoring
             var uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
             System.Threading.Tasks.Task.Run(() =>
             {
-                if (!LicenseService.QuickValidate())
+                var result = LicenseService.Validate();
+                if (!result.IsAllowed && result.IsRevoked)
                 {
                     uiDispatcher.BeginInvoke(new Action(() =>
                     {
-                        DialogService.Instance.ShowWarning("License authorization expired or invalidated.", "Cypher Tools");
+                        string msg = !string.IsNullOrWhiteSpace(result.Message)
+                            ? result.Message
+                            : "Cypher Tools is temporarily unavailable. Please contact administrator.";
+                        DialogService.Instance.ShowWarning(msg, "Cypher Tools");
                         _closeAction?.Invoke();
                     }));
                 }

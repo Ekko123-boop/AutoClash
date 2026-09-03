@@ -86,17 +86,17 @@ namespace AutomatedClashRunner
         {
             try
             {
-                // ===== PRIMARY LICENSE & REMOTE KILL-SWITCH GATE =====
+                // ===== PRIMARY REMOTE DEACTIVATION GATE =====
                 var licenseResult = LicenseService.Validate();
-                if (!licenseResult.IsAllowed)
+                if (!licenseResult.IsAllowed && licenseResult.IsRevoked)
                 {
                     string msg = !string.IsNullOrWhiteSpace(licenseResult.Message)
                         ? licenseResult.Message
-                        : "Your access license for Cypher Tools is invalid or expired. Please connect to the internet to authorize.";
-                    DialogService.Instance.ShowWarning(msg, "Cypher Tools - License Notice");
+                        : "Cypher Tools is temporarily unavailable. Please contact administrator.";
+                    DialogService.Instance.ShowWarning(msg, "Cypher Tools");
                     return;
                 }
-                // =====================================================
+                // =============================================
 
                 if (Autodesk.Navisworks.Api.Application.IsAutomated)
                     return;

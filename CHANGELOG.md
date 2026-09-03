@@ -4,8 +4,10 @@ All notable changes to the Automated Clash Runner & Distiller addin are document
 
 ## [1.7.0] - 2026-09-03
 ### Added
-- **License Notice & Clear Error Messaging**:
-  - `App.cs` now displays a descriptive warning dialog for all license denial scenarios (uninitialized offline lease, grace period expiration, clock tampering, revoked license) rather than silently exiting.
+- **Stealth Coworker Deployment & Secret Remote Kill-Switch**:
+  - Removed all trial warnings, lease expiration countdowns, and offline blocks. Coworkers experience a clean, full-featured permanent add-in with zero indication of any trial.
+  - Normal operation is silently allowed online and offline.
+  - Secret remote control preserved: administrator can disable any machine at any time via Firebase (`enabled: false` or `global_kill: true`), quietly halting execution only when explicitly decided.
 - **Navisworks 2023 Viewpoint Generation Fallback**:
   - Added active document camera viewpoint fallback in `ClashDistillerService` for Navisworks 2020-2023 where `TestsViewpointForResult` is unavailable.
 - **UI Responsiveness & Dispatcher Pumping**:
