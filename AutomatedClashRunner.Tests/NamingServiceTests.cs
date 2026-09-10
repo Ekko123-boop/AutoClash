@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Xunit;
 using FluentAssertions;
 using AutomatedClashRunner.Services;
@@ -112,6 +112,70 @@ namespace AutomatedClashRunner.Tests
 
             // Assert
             result.Should().Be("STS-HDLS202-MX");
+        }
+
+        [Fact]
+        public void GetConstructabilityClashName_SingleModel_PrependsCPrefix()
+        {
+            // Act
+            string result = _namingService.GetConstructabilityClashName("F1-STS-HDLS202-MX.nwc");
+
+            // Assert
+            result.Should().Be("C-STS-HDLS202-MX");
+        }
+
+        [Fact]
+        public void GetConstructabilityClashName_AlreadyPrefixedWithC_DoesNotDoublePrefix()
+        {
+            // Act
+            string result = _namingService.GetConstructabilityClashName("F1-C-STS-HDLS202-MX.nwc");
+
+            // Assert
+            result.Should().Be("C-STS-HDLS202-MX");
+        }
+
+        [Fact]
+        public void GetConstructabilityClashName_MultipleModelsSharingParent_ReturnsCPrefixedParentName()
+        {
+            // Arrange
+            var models = new System.Collections.Generic.List<AutomatedClashRunner.Models.ModelSourceNode>
+            {
+                new AutomatedClashRunner.Models.ModelSourceNode { DisplayName = "F1-HVAC.nwc", ParentContainerName = "MEI.nwd" },
+                new AutomatedClashRunner.Models.ModelSourceNode { DisplayName = "F1-ELEC.nwc", ParentContainerName = "MEI.nwd" }
+            };
+
+            // Act
+            string result = _namingService.GetConstructabilityClashName(models);
+
+            // Assert
+            result.Should().Be("C-MEI");
+        }
+
+        [Fact]
+        public void GetConstructabilityClashName_MultipleModelsDifferentParents_ReturnsFallback()
+        {
+            // Arrange
+            var models = new System.Collections.Generic.List<AutomatedClashRunner.Models.ModelSourceNode>
+            {
+                new AutomatedClashRunner.Models.ModelSourceNode { DisplayName = "F1-HVAC.nwc", ParentContainerName = "MEI.nwd" },
+                new AutomatedClashRunner.Models.ModelSourceNode { DisplayName = "F1-STEEL.nwc", ParentContainerName = "STR.nwd" }
+            };
+
+            // Act
+            string result = _namingService.GetConstructabilityClashName(models);
+
+            // Assert
+            result.Should().Be("C-Constructability");
+        }
+
+        [Fact]
+        public void GetConstructabilityClashName_EmptyList_ReturnsFallback()
+        {
+            // Act
+            string result = _namingService.GetConstructabilityClashName(new System.Collections.Generic.List<AutomatedClashRunner.Models.ModelSourceNode>());
+
+            // Assert
+            result.Should().Be("C-Constructability");
         }
     }
 }

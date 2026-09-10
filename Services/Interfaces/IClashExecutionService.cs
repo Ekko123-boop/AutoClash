@@ -29,5 +29,11 @@ namespace AutomatedClashRunner.Services.Interfaces
             ClashTestType testType = ClashTestType.Clearance,
             double tolerance = 0.0,
             Action<string, int, int> progressCallback = null);
+
+        ExecutionResult RunConstructabilityTest(
+            Document doc,
+            List<ModelSourceNode> models,
+            double clearanceTolerance = 0.3048,
+            Action<string, int, int> progressCallback = null);
     }
 }

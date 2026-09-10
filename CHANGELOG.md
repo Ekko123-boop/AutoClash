@@ -2,6 +2,17 @@
 
 All notable changes to the Automated Clash Runner & Distiller addin are documented here.
 
+## [2.0.5] - 2026-09-10
+### Added
+- **Constructability (POC Clearance Clash) Feature**:
+  - Added dedicated purple "Constructability ({0} NWCs)" action button (`#7C3AED`) to the Generate Matrix action bar.
+  - Automatically verifies physical accessibility around Points of Connection (POC) using 1.0 ft (0.3048 m) clearance.
+  - **One-Click Automatic Search Set Generation**: Scans the active document for all elements containing "POC" in their name (`Item > Name` / DisplayName) and creates/refreshes the `Tests > POC Elements` Selection Set under the `Tests` folder.
+  - **Combined Model Testing**: Clashes all selected models in Selection B against all POC elements in Selection A in a single streamlined test.
+  - **`C-` Prefix Naming**: Follows the `C-` naming standard (`C-[TrimmedCode]` for single model, `C-[ParentContainer]` like `C-MEI` when models share a parent container, or `C-Constructability`).
+  - **Self-Clash Elimination ("Ignore Items in Same File")**: Automatically activates the built-in Clash Detective ignore rule so host pipes and ducts do not flag false-positive clashes against their own POC taps at 0.0 ft.
+  - **Strict Architectural Compliance**: Adheres to ISS-041 (Selection A strictly uses `SelectionSources.Add(sourceA)` without `CopyFrom`) and ISS-037 (no conflicting outer transaction).
+
 ## [2.0.4] - 2026-09-10
 ### Added
 - **Tab Navigation Auto-Refresh**:

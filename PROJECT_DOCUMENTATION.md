@@ -54,6 +54,7 @@ Cypher Tools (`CypherNavisTools.dll`) is a modular, high-reliability Autodesk Na
 - Creates/ensures a designated `Tests` folder in the Navisworks Sets tree.
 - Instantiates static `SelectionSet` objects for discovered `.nwc` items.
 - **`GenerateSiblingSearchSet`**: Generates a static `SelectionSet` containing all sibling `.nwc` models under the parent NWD, files it into the `Tests` folder, and handles automatic version naming on collision.
+- **`GetOrCreatePocSearchSet`**: Discovers all Point of Connection (POC) elements using native search query (`Item > Name` contains `"POC"`) and fallback hierarchy traversal, creating or refreshing the `Tests > POC Elements` Selection Set with duplicate proliferation prevention.
 
 ### 2.3 NamingService
 - Strips file extension and leading project code before the first hyphen or underscore (e.g. `F1-STS-HDLS202-MX.nwc` → `STS-HDLS202-MX`).
@@ -62,6 +63,7 @@ Cypher Tools (`CypherNavisTools.dll`) is a modular, high-reliability Autodesk Na
   - Any other manual set → `T-STS-HDLS202-MX`
 - **Tools Test Naming**: `GetToolsTestClashName` prefixes generated 1-to-1 test names with `T-` (e.g., `T-STS-HDLS202-MX`).
 - **Base Build Naming**: `GetBaseBuildClashName` produces clean trimmed model code without `T-` prefix.
+- **Constructability Naming**: `GetConstructabilityClashName` formats clash tests with `C-` prefix (`C-[TrimmedCode]` for single model, `C-[ParentContainer]` like `C-MEI` when models share a container, or `C-Constructability`).
 
 ### 2.4 ClashExecutionService
 - **Full Matrix Run**: Builds Cartesian product between selected Models and manual Search Sets, skipping duplicates.
@@ -73,6 +75,12 @@ Cypher Tools (`CypherNavisTools.dll`) is a modular, high-reliability Autodesk Na
   - Automatically identifies the document's `Base Build` / `BaseBuild` Selection Set.
   - Sets Selection A to Base Build and Selection B to the direct NWC model item.
   - Names generated clash tests with the clean model code (no `T-` prefix).
+- **Constructability (POC Clearance Clash Runner)**:
+  - Automatically ensures `Tests > POC Elements` Selection Set is created.
+  - Sets Selection A to `POC Elements` using dynamic `SelectionSources.Add` binding.
+  - Sets Selection B to all selected models combined.
+  - Sets clearance tolerance to 1.0 ft (0.3048 m) to verify physical accessibility envelope.
+  - Enables the "Ignore items in same file" rule on `ClashTest.IgnoreRules` to eliminate host pipe/duct self-clash false positives.
 - Bypasses the known Navisworks `new SelectionSourceCollection()` constructor crash.
 - Executes tests and gathers execution outcomes into `ExecutionResult`.
 

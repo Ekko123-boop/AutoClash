@@ -200,5 +200,111 @@ namespace AutomatedClashRunner.Services
 
             return addedSet;
         }
+
+        public SavedItem GetOrCreatePocSearchSet(Document doc, ExecutionResult result = null)
+        {
+            if (doc == null || doc.IsClear) return null;
+
+            var testsFolder = EnsureTestsFolder(doc);
+
+            // 1. Purge any previous "POC Elements" set in Tests folder to prevent duplicate proliferation (ISS-031)
+            if (testsFolder != null)
+            {
+                var existing = testsFolder.Children.FirstOrDefault(x =>
+                    string.Equals(x.DisplayName, "POC Elements", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(x.DisplayName, "POC", StringComparison.OrdinalIgnoreCase));
+                if (existing != null)
+                {
+                    try { doc.SelectionSets.Remove(testsFolder, existing); } catch { }
+                }
+            }
+
+            // 2. Discover all elements having "POC" in their name
+            var pocItems = new ModelItemCollection();
+
+            // Try native search query first
+            try
+            {
+                var search = new Search();
+                search.Selection.SelectAll();
+                search.SearchConditions.Add(
+                    SearchCondition.HasPropertyByDisplayName("Item", "Name").DisplayStringContains("POC"));
+                var found = search.FindAll(doc, false);
+                if (found != null && found.Count > 0)
+                {
+                    pocItems.AddRange(found);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Native Search query for 'POC' threw: {ex.Message}. Falling back to hierarchy traversal.");
+            }
+
+            // Fallback to recursive hierarchy traversal if Search returned 0 items
+            if (pocItems.Count == 0 && doc.Models != null)
+            {
+                foreach (Model m in doc.Models)
+                {
+                    if (m?.RootItem != null)
+                    {
+                        CollectPocItems(m.RootItem, pocItems);
+                    }
+                }
+            }
+
+            if (pocItems.Count == 0)
+            {
+                _logger.LogWarning("No elements containing 'POC' in their name were found in the document.");
+                return null;
+            }
+
+            // 3. Create static SelectionSet named "POC Elements"
+            string finalName = "POC Elements";
+            var newSet = new SelectionSet(pocItems) { DisplayName = finalName };
+            doc.SelectionSets.AddCopy(newSet);
+
+            var addedSet = doc.SelectionSets.RootItem.Children.OfType<SelectionSet>()
+                .FirstOrDefault(s => string.Equals(s.DisplayName, finalName, StringComparison.OrdinalIgnoreCase))
+                ?? doc.SelectionSets.RootItem.Children.LastOrDefault() as SelectionSet;
+
+            // Move to Tests folder
+            if (addedSet != null && testsFolder != null)
+            {
+                try
+                {
+                    int rootIndex = doc.SelectionSets.RootItem.Children.IndexOf(addedSet);
+                    if (rootIndex >= 0)
+                    {
+                        doc.SelectionSets.Move(doc.SelectionSets.RootItem, rootIndex, testsFolder, testsFolder.Children.Count);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Failed to move SelectionSet '{finalName}' into 'Tests' folder: {ex.Message}");
+                }
+            }
+
+            string setNamePath = testsFolder != null ? $"Tests > {finalName}" : finalName;
+            result?.GeneratedSets.Add($"{setNamePath} ({pocItems.Count} POC items)");
+            _logger.Log($"Generated Selection Set '{setNamePath}' containing {pocItems.Count} POC elements.");
+
+            return addedSet;
+        }
+
+        private void CollectPocItems(ModelItem item, ModelItemCollection collection)
+        {
+            if (item == null) return;
+
+            if (!string.IsNullOrEmpty(item.DisplayName) &&
+                item.DisplayName.IndexOf("POC", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                collection.Add(item);
+            }
+
+            foreach (ModelItem child in item.Children)
+            {
+                CollectPocItems(child, collection);
+            }
+        }
     }
 }

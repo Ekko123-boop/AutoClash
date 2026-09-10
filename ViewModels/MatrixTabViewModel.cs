@@ -8,6 +8,7 @@ using System.Windows.Input;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
 using AutomatedClashRunner.Models;
+using AutomatedClashRunner.Services;
 using AutomatedClashRunner.Services.Interfaces;
 
 namespace AutomatedClashRunner.ViewModels
@@ -19,6 +20,7 @@ namespace AutomatedClashRunner.ViewModels
         private readonly IClashExecutionService _clashExecution;
         private readonly IDialogService _dialogService;
         private readonly ILoggerService _logger;
+        private readonly INamingService _naming;
 
         public ObservableCollection<ModelSourceNode> AllModels { get; } = new ObservableCollection<ModelSourceNode>();
         public ICollectionView ModelsView { get; }
@@ -126,6 +128,7 @@ namespace AutomatedClashRunner.ViewModels
         public bool IsRunEnabled => ExpectedTestCount > 0 && !IsBusy;
         public bool IsToolsTestEnabled => SelectedModelCount > 0 && !IsBusy;
         public bool IsBaseBuildTestEnabled => SelectedModelCount > 0 && !IsBusy;
+        public bool IsConstructabilityEnabled => SelectedModelCount > 0 && !IsBusy;
         public bool IsGenerateSetsEnabled => SelectedModelCount > 0 && !IsBusy;
 
         public ICommand RefreshModelsCommand { get; }
@@ -138,6 +141,7 @@ namespace AutomatedClashRunner.ViewModels
         public ICommand RunCommand { get; }
         public ICommand ToolsTestCommand { get; }
         public ICommand BaseBuildTestCommand { get; }
+        public ICommand ConstructabilityCommand { get; }
         public ICommand GenerateSelectionSetsCommand { get; }
 
         public MatrixTabViewModel(
@@ -145,13 +149,15 @@ namespace AutomatedClashRunner.ViewModels
             ISearchSetService searchSets,
             IClashExecutionService clashExecution,
             IDialogService dialogService,
-            ILoggerService logger)
+            ILoggerService logger,
+            INamingService naming = null)
         {
             _modelDiscovery = modelDiscovery;
             _searchSets = searchSets;
             _clashExecution = clashExecution;
             _dialogService = dialogService;
             _logger = logger;
+            _naming = naming ?? NamingService.Instance;
 
             ModelsView = CollectionViewSource.GetDefaultView(AllModels);
             ModelsView.Filter = FilterModelItem;
@@ -172,6 +178,7 @@ namespace AutomatedClashRunner.ViewModels
             RunCommand = new RelayCommand(_ => RunClashTests(), _ => IsRunEnabled);
             ToolsTestCommand = new RelayCommand(_ => RunToolsTests(), _ => IsToolsTestEnabled);
             BaseBuildTestCommand = new RelayCommand(_ => RunBaseBuildTests(), _ => IsBaseBuildTestEnabled);
+            ConstructabilityCommand = new RelayCommand(_ => RunConstructabilityTests(), _ => IsConstructabilityEnabled);
             GenerateSelectionSetsCommand = new RelayCommand(_ => GenerateSelectionSets(), _ => IsGenerateSetsEnabled);
 
             LoadModels();
@@ -294,6 +301,7 @@ namespace AutomatedClashRunner.ViewModels
             OnPropertyChanged(nameof(IsRunEnabled));
             OnPropertyChanged(nameof(IsToolsTestEnabled));
             OnPropertyChanged(nameof(IsBaseBuildTestEnabled));
+            OnPropertyChanged(nameof(IsConstructabilityEnabled));
             OnPropertyChanged(nameof(IsGenerateSetsEnabled));
             OnPropertyChanged(nameof(ModelSelectionSummary));
             OnPropertyChanged(nameof(SetSelectionSummary));
@@ -302,6 +310,7 @@ namespace AutomatedClashRunner.ViewModels
             (RunCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (ToolsTestCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (BaseBuildTestCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (ConstructabilityCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (GenerateSelectionSetsCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
@@ -486,6 +495,70 @@ namespace AutomatedClashRunner.ViewModels
             {
                 _logger.LogError("Fatal error in base build clash test execution", ex);
                 _dialogService.ShowError($"Base build test execution failed: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+                ProgressText = string.Empty;
+                ProgressBarValue = 0;
+            }
+        }
+
+        private void RunConstructabilityTests()
+        {
+            var selectedModels = AllModels.Where(x => x.IsSelected && x.IsSelectable).ToList();
+            if (selectedModels.Count == 0)
+            {
+                _dialogService.ShowWarning("Please select at least one NWC Model from the left panel.", "No Models Selected");
+                return;
+            }
+
+            string testName = _naming.GetConstructabilityClashName(selectedModels);
+
+            bool confirm = _dialogService.ShowConfirmation(
+                $"Run Constructability clearance clash test for {selectedModels.Count} selected model(s)?\n\n" +
+                $"• Test Name: {testName}\n" +
+                $"• Selection A: All POC Elements (auto-generated set in 'Tests' folder)\n" +
+                $"• Selection B: {selectedModels.Count} Selected Model(s)\n" +
+                $"• Clearance: 1.0 ft (0.3048 m)\n" +
+                $"• Rule: Ignore items in same file\n" +
+                $"• Naming Prefix: C-",
+                "Confirm Constructability Clash Test Execution");
+
+            if (!confirm) return;
+
+            var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
+            if (doc == null || doc.IsClear)
+            {
+                _dialogService.ShowError("Active document is not available or is empty.");
+                return;
+            }
+
+            IsBusy = true;
+            ProgressText = "Initializing Constructability Tests...";
+            ProgressBarValue = 0;
+            ProgressBarMax = 10;
+
+            try
+            {
+                var result = _clashExecution.RunConstructabilityTest(
+                    doc,
+                    selectedModels,
+                    0.3048, // 1.0 ft in meters
+                    (status, current, total) =>
+                    {
+                        ProgressText = status;
+                        ProgressBarValue = current;
+                        ProgressBarMax = total;
+                        DoEvents();
+                    });
+
+                _dialogService.ShowSummary(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Fatal error in constructability clash test execution", ex);
+                _dialogService.ShowError($"Constructability test execution failed: {ex.Message}");
             }
             finally
             {

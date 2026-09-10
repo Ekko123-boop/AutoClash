@@ -10,5 +10,6 @@ namespace AutomatedClashRunner.Services.Interfaces
         FolderItem EnsureTestsFolder(Document doc);
         SelectionSet GenerateModelSearchSet(Document doc, ModelSourceNode modelNode, FolderItem testsFolder, ExecutionResult result);
         SelectionSet GenerateSiblingSearchSet(Document doc, ModelSourceNode targetNwc, List<ModelItem> siblingNwcs, FolderItem testsFolder, ExecutionResult result);
+        SavedItem GetOrCreatePocSearchSet(Document doc, ExecutionResult result = null);
     }
 }
