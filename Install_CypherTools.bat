@@ -54,43 +54,24 @@ if exist "%BIN2024%\CypherNavisTools.dll" (
 )
 echo      - Global Bundle deployed successfully.
 
-:: 2. Auto-Detect and Deploy to All Program Files Navisworks Installations
+:: 2. Purge duplicate standalone plugins from Program Files and User AppData
 echo.
-echo [2/3] Scanning Program Files for Autodesk Navisworks Installations...
+echo [2/3] Purging any duplicate standalone plugins to prevent dual-load conflicts...
 set "AUTODESK_DIR=%ProgramFiles%\Autodesk"
 
 for /d %%D in ("%AUTODESK_DIR%\Navisworks*") do (
-    set "NW_DIR=%%~fD"
-    set "NW_NAME=%%~nxD"
-    
-    :: Clean legacy folders
-    if exist "!NW_DIR!\Plugins\AutomatedClashRunner" (
-        rmdir /s /q "!NW_DIR!\Plugins\AutomatedClashRunner" 2>nul
+    for %%P in (CypherNavisTools CypherTools RimoNavisTools RimoTools AutomatedClashRunner) do (
+        if exist "%%~fD\Plugins\%%P" (
+            rmdir /s /q "%%~fD\Plugins\%%P" 2>nul
+            echo      - Cleaned duplicate plugin: %%~nxD\Plugins\%%P
+        )
     )
-    if exist "!NW_DIR!\Plugins\RimoTools" (
-        rmdir /s /q "!NW_DIR!\Plugins\RimoTools" 2>nul
-    )
-    if exist "!NW_DIR!\Plugins\RimoNavisTools" (
-        rmdir /s /q "!NW_DIR!\Plugins\RimoNavisTools" 2>nul
-    )
+)
 
-    set "TARGET=!NW_DIR!\Plugins\CypherNavisTools"
-    if not exist "!TARGET!\en-US" mkdir "!TARGET!\en-US" 2>nul
-    if not exist "!TARGET!\Images" mkdir "!TARGET!\Images" 2>nul
-
-    :: Determine Version (2020-2023 vs 2024-2026)
-    echo !NW_NAME! | findstr /C:"2024" /C:"2025" /C:"2026" >nul
-    if !errorlevel! equ 0 (
-        echo   [+] Found !NW_NAME! (Deploying 2024+ engine)
-        copy /Y "%BIN2024%\CypherNavisTools.dll" "!TARGET!\" >nul
-    ) else (
-        echo   [+] Found !NW_NAME! (Deploying 2020-2023 engine)
-        copy /Y "%BIN2023%\CypherNavisTools.dll" "!TARGET!\" >nul
-    )
-
-    copy /Y "%ROOT%en-US\*.xaml" "!TARGET!\en-US\" >nul
-    copy /Y "%ROOT%Images\*.png" "!TARGET!\Images\" >nul
-    set /a COUNT+=1
+:: Also purge user AppData bundle so there is only one authoritative bundle on the system
+if exist "%APPDATA%\Autodesk\ApplicationPlugins\CypherNavisTools.bundle" (
+    rmdir /s /q "%APPDATA%\Autodesk\ApplicationPlugins\CypherNavisTools.bundle" 2>nul
+    echo      - Cleaned duplicate user bundle from AppData.
 )
 
 :: 3. Finish

@@ -2,6 +2,24 @@
 
 All notable changes to the Automated Clash Runner & Distiller addin are documented here.
 
+## [2.0.2] - 2026-09-10
+### Fixed
+- **Host Fatal Crash Elimination on Open NWF/NWD (Navisworks 2023 & 2024)**:
+  - Fixed lethal STA message-pump deadlock and memory access violation (`0xC0000005`) caused by passing `Process.GetCurrentProcess().MainWindowHandle` to WPF `WindowInteropHelper.Owner`. Replaced with official `Autodesk.Navisworks.Api.Application.Gui.MainWindow.Handle` wrapped in defensive exception handling.
+  - Removed fatal secondary `window.Show()` fallback that caused WPF invalid state exceptions when `ShowDialog()` failed.
+  - Resolved duplicate ribbon command registration collisions by enforcing a single authoritative Autoloader bundle and automatically purging conflicting standalone plugins from `Program Files` and `AppData`.
+  - Fixed ribbon button sticky toggle state by setting `CommandState.IsChecked = false` for all push-button actions.
+- **Clash Detective Transaction Compatibility (Navisworks 2023)**:
+  - Removed enclosing `doc.BeginTransaction()` calls from batch clash runners (`RunToolsTest` and `RunBaseBuildTest`) that conflicted with Navisworks 2023 internal clash detective transactions.
+- **Tree Node Count Safety**:
+  - Added null-coalescing guards and defensive try-catch blocks to `ClashTestNode.CalculateCounts()` preventing unhandled exceptions during model tree traversal.
+
+### Added
+- **Single-Bundle Deployment Enforcement**:
+  - `Install_CypherTools.bat` and `CypherTools_Installer.exe` now actively purge redundant copies across `C:\Program Files\Autodesk\Navisworks Manage [Year]\Plugins\CypherNavisTools` and user AppData, ensuring only one clean bundle is loaded.
+- **Stealth Coworker Operation (100% Maintained)**:
+  - Zero trial warnings, zero popups, zero countdowns for coworkers online and offline.
+
 ## [1.7.0] - 2026-09-03
 ### Added
 - **Stealth Coworker Deployment & Secret Remote Kill-Switch**:

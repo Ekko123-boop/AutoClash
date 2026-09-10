@@ -20,7 +20,6 @@ namespace AutomatedClashRunner.Services
 
         public void ReRunTests(Document doc, IEnumerable<ClashTest> tests)
         {
-            if (!LicenseService.QuickValidate()) return;
             if (doc == null || tests == null) return;
 
             var documentClash = doc.GetClash();
@@ -44,7 +43,6 @@ namespace AutomatedClashRunner.Services
         public int GroupByElement(Document doc, IEnumerable<ClashTest> tests, double maxProximityFt)
         {
             int groupsCreated = 0;
-            if (!LicenseService.QuickValidate()) return groupsCreated;
             if (doc == null || tests == null) return groupsCreated;
 
             var documentClash = doc.GetClash();
@@ -170,7 +168,6 @@ namespace AutomatedClashRunner.Services
             bool timestampedFolder = false)
         {
             int viewpointsCreated = 0;
-            if (!LicenseService.QuickValidate()) return viewpointsCreated;
             if (doc == null || tests == null) return viewpointsCreated;
 
             var documentClash = doc.GetClash();

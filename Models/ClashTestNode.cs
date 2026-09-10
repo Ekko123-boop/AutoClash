@@ -52,69 +52,77 @@ namespace AutomatedClashRunner.Models
 
         private void CalculateCounts()
         {
-            if (OriginalTest?.Children == null) return;
+            if (OriginalTest == null) return;
 
-            int activeNew = 0;
-            int reviewed = 0;
-            int approved = 0;
-            int resolved = 0;
-            int total = 0;
-
-            foreach (SavedItem child in OriginalTest.Children)
+            try
             {
-                if (child is ClashResult res)
-                {
-                    total++;
-                    switch (res.Status)
-                    {
-                        case ClashResultStatus.New:
-                        case ClashResultStatus.Active:
-                            activeNew++;
-                            break;
-                        case ClashResultStatus.Reviewed:
-                            reviewed++;
-                            break;
-                        case ClashResultStatus.Approved:
-                            approved++;
-                            break;
-                        case ClashResultStatus.Resolved:
-                            resolved++;
-                            break;
-                    }
-                }
-                else if (child is ClashResultGroup group)
-                {
-                    int groupCount = group.Children.Count;
-                    int countToAdd = groupCount > 0 ? groupCount : 1;
-                    total += countToAdd;
+                if (OriginalTest.Children == null) return;
 
-                    switch (group.Status)
+                int activeNew = 0;
+                int reviewed = 0;
+                int approved = 0;
+                int resolved = 0;
+                int total = 0;
+
+                foreach (SavedItem child in OriginalTest.Children)
+                {
+                    if (child == null) continue;
+
+                    if (child is ClashResult res)
                     {
-                        case ClashResultStatus.New:
-                        case ClashResultStatus.Active:
-                            activeNew += countToAdd;
-                            break;
-                        case ClashResultStatus.Reviewed:
-                            reviewed += countToAdd;
-                            break;
-                        case ClashResultStatus.Approved:
-                            approved += countToAdd;
-                            break;
-                        case ClashResultStatus.Resolved:
-                            resolved += countToAdd;
-                            break;
-                        default:
-                            activeNew += countToAdd;
-                            break;
+                        total++;
+                        switch (res.Status)
+                        {
+                            case ClashResultStatus.New:
+                            case ClashResultStatus.Active:
+                                activeNew++;
+                                break;
+                            case ClashResultStatus.Reviewed:
+                                reviewed++;
+                                break;
+                            case ClashResultStatus.Approved:
+                                approved++;
+                                break;
+                            case ClashResultStatus.Resolved:
+                                resolved++;
+                                break;
+                        }
+                    }
+                    else if (child is ClashResultGroup group)
+                    {
+                        int groupCount = group.Children != null ? group.Children.Count : 0;
+                        int countToAdd = groupCount > 0 ? groupCount : 1;
+                        total += countToAdd;
+
+                        switch (group.Status)
+                        {
+                            case ClashResultStatus.New:
+                            case ClashResultStatus.Active:
+                                activeNew += countToAdd;
+                                break;
+                            case ClashResultStatus.Reviewed:
+                                reviewed += countToAdd;
+                                break;
+                            case ClashResultStatus.Approved:
+                                approved += countToAdd;
+                                break;
+                            case ClashResultStatus.Resolved:
+                                resolved += countToAdd;
+                                break;
+                            default:
+                                activeNew += countToAdd;
+                                break;
+                        }
                     }
                 }
+
+                ActiveNewCount = activeNew;
+                ReviewedCount = reviewed;
+                ApprovedCount = approved;
+                ResolvedCount = resolved;
+                TotalCount = total;
             }
-
-            ActiveNewCount = activeNew;
-            ReviewedCount = reviewed;
-            ApprovedCount = approved;
-            ResolvedCount = resolved;
-            TotalCount = total;
+            catch { }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

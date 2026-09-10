@@ -383,7 +383,56 @@ namespace AutomatedClashRunner.Installer
 
                 if (deployGlobal)
                 {
-                    // 1. Deploy Global ProgramData ApplicationPlugins bundle
+                    // 1. Clean any legacy standalone plugins from Program Files across all versions
+                    var allNw = GetInstalledNavisworksDirectories();
+                    foreach (string nwDir in allNw)
+                    {
+                        foreach (var leg in new[] { "CypherNavisTools", "CypherTools", "RimoNavisTools", "RimoTools", "AutomatedClashRunner" })
+                        {
+                            string old = Path.Combine(nwDir, "Plugins", leg);
+                            if (Directory.Exists(old))
+                            {
+                                try { Directory.Delete(old, true); log($"✓ Cleaned standalone duplicate: {Path.GetFileName(nwDir)}\\Plugins\\{leg}"); } catch { }
+                            }
+                        }
+                    }
+
+                    // 1b. Clean any legacy standalone user plugins from AppData across all versions
+                    string userAppData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                    string userAutodesk = Path.Combine(userAppData, "Autodesk");
+                    if (Directory.Exists(userAutodesk))
+                    {
+                        foreach (var nwDir in Directory.GetDirectories(userAutodesk, "Navisworks Manage*"))
+                        {
+                            foreach (var leg in new[] { "CypherNavisTools", "CypherTools", "RimoNavisTools", "RimoTools", "AutomatedClashRunner" })
+                            {
+                                string old = Path.Combine(nwDir, "Plugins", leg);
+                                if (Directory.Exists(old))
+                                {
+                                    try { Directory.Delete(old, true); log($"✓ Cleaned AppData duplicate: {Path.GetFileName(nwDir)}\\Plugins\\{leg}"); } catch { }
+                                }
+                            }
+                        }
+                    }
+
+                    // 1c. Clean any legacy bundles (ProgramData and AppData)
+                    string commonProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                    foreach (var legacyBundle in new[] { "CypherTools.bundle", "RimoNavisTools.bundle", "RimoTools.bundle", "AutomatedClashRunner.bundle" })
+                    {
+                        string pdOld = Path.Combine(commonProgData, @"Autodesk\ApplicationPlugins", legacyBundle);
+                        if (Directory.Exists(pdOld))
+                        {
+                            try { Directory.Delete(pdOld, true); log($"✓ Cleaned legacy bundle: {legacyBundle}"); } catch { }
+                        }
+                        string adOld = Path.Combine(userAppData, @"Autodesk\ApplicationPlugins", legacyBundle);
+                        if (Directory.Exists(adOld))
+                        {
+                            try { Directory.Delete(adOld, true); log($"✓ Cleaned legacy AppData bundle: {legacyBundle}"); } catch { }
+                        }
+                    }
+
+                    // 2. Deploy Global ProgramData ApplicationPlugins bundle
+                    bool progDataSuccess = false;
                     try
                     {
                         string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
@@ -392,86 +441,98 @@ namespace AutomatedClashRunner.Installer
                         CopyDirectory(tempDir, globalBundle);
                         log("✓ Deployed Global ApplicationPlugins Bundle (ProgramData)");
                         successCount++;
+                        progDataSuccess = true;
                     }
                     catch (Exception ex)
                     {
-                        log($"⚠ Warning deploying global bundle: {ex.Message}");
-                        failureCount++;
+                        log($"ℹ ProgramData deployment: {ex.Message}");
                     }
 
-                    // 2. Deploy User AppData ApplicationPlugins bundle
-                    try
+                    // 3. If ProgramData succeeded, clean AppData bundle to ensure exactly ONE copy exists.
+                    //    If ProgramData failed, deploy User AppData bundle as canonical fallback.
+                    string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                    string userBundle = Path.Combine(appData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
+                    if (progDataSuccess)
                     {
-                        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                        string userBundle = Path.Combine(appData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
-                        if (Directory.Exists(userBundle)) Directory.Delete(userBundle, true);
-                        CopyDirectory(tempDir, userBundle);
-                        log("✓ Deployed User ApplicationPlugins Bundle (AppData)");
-                        successCount++;
+                        if (Directory.Exists(userBundle))
+                        {
+                            try { Directory.Delete(userBundle, true); log("✓ Purged redundant user bundle from AppData"); } catch { }
+                        }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        log($"⚠ Warning deploying user bundle: {ex.Message}");
+                        try
+                        {
+                            if (Directory.Exists(userBundle)) Directory.Delete(userBundle, true);
+                            CopyDirectory(tempDir, userBundle);
+                            log("✓ Deployed User ApplicationPlugins Bundle (AppData)");
+                            successCount++;
+                        }
+                        catch (Exception appEx)
+                        {
+                            log($"⚠ Error deploying bundle to AppData: {appEx.Message}");
+                            failureCount++;
+                        }
                     }
                 }
-
-                // 3. Deploy to Program Files Navisworks Plugins directories
-                var installedDirs = GetInstalledNavisworksDirectories();
-                foreach (string nwDir in installedDirs)
+                else
                 {
-                    string nwName = Path.GetFileName(nwDir);
-                    bool isTargeted = selectedTargets == null || selectedTargets.Count == 0 ||
-                        selectedTargets.Any(x => x.IndexOf(nwName, StringComparison.OrdinalIgnoreCase) >= 0);
-
-                    if (!isTargeted)
+                    // Deploy to specific targeted Program Files Navisworks Plugins directories only
+                    var installedDirs = GetInstalledNavisworksDirectories();
+                    foreach (string nwDir in installedDirs)
                     {
-                        log($"Skipping {nwName} (unselected in installer)");
-                        continue;
-                    }
-
-                    bool is2024Plus = nwName.Contains("2024") || nwName.Contains("2025") || nwName.Contains("2026");
-                    string engineFolder = is2024Plus ? "2024" : "2023";
-
-                    try
-                    {
-                        // Clean legacy folders
-                        string[] legacy = { "AutomatedClashRunner", "RimoTools", "RimoNavisTools", "CypherTools" };
-                        foreach (var leg in legacy)
+                        string nwName = Path.GetFileName(nwDir);
+                        bool isTargeted = selectedTargets.Any(x => x.IndexOf(nwName, StringComparison.OrdinalIgnoreCase) >= 0);
+                        if (!isTargeted)
                         {
-                            string old = Path.Combine(nwDir, "Plugins", leg);
-                            if (Directory.Exists(old)) Directory.Delete(old, true);
+                            log($"Skipping {nwName} (unselected in installer)");
+                            continue;
                         }
 
-                        string targetPlugin = Path.Combine(nwDir, @"Plugins\CypherNavisTools");
-                        if (Directory.Exists(targetPlugin)) Directory.Delete(targetPlugin, true);
-                        Directory.CreateDirectory(targetPlugin);
+                        bool is2024Plus = nwName.Contains("2024") || nwName.Contains("2025") || nwName.Contains("2026");
+                        string engineFolder = is2024Plus ? "2024" : "2023";
 
-                        // Copy engine binary
-                        string sourceEngine = Path.Combine(tempDir, "Contents", engineFolder);
-                        if (Directory.Exists(sourceEngine))
+                        try
                         {
-                            CopyDirectory(sourceEngine, targetPlugin);
-                        }
+                            // Clean legacy folders
+                            string[] legacy = { "AutomatedClashRunner", "RimoTools", "RimoNavisTools", "CypherTools" };
+                            foreach (var leg in legacy)
+                            {
+                                string old = Path.Combine(nwDir, "Plugins", leg);
+                                if (Directory.Exists(old)) Directory.Delete(old, true);
+                            }
 
-                        // Copy shared Ribbon & Images
-                        string sharedRibbon = Path.Combine(tempDir, "en-US");
-                        if (Directory.Exists(sharedRibbon))
-                        {
-                            CopyDirectory(sharedRibbon, Path.Combine(targetPlugin, "en-US"));
-                        }
-                        string sharedImages = Path.Combine(tempDir, "Images");
-                        if (Directory.Exists(sharedImages))
-                        {
-                            CopyDirectory(sharedImages, Path.Combine(targetPlugin, "Images"));
-                        }
+                            string targetPlugin = Path.Combine(nwDir, @"Plugins\CypherNavisTools");
+                            if (Directory.Exists(targetPlugin)) Directory.Delete(targetPlugin, true);
+                            Directory.CreateDirectory(targetPlugin);
 
-                        log($"✓ Installed to {nwName} (Using {engineFolder} Engine)");
-                        successCount++;
-                    }
-                    catch (Exception ex)
-                    {
-                        log($"⚠ Error installing to {nwName}: {ex.Message}");
-                        failureCount++;
+                            // Copy engine binary
+                            string sourceEngine = Path.Combine(tempDir, "Contents", engineFolder);
+                            if (Directory.Exists(sourceEngine))
+                            {
+                                CopyDirectory(sourceEngine, targetPlugin);
+                            }
+
+                            // Copy shared Ribbon & Images
+                            string sharedRibbon = Path.Combine(tempDir, "en-US");
+                            if (Directory.Exists(sharedRibbon))
+                            {
+                                CopyDirectory(sharedRibbon, Path.Combine(targetPlugin, "en-US"));
+                            }
+                            string sharedImages = Path.Combine(tempDir, "Images");
+                            if (Directory.Exists(sharedImages))
+                            {
+                                CopyDirectory(sharedImages, Path.Combine(targetPlugin, "Images"));
+                            }
+
+                            log($"✓ Installed to {nwName} (Using {engineFolder} Engine)");
+                            successCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            log($"⚠ Error installing to {nwName}: {ex.Message}");
+                            failureCount++;
+                        }
                     }
                 }
 
@@ -529,14 +590,18 @@ namespace AutomatedClashRunner.Installer
             }
 
             // Clean AppData user plugin folders
-            foreach (var nwDir in Directory.GetDirectories(appData, "Navisworks Manage*"))
+            string autodeskAppData = Path.Combine(appData, "Autodesk");
+            if (Directory.Exists(autodeskAppData))
             {
-                foreach (var t in new[] { "CypherNavisTools", "CypherTools", "RimoNavisTools", "RimoTools" })
+                foreach (var nwDir in Directory.GetDirectories(autodeskAppData, "Navisworks Manage*"))
                 {
-                    string p = Path.Combine(nwDir, "Plugins", t);
-                    if (Directory.Exists(p))
+                    foreach (var t in new[] { "CypherNavisTools", "CypherTools", "RimoNavisTools", "RimoTools", "AutomatedClashRunner" })
                     {
-                        try { Directory.Delete(p, true); log($"✓ Removed AppData\\{Path.GetFileName(nwDir)}\\Plugins\\{t}"); } catch { }
+                        string p = Path.Combine(nwDir, "Plugins", t);
+                        if (Directory.Exists(p))
+                        {
+                            try { Directory.Delete(p, true); log($"✓ Removed AppData\\Autodesk\\{Path.GetFileName(nwDir)}\\Plugins\\{t}"); } catch { }
+                        }
                     }
                 }
             }

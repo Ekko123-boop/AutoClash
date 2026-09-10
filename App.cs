@@ -59,7 +59,7 @@ namespace AutomatedClashRunner
             var state = new CommandState();
             state.IsVisible = true;
             state.IsEnabled = true;
-            state.IsChecked = true;
+            state.IsChecked = false;
             return state;
         }
 
@@ -111,10 +111,17 @@ namespace AutomatedClashRunner
                 }
 
                 var window = new MainWindow();
-                if (Autodesk.Navisworks.Api.Application.Gui?.MainWindow?.Handle != IntPtr.Zero)
+                try
                 {
-                    var helper = new WindowInteropHelper(window);
-                    helper.Owner = Autodesk.Navisworks.Api.Application.Gui.MainWindow.Handle;
+                    if (Autodesk.Navisworks.Api.Application.Gui?.MainWindow?.Handle != IntPtr.Zero)
+                    {
+                        var helper = new WindowInteropHelper(window);
+                        helper.Owner = Autodesk.Navisworks.Api.Application.Gui.MainWindow.Handle;
+                    }
+                }
+                catch (Exception ownerEx)
+                {
+                    LoggerService.LogWarningStatic($"Could not attach window owner handle: {ownerEx.Message}");
                 }
 
                 window.DataContext = new MainViewModel(() => window.Close(), initialTabIndex: targetTab);

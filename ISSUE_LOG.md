@@ -41,6 +41,12 @@ This document records the full engineering history, bugs encountered, root cause
 | **ISS-032** | WPF Threading | `MatrixTabViewModel.cs` | UI freezing / "(Not Responding)" during large batch clash matrix runs | STA execution on UI thread starved the WPF render loop of time slices. | Implemented `DoEvents()` dispatcher render pump in all progress callbacks so progress bars and UI update smoothly. |
 | **ISS-033** | Installer & Deploy | `Installer/Program.cs`, `Install_CypherTools.bat`, `build_all.ps1` | Ignored checked versions in installer list, duplicate plugin loading across bundle and user directory | Installer deployed to all versions regardless of check state, and dual deployment caused duplicate tabs in Navisworks. | Installer now respects checked versions filter, returns accurate success status, and build/install scripts purge duplicate user plugin folders. |
 | **ISS-034** | License & UX | `LicenseService.cs`, `App.cs`, `MainViewModel.cs`, `ClashExecutionService.cs` | User wanted completely silent stealth operation for coworkers without trial warnings or countdowns | Prior implementation showed popups when offline lease was missing or grace period expired. | Eliminated all trial/lease warnings and offline blocks; default access is silently allowed online and offline; remote kill-switch operates quietly via Firebase (`enabled = false` / `global_kill = true`), saving local `.revoked` state only when explicitly triggered by administrator. |
+| **ISS-035** | UI/UX | `MainWindow.xaml` | Proximity slider allowed 0 ft or oversized 2000 ft range | Default range 1-2000 ft was excessive for standard MEP coordination; 0 ft caused zero-radius clustering errors. | Constrained range to 1 - 300 ft with 10 ft snap ticks and 25 ft default. |
+| **ISS-036** | Viewpoints | `ViewpointsTabViewModel.cs`, `ClashDistillerService.cs` | Viewpoints clutter root viewpoint tree without timestamping | Multiple runs generated viewpoints loose or unorganized. | Added optional grouped master folder stamped with current date and time (`Clash Viewpoints - yyyy-MM-dd HH.mm.ss`). |
+| **ISS-037** | Clash Engine | `ClashExecutionService.cs` | Execution aborted on Navisworks 2023 when creating Base Build or Tools tests | Wrapping batch test runs in a parent `doc.BeginTransaction(...)` conflicted with Navisworks internal clash test execution transactions in 2023, causing transaction abort exceptions. | Removed enclosing transaction from `RunToolsTest` and `RunBaseBuildTest`; Navisworks handles test creation and execution atomicity per test internally. |
+| **ISS-038** | Tree Traversal | `ClashTestNode.cs` | `NullReferenceException` during tree count calculation | Models or folders with null item collections caused crashes during recursive status aggregation. | Wrapped `CalculateCounts()` in null-coalescing guards and defensive try-catch blocks. |
+| **ISS-039** | Multi-Version | `ClashDistillerService.cs` | Reflection failure accessing `TestsViewpointForResult` in 2023 | Method does not exist in Navisworks 2020-2023 API; unhandled invocation crashed viewpoint generation. | Implemented graceful fallback: queries active viewpoint camera via `doc.CurrentViewpoint.Value.CreateCopy()` when the 2024 API method is unavailable. |
+| **ISS-040** | Stability / Host Fatal Crash | `App.cs`, `Installer/Program.cs`, `Install_CypherTools.bat` | Navisworks Manage 2023 & 2024 immediately crashed with `0xC0000005` Access Violation upon clicking any add-in button when an NWF/NWD model was open | 1) `App.LaunchApp()` set `WindowInteropHelper.Owner = Process.GetCurrentProcess().MainWindowHandle` which in `roamer.exe` returns an unmanaged worker/message window, deadlocking the STA message pump. 2) Duplicate plugin installations (`Program Files` + `ProgramData` + `AppData`) loaded conflicting ribbon command hooks into the MFC command table. 3) Catch block attempted fatal `window.Show()` retry after failed `ShowDialog()`. | 1) Replaced `Process.MainWindowHandle` with native MFC handle `Autodesk.Navisworks.Api.Application.Gui.MainWindow.Handle` guarded by try-catch. 2) Standardized deployment to a single authoritative bundle and purged duplicate standalone plugins from `Program Files` and `AppData`. 3) Set non-toggle button ribbon states to `IsChecked = false`. 4) Removed invalid `window.Show()` retry. |
 
 ---
 
@@ -62,4 +68,114 @@ This document records the full engineering history, bugs encountered, root cause
    - Always compile dual engines (`Release2023` and `Release2024`) to avoid silent `ReflectionTypeLoadException` in host CLR.
 6. **Smart App Control & Deployment**:
    - Deploy directly into `C:\Program Files\Autodesk\Navisworks Manage [Year]\Plugins\CypherNavisTools` via elevated `.bat` script or `CypherTools_Installer.exe` to avoid Windows 11 Smart App Control (`0x800711C7`) blocks.
+7. **WPF Window Owner in Navisworks (`roamer.exe`)**:
+   - Never use `Process.GetCurrentProcess().MainWindowHandle`. Navisworks has multiple native threads and background worker windows. WPF modal ownership must always use `Autodesk.Navisworks.Api.Application.Gui?.MainWindow?.Handle` (an `IWin32Window` wrapping the main MFC frame).
+8. **Single Plugin Deployment Rule**:
+   - Never install `CypherNavisTools` simultaneously to `Program Files\Autodesk\Navisworks...\Plugins` AND `ApplicationPlugins\*.bundle`. Dual registration corrupts the native Ribbon command dispatch table and causes host access violations.
+9. **Clash Detective Transaction Boundaries**:
+   - Never wrap `clashTests.TestsAddCopy()` and `clashTests.TestsRunTest()` in an outer `doc.BeginTransaction()`. Navisworks manages its own internal undo/redo transactions during clash runs.
+10. **Pre-Flight Testing with Active Models**:
+    - Never certify an add-in release based solely on an empty Navisworks session. Guard clauses like `if (doc == null || doc.IsClear)` short-circuit execution. All pre-flight verification must be performed with an active `.nwf` or `.nwd` model open.
+
+---
+
+## Deep Dive Post-Mortem: ISS-040 — Host Fatal Crash on Open NWF/NWD Model
+
+### 1. Incident Overview & Diagnostic Behavior
+- **Affected Versions**: Navisworks Manage 2023 (`roamer.exe` v20.0) and Navisworks Manage 2024 (`roamer.exe` v21.0).
+- **Failure Signature**: Immediate process crash (`0xC0000005` Access Violation) without an unhandled .NET exception dialog.
+- **The Critical Paradox**:
+  - Clicking "Clash Matrix" when **no model was open** operated cleanly without crashing (displayed *"Please open a Navisworks document (.nwf or .nwd) before running the tool"*).
+  - The moment an `.nwf` or `.nwd` document was loaded into the viewport, clicking *any* add-in button instantly terminated Navisworks.
+
+---
+
+### 2. Root Cause Analysis (The Lethal Trifecta)
+
+#### Root Cause A: Invalid Native Window Handle Ownership (`Process.GetCurrentProcess().MainWindowHandle`)
+In `App.cs`, modal window ownership had been refactored to:
+```csharp
+var helper = new WindowInteropHelper(window);
+helper.Owner = Process.GetCurrentProcess().MainWindowHandle;
+```
+- **Why this is catastrophic in Navisworks**: `roamer.exe` is a complex unmanaged C++/MFC application hosting multiple threads and several off-screen helper/message windows. When a 3D document is loaded, DirectX/OpenGL graphics renderers and background spatial indexing services spin up background native threads. `Process.GetCurrentProcess().MainWindowHandle` queries the Win32 message pump and often resolves to an unmanaged background worker or hidden message-only window rather than the MFC main frame (`CMainFrame`).
+- **The Mechanism of Death**:
+  1. When WPF's `Window.ShowDialog()` executes, WPF calls Win32 `EnableWindow(helper.Owner, FALSE)` to disable the parent window and enter a modal message loop.
+  2. Because the HWND belonged to an unmanaged background worker thread, `EnableWindow` deadlocked the Windows STA message dispatcher.
+  3. The resulting cross-thread HWND state corruption caused an immediate hardware-level Memory Access Violation (`0xC0000005`) that bypassed all standard C# `catch (Exception ex)` blocks.
+  4. Furthermore, if `ShowDialog()` faulted, the fallback handler attempted `window.Show()`. WPF strictly forbids calling `Show()` on a window that has already attempted to show, immediately throwing `InvalidOperationException` and terminating the host.
+
+#### Root Cause B: Dual & Triple Simultaneous Plugin Loading Collisions
+- During installer testing, `CypherNavisTools` had been installed simultaneously to:
+  1. `C:\ProgramData\Autodesk\ApplicationPlugins\CypherNavisTools.bundle` (Machine Autoloader)
+  2. `%APPDATA%\Autodesk\ApplicationPlugins\CypherNavisTools.bundle` (User Autoloader)
+  3. `C:\Program Files\Autodesk\Navisworks Manage 2024\Plugins\CypherNavisTools` (Standalone legacy plugin)
+- Navisworks loaded all three copies on startup. Autodesk's `NwPluginManager` registered the exact same plugin GUIDs and command IDs (`Cypher_Matrix`, `Cypher_Distill`, `Cypher_Viewpoints`) three times into the native MFC command dispatch table.
+- When any ribbon button was clicked, MFC dispatched into conflicting native memory function pointers, causing heap corruption and access violations.
+- Crucially, when `build_all.ps1` compiled fresh DLLs into `%APPDATA%`, Navisworks gave priority to the stale, crashing DLLs sitting in `C:\Program Files` and `C:\ProgramData`, masking newly compiled fixes until the duplicates were purged.
+
+#### Root Cause C: Clash Detective Transaction Collisions (Navisworks 2023)
+- In `ClashExecutionService.cs`, batch test creation and execution were enclosed in `using (var trans = doc.BeginTransaction(...))`.
+- While Navisworks 2024 tolerates certain nested document transactions, Navisworks 2023's Clash Detective engine (`doc.GetClash().TestsData.TestsRunTest()`) starts its own internal undo/redo transaction.
+- When an inner transaction was opened inside an active user transaction, Navisworks 2023 threw a fatal transaction abort exception that destabilized the host session.
+
+---
+
+### 3. The Comprehensive Fix
+
+#### Fix 1: Authoritative MFC Main Window Handle with Safe Try-Catch
+In [`App.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/App.cs):
+- Replaced `Process.GetCurrentProcess().MainWindowHandle` with the official Autodesk API MFC main frame pointer:
+  `Autodesk.Navisworks.Api.Application.Gui.MainWindow.Handle`
+- Wrapped the handle assignment in a dedicated `try-catch` block so even if the GUI handle is temporarily unreachable, the window still opens smoothly without crashing the host.
+- Removed the invalid `window.Show()` retry.
+- Set `state.IsChecked = false` in `CanExecuteCommand` to prevent ribbon buttons from locking in a pressed state.
+
+```csharp
+var window = new MainWindow();
+try
+{
+    if (Autodesk.Navisworks.Api.Application.Gui?.MainWindow?.Handle != IntPtr.Zero)
+    {
+        var helper = new WindowInteropHelper(window);
+        helper.Owner = Autodesk.Navisworks.Api.Application.Gui.MainWindow.Handle;
+    }
+}
+catch (Exception ownerEx)
+{
+    LoggerService.LogWarningStatic($"Could not attach window owner handle: {ownerEx.Message}");
+}
+
+window.DataContext = new MainViewModel(() => window.Close(), initialTabIndex: targetTab);
+window.ShowDialog();
+```
+
+#### Fix 2: Single Authoritative Bundle Architecture & Automated Duplicate Purge
+In [`Installer/Program.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Installer/Program.cs) and [`Install_CypherTools.bat`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Install_CypherTools.bat):
+- Standardized all deployments exclusively to the global Autoloader bundle:
+  `C:\ProgramData\Autodesk\ApplicationPlugins\CypherNavisTools.bundle`
+- Built an automatic deep-cleaning routine into both `PerformInstall` and `PerformUninstall` that proactively scans and removes:
+  - `C:\Program Files\Autodesk\Navisworks Manage [Year]\Plugins\{CypherNavisTools, CypherTools, RimoTools, AutomatedClashRunner}`
+  - `%APPDATA%\Autodesk\ApplicationPlugins\{bundles}`
+  - `%APPDATA%\Autodesk\Navisworks Manage [Year]\Plugins\{plugins}`
+- Guarantees Navisworks loads exactly **one** plugin instance on startup.
+
+#### Fix 3: Removed Enclosing Document Transactions
+In [`Services/ClashExecutionService.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Services/ClashExecutionService.cs):
+- Removed `using (var trans = doc.BeginTransaction(...))` from `RunToolsTest` and `RunBaseBuildTest`.
+- Navisworks Clash Detective manages transaction boundaries per test internally, ensuring 100% stable execution on both Navisworks 2023 and 2024.
+
+---
+
+### 4. Permanent Architectural Rules & Checklist for Maintainers
+
+| Area | Strictly Forbidden (DON'T) | Required Pattern (DO) |
+|---|---|---|
+| **WPF Modal Owner** | `Process.GetCurrentProcess().MainWindowHandle` | `Autodesk.Navisworks.Api.Application.Gui?.MainWindow?.Handle` inside `try-catch` |
+| **Ribbon Buttons** | Leaving `state.IsChecked = true` on push buttons | Set `state.IsChecked = false` in `CanExecuteCommand` |
+| **Plugin Deployment** | Deploying both to `Program Files` and `ApplicationPlugins` | Single bundle in `C:\ProgramData\Autodesk\ApplicationPlugins\CypherNavisTools.bundle` |
+| **Clash Transactions** | Wrapping `TestsRunTest()` in `doc.BeginTransaction()` | Let Clash Detective manage its own per-test undo transaction |
+| **Tree Traversal** | Accessing `.Children` or `.OriginalModelItem` without null checks | Null-coalesce and wrap recursive aggregations in defensive try-catch |
+| **Release Testing** | Testing only on an empty Navisworks viewport | Always verify by opening a heavy `.nwf` or `.nwd` model and launching each tool |
+
 

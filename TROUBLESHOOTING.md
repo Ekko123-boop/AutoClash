@@ -2,7 +2,7 @@
 
 ## 1. Where are the log files located?
 Diagnostic logs are automatically written to:
-`%LOCALAPPDATA%\AutomatedClashRunner\Logs\session_YYYY-MM-DD.log`
+`%LOCALAPPDATA%\CypherNavisTools\Logs\session_YYYY-MM-DD.log`
 
 If you encounter unexpected behavior, inspect this file to view detailed stack traces and warnings.
 
@@ -92,7 +92,24 @@ Our tool creates a SelectionSet for the model and links it to `SelectionB` via `
 
 ## 9. Fast Installation Guide
 1. Make sure all Navisworks instances are closed.
-2. Run `CypherTools_Installer.exe` or right-click `Install_CypherTools.bat` and select **Run as Administrator**.
+2. Run `CypherTools_Installer.exe` (or right-click `Install_CypherTools.bat` and select **Run as Administrator**).
 3. The installer detects all versions from 2020 to 2026 and deploys the appropriate engine automatically.
 4. Launch Navisworks Manage.
+
+---
+
+## 10. Navisworks Crashes Instantly When an NWF/NWD Model is Open
+### Symptom
+Clicking "Clash Matrix" when no model is open displays an info message cleanly. As soon as an `.nwf` or `.nwd` model is open in Navisworks 2023 or 2024, clicking any add-in button immediately terminates `roamer.exe` with a `0xC0000005` Access Violation.
+### Cause
+1. WPF window ownership was attached to `Process.GetCurrentProcess().MainWindowHandle`, which in Navisworks Manage resolves to an off-screen worker thread window when 3D models are loaded. Modal message looping deadlocked the STA message pump.
+2. Duplicate plugin installations (`Program Files` + `ProgramData` + `AppData`) registered ribbon command hooks multiple times, causing native MFC command routing conflicts.
+3. Batch clash execution wrapped in an outer `doc.BeginTransaction()` conflicted with Navisworks 2023's internal Clash Detective transactions.
+### Solution
+In v2.0.2:
+- Modal ownership uses `Autodesk.Navisworks.Api.Application.Gui.MainWindow.Handle` inside a safe `try-catch`.
+- Installers enforce a single authoritative bundle (`C:\ProgramData\Autodesk\ApplicationPlugins\CypherNavisTools.bundle`) and actively purge legacy standalone plugins from `Program Files` and `AppData`.
+- Outer document transactions were removed from batch clash test executions.
+- Run `CypherTools_Installer.exe` -> Click **Uninstall** -> Click **Install / Update** to cleanly restore the environment.
+
 

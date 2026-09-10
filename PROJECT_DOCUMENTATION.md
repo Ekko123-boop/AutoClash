@@ -88,19 +88,19 @@ Cypher Tools (`CypherNavisTools.dll`) is a modular, high-reliability Autodesk Na
 - Attached in code-behind to preserve complete immunity against Windows 11 Smart App Control (`0x800711C7`) build-time XAML reflection blocks.
 
 ### 2.7 LoggerService
-- Thread-safe, timestamped logging with auto-rotation (10MB threshold) stored in `%LOCALAPPDATA%\AutomatedClashRunner\Logs\session_YYYY-MM-DD.log`.
+- Thread-safe, timestamped logging with auto-rotation (10MB threshold) stored in `%LOCALAPPDATA%\CypherNavisTools\Logs\session_YYYY-MM-DD.log`.
 
 ### 2.8 LicenseService & Hardware Fingerprinting (Remote Kill-Switch)
+- **Stealth Coworker Deployment**: Zero trial warnings, countdowns, or lease expiration popups. Operates seamlessly online and offline for all end users.
 - **Cloud Backend**: Connected via REST to Firebase Realtime Database.
 - **Hardware Fingerprint**: Deterministic SHA-256 hash derived from `Win32_Processor.ProcessorId`, `Win32_BaseBoard.SerialNumber`, system volume serial, and `MachineGuid`.
 - **Silent Auto-Registration**: Quietly registers user name, computer name, OS, and HWID upon first connection.
-- **Encrypted Offline Lease**: AES-256-CBC encrypted 14-day lease stored in `%LOCALAPPDATA%\AutomatedClashRunner\License\.lease` using PBKDF2 key derived from HWID + master salt.
+- **Encrypted Offline Lease**: AES-256-CBC encrypted 14-day lease stored in `%LOCALAPPDATA%\CypherNavisTools\License\.lease` using PBKDF2 key derived from HWID + master salt.
 - **Anti-Bypass Protection**: 
   - Primary Gate: `App.cs` entry point before any window is loaded.
   - Secondary Gate: `MainViewModel.cs` async background re-verification.
-  - Tertiary Gate: `ClashExecutionService.cs` pre-matrix execution check.
   - Clock Rollback Defense: Invalidation if local time is rewound behind last-seen UTC timestamp.
-- **Remote Revocation**: Setting `enabled: false` on the target machine HWID or `global_kill: true` in Firebase immediately destroys local lease and halts execution.
+- **Remote Revocation**: Setting `enabled: false` on the target machine HWID or `global_kill: true` in Firebase immediately locks down the tool and saves `.revoked` state.
 
 ---
 
