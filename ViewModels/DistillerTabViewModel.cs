@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -44,6 +44,34 @@ namespace AutomatedClashRunner.ViewModels
             $"{AllTests.Count(x => x.IsSelected)} of {AllTests.Count} tests selected";
 
         public bool HasNoTests => AllTests.Count == 0;
+
+        private bool _isBusy;
+        public bool IsBusy
+        {
+            get => _isBusy;
+            set => SetProperty(ref _isBusy, value);
+        }
+
+        private string _progressText = string.Empty;
+        public string ProgressText
+        {
+            get => _progressText;
+            set => SetProperty(ref _progressText, value);
+        }
+
+        private int _progressBarValue;
+        public int ProgressBarValue
+        {
+            get => _progressBarValue;
+            set => SetProperty(ref _progressBarValue, value);
+        }
+
+        private int _progressBarMax = 100;
+        public int ProgressBarMax
+        {
+            get => _progressBarMax;
+            set => SetProperty(ref _progressBarMax, value);
+        }
 
         public ICommand RefreshTestsCommand { get; }
         public ICommand SelectAllTestsCommand { get; }
@@ -163,6 +191,11 @@ namespace AutomatedClashRunner.ViewModels
                 return;
             }
 
+            IsBusy = true;
+            ProgressText = "Re-running selected clash tests...";
+            ProgressBarValue = 0;
+            ProgressBarMax = selected.Count;
+
             try
             {
                 var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
@@ -174,6 +207,12 @@ namespace AutomatedClashRunner.ViewModels
             {
                 _logger.LogError("Error re-running selected tests", ex);
                 _dialogService.ShowError($"Failed to re-run tests: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+                ProgressText = string.Empty;
+                ProgressBarValue = 0;
             }
         }
 
@@ -191,10 +230,26 @@ namespace AutomatedClashRunner.ViewModels
                 return;
             }
 
+            IsBusy = true;
+            ProgressText = "Preparing clash distillation...";
+            ProgressBarValue = 0;
+            ProgressBarMax = 100;
+
             try
             {
                 var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
-                int groupsCreated = _distiller.GroupByElement(doc, targetTests, GroupingProximity);
+                int groupsCreated = _distiller.GroupByElement(
+                    doc,
+                    targetTests,
+                    GroupingProximity,
+                    (status, current, total) =>
+                    {
+                        ProgressText = status;
+                        ProgressBarValue = current;
+                        ProgressBarMax = total > 0 ? total : 100;
+                        DoEvents();
+                    });
+
                 LoadTests();
                 _dialogService.ShowInformation($"Clash Distillation complete! Created {groupsCreated} new groups across {targetTests.Count} tests.", "Distill Complete");
             }
@@ -203,6 +258,22 @@ namespace AutomatedClashRunner.ViewModels
                 _logger.LogError("Error distilling clash tests", ex);
                 _dialogService.ShowError($"Failed to distill clashes: {ex.Message}");
             }
+            finally
+            {
+                IsBusy = false;
+                ProgressText = string.Empty;
+                ProgressBarValue = 0;
+            }
+        }
+
+        private static void DoEvents()
+        {
+            try
+            {
+                var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+                dispatcher?.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
+            }
+            catch { }
         }
     }
 }

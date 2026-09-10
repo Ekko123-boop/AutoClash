@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using Xunit;
@@ -111,6 +111,47 @@ namespace AutomatedClashRunner.Tests
             items[7].IsSelected.Should().BeFalse();
             items[8].IsSelected.Should().BeFalse();
             items[9].IsSelected.Should().BeFalse();
+        }
+
+        public class MockTabNavigationViewModel : INotifyPropertyChanged
+        {
+            private int _selectedTabIndex;
+            public int SelectedTabIndex
+            {
+                get => _selectedTabIndex;
+                set
+                {
+                    if (_selectedTabIndex != value)
+                    {
+                        _selectedTabIndex = value;
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedTabIndex)));
+                        if (value == 1) DistillerRefreshed = true;
+                        if (value == 2) ViewpointsRefreshed = true;
+                    }
+                }
+            }
+
+            public bool DistillerRefreshed { get; private set; }
+            public bool ViewpointsRefreshed { get; private set; }
+
+            public event PropertyChangedEventHandler PropertyChanged;
+        }
+
+        [Fact]
+        public void TabNavigation_WhenSwitched_TriggersDistillerAndViewpointsRefresh()
+        {
+            var vm = new MockTabNavigationViewModel();
+            string changedProp = null;
+            vm.PropertyChanged += (s, e) => changedProp = e.PropertyName;
+
+            vm.SelectedTabIndex = 1;
+            vm.SelectedTabIndex.Should().Be(1);
+            changedProp.Should().Be(nameof(MockTabNavigationViewModel.SelectedTabIndex));
+            vm.DistillerRefreshed.Should().BeTrue();
+
+            vm.SelectedTabIndex = 2;
+            vm.SelectedTabIndex.Should().Be(2);
+            vm.ViewpointsRefreshed.Should().BeTrue();
         }
     }
 }

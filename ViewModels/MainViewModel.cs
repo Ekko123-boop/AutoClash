@@ -13,7 +13,20 @@ namespace AutomatedClashRunner.ViewModels
         public int SelectedTabIndex
         {
             get => _selectedTabIndex;
-            set => SetProperty(ref _selectedTabIndex, value);
+            set
+            {
+                if (SetProperty(ref _selectedTabIndex, value))
+                {
+                    if (value == 1)
+                    {
+                        DistillerTab?.LoadTests();
+                    }
+                    else if (value == 2)
+                    {
+                        ViewpointsTab?.LoadTests();
+                    }
+                }
+            }
         }
 
         public MatrixTabViewModel MatrixTab { get; }

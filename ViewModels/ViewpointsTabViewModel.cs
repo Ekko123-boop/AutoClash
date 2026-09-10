@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -79,6 +79,34 @@ namespace AutomatedClashRunner.ViewModels
             $"{AllTests.Count(x => x.IsSelected)} of {AllTests.Count} selected";
 
         public bool HasNoTests => AllTests.Count == 0;
+
+        private bool _isBusy;
+        public bool IsBusy
+        {
+            get => _isBusy;
+            set => SetProperty(ref _isBusy, value);
+        }
+
+        private string _progressText = string.Empty;
+        public string ProgressText
+        {
+            get => _progressText;
+            set => SetProperty(ref _progressText, value);
+        }
+
+        private int _progressBarValue;
+        public int ProgressBarValue
+        {
+            get => _progressBarValue;
+            set => SetProperty(ref _progressBarValue, value);
+        }
+
+        private int _progressBarMax = 100;
+        public int ProgressBarMax
+        {
+            get => _progressBarMax;
+            set => SetProperty(ref _progressBarMax, value);
+        }
 
         public ICommand RefreshTestsCommand { get; }
         public ICommand SelectAllTestsCommand { get; }
@@ -208,6 +236,11 @@ namespace AutomatedClashRunner.ViewModels
                 return;
             }
 
+            IsBusy = true;
+            ProgressText = "Preparing viewpoint generation...";
+            ProgressBarValue = 0;
+            ProgressBarMax = targetTests.Count;
+
             try
             {
                 var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
@@ -219,7 +252,14 @@ namespace AutomatedClashRunner.ViewModels
                     IncludeReviewed,
                     IncludeApproved,
                     IncludeResolved,
-                    PlaceInTimestampedFolder);
+                    PlaceInTimestampedFolder,
+                    (status, current, total) =>
+                    {
+                        ProgressText = status;
+                        ProgressBarValue = current;
+                        ProgressBarMax = total > 0 ? total : 100;
+                        DoEvents();
+                    });
 
                 LoadTests();
 
@@ -232,6 +272,22 @@ namespace AutomatedClashRunner.ViewModels
                 _logger.LogError("Error generating viewpoints", ex);
                 _dialogService.ShowError($"Failed to generate viewpoints: {ex.Message}");
             }
+            finally
+            {
+                IsBusy = false;
+                ProgressText = string.Empty;
+                ProgressBarValue = 0;
+            }
+        }
+
+        private static void DoEvents()
+        {
+            try
+            {
+                var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+                dispatcher?.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
+            }
+            catch { }
         }
     }
 }

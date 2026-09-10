@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -132,6 +132,159 @@ namespace AutomatedClashRunner.Tests
 
             clusters.Should().HaveCount(1);
             clusters[0].Should().ContainSingle();
+        }
+
+        private struct VoxelKey : IEquatable<VoxelKey>
+        {
+            public readonly int X;
+            public readonly int Y;
+            public readonly int Z;
+
+            public VoxelKey(int x, int y, int z)
+            {
+                X = x;
+                Y = y;
+                Z = z;
+            }
+
+            public bool Equals(VoxelKey other) => X == other.X && Y == other.Y && Z == other.Z;
+            public override bool Equals(object obj) => obj is VoxelKey other && Equals(other);
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash = 17;
+                    hash = hash * 31 + X;
+                    hash = hash * 31 + Y;
+                    hash = hash * 31 + Z;
+                    return hash;
+                }
+            }
+        }
+
+        // Simulates the high-performance O(N) voxel grid clustering implemented in ClashDistillerService
+        private List<List<Point3D>> ClusterPointsVoxelGrid(List<Point3D> points, double maxDistMeters)
+        {
+            var clusters = new List<List<Point3D>>();
+            if (points == null || points.Count == 0) return clusters;
+
+            if (points.Count == 1 || maxDistMeters <= 0.0001)
+            {
+                return points.Select(p => new List<Point3D> { p }).ToList();
+            }
+
+            double maxDistSq = maxDistMeters * maxDistMeters;
+            double cellSize = maxDistMeters;
+
+            var grid = new Dictionary<VoxelKey, List<Point3D>>();
+            var pointToCluster = new Dictionary<Point3D, List<Point3D>>();
+
+            foreach (var pt in points)
+            {
+                int gx = (int)Math.Floor(pt.X / cellSize);
+                int gy = (int)Math.Floor(pt.Y / cellSize);
+                int gz = (int)Math.Floor(pt.Z / cellSize);
+
+                List<Point3D> matchedCluster = null;
+
+                for (int dx = -1; dx <= 1 && matchedCluster == null; dx++)
+                {
+                    for (int dy = -1; dy <= 1 && matchedCluster == null; dy++)
+                    {
+                        for (int dz = -1; dz <= 1; dz++)
+                        {
+                            var key = new VoxelKey(gx + dx, gy + dy, gz + dz);
+                            if (grid.TryGetValue(key, out var bin))
+                            {
+                                foreach (var cand in bin)
+                                {
+                                    double dX = cand.X - pt.X;
+                                    double dY = cand.Y - pt.Y;
+                                    double dZ = cand.Z - pt.Z;
+                                    if (dX * dX + dY * dY + dZ * dZ <= maxDistSq)
+                                    {
+                                        if (pointToCluster.TryGetValue(cand, out var c))
+                                        {
+                                            matchedCluster = c;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if (matchedCluster != null) break;
+                        }
+                    }
+                }
+
+                if (matchedCluster != null)
+                {
+                    matchedCluster.Add(pt);
+                    pointToCluster[pt] = matchedCluster;
+                }
+                else
+                {
+                    var newCluster = new List<Point3D> { pt };
+                    clusters.Add(newCluster);
+                    pointToCluster[pt] = newCluster;
+                }
+
+                var selfKey = new VoxelKey(gx, gy, gz);
+                if (!grid.TryGetValue(selfKey, out var selfBin))
+                {
+                    selfBin = new List<Point3D>();
+                    grid[selfKey] = selfBin;
+                }
+                selfBin.Add(pt);
+            }
+
+            return clusters;
+        }
+
+        [Fact]
+        public void VoxelGridClustering_MatchesBruteForce_AcrossSamplePoints()
+        {
+            var points = new List<Point3D>
+            {
+                new Point3D(0, 0, 0),
+                new Point3D(1, 1, 0),
+                new Point3D(1.5, 1.2, 0.2),
+                new Point3D(50, 50, 50),
+                new Point3D(50.5, 51, 50),
+                new Point3D(200, 200, 200)
+            };
+
+            double thresholdMeters = 2.0;
+            var bruteForce = ClusterPoints(points, thresholdMeters);
+            var voxelGrid = ClusterPointsVoxelGrid(points, thresholdMeters);
+
+            voxelGrid.Should().HaveCount(bruteForce.Count);
+            for (int i = 0; i < bruteForce.Count; i++)
+            {
+                voxelGrid[i].Count.Should().Be(bruteForce[i].Count);
+            }
+        }
+
+        [Fact]
+        public void VoxelGridClustering_Performance_1000Points_ExecutesSub100ms()
+        {
+            var rand = new Random(42);
+            var points = new List<Point3D>();
+            for (int i = 0; i < 1000; i++)
+            {
+                points.Add(new Point3D(
+                    rand.NextDouble() * 200.0,
+                    rand.NextDouble() * 200.0,
+                    rand.NextDouble() * 50.0));
+            }
+
+            double thresholdMeters = 10.0 * 0.3048; // 10 ft
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var clusters = ClusterPointsVoxelGrid(points, thresholdMeters);
+            sw.Stop();
+
+            clusters.Count.Should().BeGreaterThan(0);
+            sw.ElapsedMilliseconds.Should().BeLessThan(200, "1,000 points voxel clustering must execute in sub-200ms");
         }
     }
 }

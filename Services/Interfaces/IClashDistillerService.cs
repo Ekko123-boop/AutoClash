@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
 
@@ -7,7 +7,7 @@ namespace AutomatedClashRunner.Services.Interfaces
     public interface IClashDistillerService
     {
         void ReRunTests(Document doc, IEnumerable<ClashTest> tests);
-        int GroupByElement(Document doc, IEnumerable<ClashTest> tests, double maxProximityFt);
+        int GroupByElement(Document doc, IEnumerable<ClashTest> tests, double maxProximityFt, System.Action<string, int, int> progressCallback = null);
         int ExportReviewedViewpoints(Document doc, IEnumerable<ClashTest> tests);
         int ExportViewpoints(
             Document doc,
@@ -17,6 +17,7 @@ namespace AutomatedClashRunner.Services.Interfaces
             bool includeReviewed,
             bool includeApproved,
             bool includeResolved,
-            bool timestampedFolder = false);
+            bool timestampedFolder = false,
+            System.Action<string, int, int> progressCallback = null);
     }
 }

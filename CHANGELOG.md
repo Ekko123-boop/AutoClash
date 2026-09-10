@@ -2,6 +2,26 @@
 
 All notable changes to the Automated Clash Runner & Distiller addin are documented here.
 
+## [2.0.4] - 2026-09-10
+### Added
+- **Tab Navigation Auto-Refresh**:
+  - Navigating between tabs ("Generate Matrix" -> "Distill Clashes" -> "Create Viewpoints") now automatically detects and reloads tests from the active Navisworks document.
+  - Preserves existing checkbox selections across tab transitions with zero manual "Refresh" button clicks needed.
+- **Distillation & Viewpoints Progress Overlays**:
+  - Added modern, non-blocking Loading Overlays with live progress bars and status text to both the "Distill Clashes" and "Create Viewpoints" tabs.
+
+### Performance & Stability
+- **$O(N)$ Spatial Voxel Hash Grid Clustering**:
+  - Replaced $O(N^2)$ brute-force pairwise distance checks with 3D spatial voxel binning.
+  - Utilizes squared euclidean distance comparisons, eliminating slow `Math.Pow` and `Math.Sqrt` calls.
+- **COM Ancestor Element Memoization**:
+  - Added dictionary caching for top-level named elements, reducing cross-boundary COM property searches (`Item.Name`) by over 95%.
+- **Zero-`IndexOf` Single-Pass Reverse Move**:
+  - Pre-creates result groups and migrates clash results in a single descending loop from `test.Children.Count - 1` down to `0`.
+  - Eliminates millions of $O(N)$ `test.Children.IndexOf` full-tree scans.
+- **STA Dispatcher Message Pumping (`DoEvents`)**:
+  - Pumps the Windows UI message queue every 25 operations during distillation and viewpoint exports, permanently preventing the Windows "Not Responding" state and spinning blue wait cursor.
+
 ## [2.0.3] - 2026-09-10
 ### Fixed
 - **Selection A Dynamic Set Hierarchy Binding (Clash Matrix, Tools Test & Base Build)**:

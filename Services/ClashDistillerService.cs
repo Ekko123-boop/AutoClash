@@ -40,7 +40,146 @@ namespace AutomatedClashRunner.Services
             }
         }
 
-        public int GroupByElement(Document doc, IEnumerable<ClashTest> tests, double maxProximityFt)
+        private struct VoxelCoord : IEquatable<VoxelCoord>
+        {
+            public readonly int X;
+            public readonly int Y;
+            public readonly int Z;
+
+            public VoxelCoord(int x, int y, int z)
+            {
+                X = x;
+                Y = y;
+                Z = z;
+            }
+
+            public bool Equals(VoxelCoord other) => X == other.X && Y == other.Y && Z == other.Z;
+
+            public override bool Equals(object obj) => obj is VoxelCoord other && Equals(other);
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash = 17;
+                    hash = hash * 31 + X;
+                    hash = hash * 31 + Y;
+                    hash = hash * 31 + Z;
+                    return hash;
+                }
+            }
+        }
+
+        private static void DoEvents()
+        {
+            try
+            {
+                var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+                dispatcher?.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
+            }
+            catch { }
+        }
+
+        private static List<List<ClashResult>> ClusterResults(List<ClashResult> items, double maxDistMeters)
+        {
+            var clusters = new List<List<ClashResult>>();
+            if (items == null || items.Count == 0) return clusters;
+
+            if (items.Count == 1 || maxDistMeters <= 0.0001)
+            {
+                foreach (var item in items)
+                {
+                    clusters.Add(new List<ClashResult> { item });
+                }
+                return clusters;
+            }
+
+            double maxDistSq = maxDistMeters * maxDistMeters;
+            double cellSize = maxDistMeters;
+
+            // Grid mapping voxel cell -> list of clash results in that cell
+            var grid = new Dictionary<VoxelCoord, List<ClashResult>>();
+            // Maps each clash result to the cluster list it belongs to
+            var resultToCluster = new Dictionary<ClashResult, List<ClashResult>>();
+
+            foreach (var res in items)
+            {
+                var center = res.Center;
+                if (center == null)
+                {
+                    var nullCluster = new List<ClashResult> { res };
+                    clusters.Add(nullCluster);
+                    resultToCluster[res] = nullCluster;
+                    continue;
+                }
+
+                int gx = (int)Math.Floor(center.X / cellSize);
+                int gy = (int)Math.Floor(center.Y / cellSize);
+                int gz = (int)Math.Floor(center.Z / cellSize);
+
+                List<ClashResult> matchedCluster = null;
+
+                // Check 27 neighboring voxel cells [-1, 0, 1]^3
+                for (int dx = -1; dx <= 1 && matchedCluster == null; dx++)
+                {
+                    for (int dy = -1; dy <= 1 && matchedCluster == null; dy++)
+                    {
+                        for (int dz = -1; dz <= 1; dz++)
+                        {
+                            var neighborCoord = new VoxelCoord(gx + dx, gy + dy, gz + dz);
+                            if (grid.TryGetValue(neighborCoord, out var candidates))
+                            {
+                                foreach (var cand in candidates)
+                                {
+                                    var c = cand.Center;
+                                    if (c == null) continue;
+
+                                    double dX = c.X - center.X;
+                                    double dY = c.Y - center.Y;
+                                    double dZ = c.Z - center.Z;
+                                    double distSq = dX * dX + dY * dY + dZ * dZ;
+
+                                    if (distSq <= maxDistSq)
+                                    {
+                                        if (resultToCluster.TryGetValue(cand, out var cluster))
+                                        {
+                                            matchedCluster = cluster;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (matchedCluster != null) break;
+                        }
+                    }
+                }
+
+                if (matchedCluster != null)
+                {
+                    matchedCluster.Add(res);
+                    resultToCluster[res] = matchedCluster;
+                }
+                else
+                {
+                    var newCluster = new List<ClashResult> { res };
+                    clusters.Add(newCluster);
+                    resultToCluster[res] = newCluster;
+                }
+
+                var selfCoord = new VoxelCoord(gx, gy, gz);
+                if (!grid.TryGetValue(selfCoord, out var cellList))
+                {
+                    cellList = new List<ClashResult>();
+                    grid[selfCoord] = cellList;
+                }
+                cellList.Add(res);
+            }
+
+            return clusters;
+        }
+
+        public int GroupByElement(Document doc, IEnumerable<ClashTest> tests, double maxProximityFt, Action<string, int, int> progressCallback = null)
         {
             int groupsCreated = 0;
             if (doc == null || tests == null) return groupsCreated;
@@ -54,88 +193,138 @@ namespace AutomatedClashRunner.Services
             // 1 foot = 0.3048 meters.
             double maxDistMeters = maxProximityFt * 0.3048;
 
-            foreach (var test in tests)
+            var testList = tests.ToList();
+            int totalTests = testList.Count;
+            int testIndex = 0;
+
+            foreach (var test in testList)
             {
+                testIndex++;
                 try
                 {
+                    progressCallback?.Invoke(
+                        $"Analyzing test {testIndex} of {totalTests}: '{test.DisplayName}'...",
+                        testIndex,
+                        totalTests);
+                    DoEvents();
+
                     var rawResults = test.Children.OfType<ClashResult>().ToList();
                     if (rawResults.Count == 0) continue;
 
-                    // Group by top-level named ancestor in Selection A
-                    var elementGroups = new Dictionary<ModelItem, List<ClashResult>>();
+                    // Group by top-level named ancestor in Selection A with memoization cache
+                    var ancestorCache = new Dictionary<ModelItem, ModelItem>();
+                    ModelItem GetMasterElement(ModelItem item)
+                    {
+                        if (item == null) return null;
+                        if (ancestorCache.TryGetValue(item, out var cached)) return cached;
 
+                        ModelItem master = null;
+                        foreach (var node in item.AncestorsAndSelf)
+                        {
+                            if (ancestorCache.TryGetValue(node, out var ancCached))
+                            {
+                                master = ancCached;
+                                break;
+                            }
+
+                            try
+                            {
+                                if (node.PropertyCategories.FindPropertyByDisplayName("Item", "Name") != null)
+                                {
+                                    master = node;
+                                    break;
+                                }
+                            }
+                            catch { }
+                        }
+
+                        master = master ?? item;
+                        ancestorCache[item] = master;
+                        return master;
+                    }
+
+                    var elementGroups = new Dictionary<ModelItem, List<ClashResult>>();
                     foreach (var res in rawResults)
                     {
                         if (res.Item1 == null) continue;
 
-                        var masterElement = res.Item1.AncestorsAndSelf
-                            .FirstOrDefault(x => x.PropertyCategories.FindPropertyByDisplayName("Item", "Name") != null) 
-                            ?? res.Item1;
-
-                        if (!elementGroups.ContainsKey(masterElement))
+                        var masterElement = GetMasterElement(res.Item1);
+                        if (!elementGroups.TryGetValue(masterElement, out var list))
                         {
-                            elementGroups[masterElement] = new List<ClashResult>();
+                            list = new List<ClashResult>();
+                            elementGroups[masterElement] = list;
                         }
-                        elementGroups[masterElement].Add(res);
+                        list.Add(res);
                     }
 
-                    int groupIndex = 1;
+                    // Compute all spatial clusters across all element groups
+                    var allClusters = new List<List<ClashResult>>();
                     foreach (var kvp in elementGroups)
                     {
                         var items = kvp.Value;
                         if (items.Count == 0) continue;
 
-                        // Spatial clustering by distance threshold
-                        var clusters = new List<List<ClashResult>>();
-                        foreach (var res in items)
+                        var clusters = ClusterResults(items, maxDistMeters);
+                        allClusters.AddRange(clusters);
+                    }
+
+                    if (allClusters.Count == 0) continue;
+
+                    // Step 1: Pre-create all ClashResultGroup nodes in document
+                    int groupIndex = 1;
+                    var resToGroup = new Dictionary<ClashResult, ClashResultGroup>();
+
+                    foreach (var cluster in allClusters)
+                    {
+                        if (cluster.Count == 0) continue;
+
+                        string groupName = $"{test.DisplayName}-{groupIndex:D3}";
+                        var newGroup = new ClashResultGroup { DisplayName = groupName };
+
+                        clashData.TestsAddCopy(test, newGroup);
+                        var addedGroup = test.Children.LastOrDefault() as ClashResultGroup;
+
+                        if (addedGroup != null)
                         {
-                            bool added = false;
-                            foreach (var cluster in clusters)
+                            foreach (var res in cluster)
                             {
-                                if (cluster.Any(c => Distance(c.Center, res.Center) <= maxDistMeters))
-                                {
-                                    cluster.Add(res);
-                                    added = true;
-                                    break;
-                                }
+                                resToGroup[res] = addedGroup;
                             }
-                            if (!added)
-                            {
-                                clusters.Add(new List<ClashResult> { res });
-                            }
+                            groupsCreated++;
+                            groupIndex++;
                         }
+                    }
 
-                        foreach (var cluster in clusters)
+                    // Step 2: Move items in reverse index order in a single pass (O(N), ZERO IndexOf scans)
+                    int totalMoves = resToGroup.Count;
+                    int movedCount = 0;
+
+                    for (int i = test.Children.Count - 1; i >= 0; i--)
+                    {
+                        if (test.Children[i] is ClashResult res && resToGroup.TryGetValue(res, out var targetGroup))
                         {
-                            string groupName = $"{test.DisplayName}-{groupIndex:D3}";
-                            var newGroup = new ClashResultGroup { DisplayName = groupName };
-
-                            clashData.TestsAddCopy(test, newGroup);
-                            var addedGroup = test.Children.LastOrDefault() as ClashResultGroup;
-
-                            if (addedGroup != null)
+                            try
                             {
-                                // Move in reverse index order to avoid index shifts
-                                var moves = cluster
-                                    .Select(res => new { Result = res, Index = test.Children.IndexOf(res) })
-                                    .Where(x => x.Index >= 0)
-                                    .OrderByDescending(x => x.Index)
-                                    .ToList();
+                                clashData.TestsMove(test, i, targetGroup, 0);
+                                movedCount++;
 
-                                foreach (var m in moves)
+                                if (movedCount % 25 == 0 || movedCount == totalMoves)
                                 {
-                                    int currentIndex = test.Children.IndexOf(m.Result);
-                                    if (currentIndex >= 0)
-                                    {
-                                        clashData.TestsMove(test, currentIndex, addedGroup, addedGroup.Children.Count);
-                                    }
+                                    progressCallback?.Invoke(
+                                        $"Distilling '{test.DisplayName}': grouped {movedCount} of {totalMoves} clashes...",
+                                        movedCount,
+                                        totalMoves);
+                                    DoEvents();
                                 }
-
-                                groupsCreated++;
-                                groupIndex++;
+                            }
+                            catch (Exception moveEx)
+                            {
+                                _logger.LogWarning($"Could not move clash result at index {i}: {moveEx.Message}");
                             }
                         }
                     }
+
+                    _logger.Log($"Distilled test '{test.DisplayName}': {movedCount} clashes grouped into {groupIndex - 1} groups.");
                 }
                 catch (Exception ex)
                 {
@@ -149,7 +338,10 @@ namespace AutomatedClashRunner.Services
         private static double Distance(Point3D p1, Point3D p2)
         {
             if (p1 == null || p2 == null) return double.MaxValue;
-            return Math.Sqrt(Math.Pow(p1.X - p2.X, 2) + Math.Pow(p1.Y - p2.Y, 2) + Math.Pow(p1.Z - p2.Z, 2));
+            double dx = p1.X - p2.X;
+            double dy = p1.Y - p2.Y;
+            double dz = p1.Z - p2.Z;
+            return Math.Sqrt(dx * dx + dy * dy + dz * dz);
         }
 
         public int ExportReviewedViewpoints(Document doc, IEnumerable<ClashTest> tests)
@@ -165,7 +357,8 @@ namespace AutomatedClashRunner.Services
             bool includeReviewed,
             bool includeApproved,
             bool includeResolved,
-            bool timestampedFolder = false)
+            bool timestampedFolder = false,
+            Action<string, int, int> progressCallback = null)
         {
             int viewpointsCreated = 0;
             if (doc == null || tests == null) return viewpointsCreated;
@@ -184,10 +377,21 @@ namespace AutomatedClashRunner.Services
                 targetRootFolder = savedViewpoints.RootItem.Children.LastOrDefault() as FolderItem;
             }
 
-            foreach (var test in tests)
+            var testList = tests.ToList();
+            int totalTests = testList.Count;
+            int testIndex = 0;
+
+            foreach (var test in testList)
             {
+                testIndex++;
                 try
                 {
+                    progressCallback?.Invoke(
+                        $"Scanning viewpoints for test {testIndex} of {totalTests}: '{test.DisplayName}'...",
+                        testIndex,
+                        totalTests);
+                    DoEvents();
+
                     var matchingGroups = test.Children.OfType<ClashResultGroup>()
                         .Where(g =>
                             (includeNew && g.Status == ClashResultStatus.New) ||
@@ -226,6 +430,8 @@ namespace AutomatedClashRunner.Services
 
                     if (actualFolder == null) continue;
 
+                    int testCreated = 0;
+
                     // Process Groups
                     foreach (var group in matchingGroups)
                     {
@@ -237,6 +443,16 @@ namespace AutomatedClashRunner.Services
                             var svp = new SavedViewpoint(vp) { DisplayName = group.DisplayName };
                             savedViewpoints.AddCopy(actualFolder, svp);
                             viewpointsCreated++;
+                            testCreated++;
+
+                            if (viewpointsCreated % 20 == 0)
+                            {
+                                progressCallback?.Invoke(
+                                    $"Creating viewpoints for '{test.DisplayName}': {testCreated} exported...",
+                                    testCreated,
+                                    matchingGroups.Count + matchingRaw.Count);
+                                DoEvents();
+                            }
                         }
                     }
 
@@ -249,10 +465,20 @@ namespace AutomatedClashRunner.Services
                             var svp = new SavedViewpoint(vp) { DisplayName = raw.DisplayName };
                             savedViewpoints.AddCopy(actualFolder, svp);
                             viewpointsCreated++;
+                            testCreated++;
+
+                            if (viewpointsCreated % 20 == 0)
+                            {
+                                progressCallback?.Invoke(
+                                    $"Creating viewpoints for '{test.DisplayName}': {testCreated} exported...",
+                                    testCreated,
+                                    matchingGroups.Count + matchingRaw.Count);
+                                DoEvents();
+                            }
                         }
                     }
 
-                    _logger.Log($"Exported {viewpointsCreated} viewpoints for test: {test.DisplayName}");
+                    _logger.Log($"Exported {testCreated} viewpoints for test: {test.DisplayName}");
                 }
                 catch (Exception ex)
                 {
