@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using AutomatedClashRunner.Common;
 using AutomatedClashRunner.Services.Interfaces;
 
 namespace AutomatedClashRunner.Services
@@ -38,8 +39,8 @@ namespace AutomatedClashRunner.Services
 
                     string logPath = Path.Combine(_logDir, $"session_{DateTime.Now:yyyy-MM-dd}.log");
                     
-                    // Rotate if file exceeds 10MB
-                    if (File.Exists(logPath) && new FileInfo(logPath).Length > 10 * 1024 * 1024)
+                    // Rotate if file exceeds maximum allowed size
+                    if (File.Exists(logPath) && new FileInfo(logPath).Length > AppConstants.LogFileMaxSizeBytes)
                     {
                         string backupPath = Path.Combine(_logDir, $"session_{DateTime.Now:yyyy-MM-dd_HHmmss}.log");
                         File.Move(logPath, backupPath);

@@ -8,6 +8,7 @@ using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
 using AutomatedClashRunner.Models;
 using AutomatedClashRunner.Services.Interfaces;
+using AutomatedClashRunner.Utils;
 
 namespace AutomatedClashRunner.ViewModels
 {
@@ -280,14 +281,6 @@ namespace AutomatedClashRunner.ViewModels
             }
         }
 
-        private static void DoEvents()
-        {
-            try
-            {
-                var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
-                dispatcher?.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
-            }
-            catch { }
-        }
+        private static void DoEvents() => DispatcherUtils.DoEvents();
     }
 }

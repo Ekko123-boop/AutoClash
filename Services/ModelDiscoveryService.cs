@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Autodesk.Navisworks.Api;
+using AutomatedClashRunner.Common;
 using AutomatedClashRunner.Models;
 using AutomatedClashRunner.Services.Interfaces;
 
@@ -8,7 +9,7 @@ namespace AutomatedClashRunner.Services
 {
     public class ModelDiscoveryService : IModelDiscoveryService
     {
-        private const int MaxRecursionDepth = 20;
+        private const int MaxRecursionDepth = AppConstants.MaxModelRecursionDepth;
         private readonly ILoggerService _logger;
 
         public static ModelDiscoveryService Instance { get; } = new ModelDiscoveryService(LoggerService.Instance);

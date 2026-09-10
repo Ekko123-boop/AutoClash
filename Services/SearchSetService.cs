@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Navisworks.Api;
+using AutomatedClashRunner.Common;
 using AutomatedClashRunner.Models;
 using AutomatedClashRunner.Services.Interfaces;
 
@@ -78,12 +79,12 @@ namespace AutomatedClashRunner.Services
             if (doc == null) return null;
 
             var rootChildren = doc.SelectionSets.RootItem.Children;
-            var testsFolder = rootChildren.FirstOrDefault(x => x.DisplayName == "Tests" && x is FolderItem) as FolderItem;
+            var testsFolder = rootChildren.FirstOrDefault(x => x.DisplayName == AppConstants.TestsFolderName && x is FolderItem) as FolderItem;
             if (testsFolder == null)
             {
-                var newFolder = new FolderItem { DisplayName = "Tests" };
+                var newFolder = new FolderItem { DisplayName = AppConstants.TestsFolderName };
                 doc.SelectionSets.AddCopy(newFolder);
-                testsFolder = doc.SelectionSets.RootItem.Children.LastOrDefault(x => x.DisplayName == "Tests" && x is FolderItem) as FolderItem;
+                testsFolder = doc.SelectionSets.RootItem.Children.LastOrDefault(x => x.DisplayName == AppConstants.TestsFolderName && x is FolderItem) as FolderItem;
             }
             return testsFolder;
         }
@@ -100,7 +101,8 @@ namespace AutomatedClashRunner.Services
                 var existing = testsFolder.Children.FirstOrDefault(x => string.Equals(x.DisplayName, baseName, StringComparison.OrdinalIgnoreCase));
                 if (existing != null)
                 {
-                    try { doc.SelectionSets.Remove(testsFolder, existing); } catch { }
+                    try { doc.SelectionSets.Remove(testsFolder, existing); }
+                    catch (Exception ex) { _logger.LogWarning($"Could not remove previous set '{existing.DisplayName}': {ex.Message}"); }
                 }
             }
 
@@ -156,7 +158,8 @@ namespace AutomatedClashRunner.Services
                 var existing = testsFolder.Children.FirstOrDefault(x => string.Equals(x.DisplayName, baseName, StringComparison.OrdinalIgnoreCase));
                 if (existing != null)
                 {
-                    try { doc.SelectionSets.Remove(testsFolder, existing); } catch { }
+                    try { doc.SelectionSets.Remove(testsFolder, existing); }
+                    catch (Exception ex) { _logger.LogWarning($"Could not remove previous set '{existing.DisplayName}': {ex.Message}"); }
                 }
             }
 
@@ -211,11 +214,12 @@ namespace AutomatedClashRunner.Services
             if (testsFolder != null)
             {
                 var existing = testsFolder.Children.FirstOrDefault(x =>
-                    string.Equals(x.DisplayName, "POC Elements", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(x.DisplayName, "POC", StringComparison.OrdinalIgnoreCase));
+                    string.Equals(x.DisplayName, AppConstants.PocSearchSetName, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(x.DisplayName, AppConstants.PocKeyword, StringComparison.OrdinalIgnoreCase));
                 if (existing != null)
                 {
-                    try { doc.SelectionSets.Remove(testsFolder, existing); } catch { }
+                    try { doc.SelectionSets.Remove(testsFolder, existing); }
+                    catch (Exception ex) { _logger.LogWarning($"Could not remove previous set '{existing.DisplayName}': {ex.Message}"); }
                 }
             }
 
@@ -228,7 +232,7 @@ namespace AutomatedClashRunner.Services
                 var search = new Search();
                 search.Selection.SelectAll();
                 search.SearchConditions.Add(
-                    SearchCondition.HasPropertyByDisplayName("Item", "Name").DisplayStringContains("POC"));
+                    SearchCondition.HasPropertyByDisplayName("Item", "Name").DisplayStringContains(AppConstants.PocKeyword));
                 var found = search.FindAll(doc, false);
                 if (found != null && found.Count > 0)
                 {
@@ -259,7 +263,7 @@ namespace AutomatedClashRunner.Services
             }
 
             // 3. Create static SelectionSet named "POC Elements"
-            string finalName = "POC Elements";
+            string finalName = AppConstants.PocSearchSetName;
             var newSet = new SelectionSet(pocItems) { DisplayName = finalName };
             doc.SelectionSets.AddCopy(newSet);
 
@@ -296,7 +300,7 @@ namespace AutomatedClashRunner.Services
             if (item == null) return;
 
             if (!string.IsNullOrEmpty(item.DisplayName) &&
-                item.DisplayName.IndexOf("POC", StringComparison.OrdinalIgnoreCase) >= 0)
+                item.DisplayName.IndexOf(AppConstants.PocKeyword, StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 collection.Add(item);
             }

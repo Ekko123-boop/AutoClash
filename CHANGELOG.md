@@ -2,6 +2,20 @@
 
 All notable changes to the Automated Clash Runner & Distiller addin are documented here.
 
+## [2.0.6] - 2026-09-10
+### Refactored & Optimized
+- **Unified Clash Test Execution Pipeline**:
+  - Refactored `ClashExecutionService.cs` from 570 lines down to 345 lines by extracting a unified `ExecuteSingleClashTest` core pipeline.
+  - Eliminated ~350 lines of duplicate test creation, registration, execution, and verification logic across all 4 runners (`RunClashMatrix`, `RunToolsTest`, `RunBaseBuildTest`, `RunConstructabilityTest`).
+  - Preserved all hard-won Navisworks API workarounds (ISS-001 SelectionSourceCollection, ISS-037 no outer transaction, ISS-041 Selection A strictly via Sets, ISS-044 Same File rule).
+- **Eliminated Artificial UI Lag**:
+  - Replaced legacy `Thread.Sleep(30)` in batch test loops with non-blocking `System.Threading.Thread.Yield()`, saving up to 15 seconds of artificial UI stalling on large 500-test runs.
+- **Centralized Constants & Dispatcher Utilities**:
+  - Created `Common/AppConstants.cs` containing standardized unit conversion factors (`0.3048` m/ft), default tolerances, folder names (`Tests`), set names (`POC Elements`, `Base Build`), and naming prefixes (`T-`, `C-`).
+  - Created `Utils/DispatcherUtils.cs` consolidating the duplicate `DoEvents()` implementation previously scattered across 4 ViewModels and services.
+- **Defensive Error Logging**:
+  - Added structured warning logging to `SearchSetService` catch blocks when replacing previous selection sets, eliminating silent exception swallowing.
+
 ## [2.0.5] - 2026-09-10
 ### Added
 - **Constructability (POC Clearance Clash) Feature**:

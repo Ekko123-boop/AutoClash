@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using AutomatedClashRunner.Common;
 using AutomatedClashRunner.Models;
 using AutomatedClashRunner.Services.Interfaces;
 
@@ -49,25 +50,25 @@ namespace AutomatedClashRunner.Services
 
             // If manual search set is Base Build (or BaseBuild), test name is the trimmed model code.
             // Otherwise, prepend 'T-'.
-            if (manualName.Equals("Base Build", StringComparison.OrdinalIgnoreCase) ||
-                manualName.Equals("BaseBuild", StringComparison.OrdinalIgnoreCase))
+            if (manualName.Equals(AppConstants.BaseBuildSetName, StringComparison.OrdinalIgnoreCase) ||
+                manualName.Equals(AppConstants.BaseBuildCompactSetName, StringComparison.OrdinalIgnoreCase))
             {
                 return trimmedCode;
             }
             else
             {
-                return "T-" + trimmedCode;
+                return AppConstants.ToolsTestPrefix + trimmedCode;
             }
         }
 
         public string GetToolsTestClashName(string modelDisplayName)
         {
             string trimmedCode = GetTrimmedModelCode(modelDisplayName);
-            if (trimmedCode.StartsWith("T-", StringComparison.OrdinalIgnoreCase))
+            if (trimmedCode.StartsWith(AppConstants.ToolsTestPrefix, StringComparison.OrdinalIgnoreCase))
             {
                 return trimmedCode;
             }
-            return "T-" + trimmedCode;
+            return AppConstants.ToolsTestPrefix + trimmedCode;
         }
 
         public string GetBaseBuildClashName(string modelDisplayName)
@@ -79,18 +80,18 @@ namespace AutomatedClashRunner.Services
         public string GetConstructabilityClashName(string modelDisplayName)
         {
             string trimmedCode = GetTrimmedModelCode(modelDisplayName);
-            if (trimmedCode.StartsWith("C-", StringComparison.OrdinalIgnoreCase))
+            if (trimmedCode.StartsWith(AppConstants.ConstructabilityPrefix, StringComparison.OrdinalIgnoreCase))
             {
                 return trimmedCode;
             }
-            return "C-" + trimmedCode;
+            return AppConstants.ConstructabilityPrefix + trimmedCode;
         }
 
         public string GetConstructabilityClashName(List<ModelSourceNode> models)
         {
             if (models == null || models.Count == 0)
             {
-                return "C-Constructability";
+                return AppConstants.ConstructabilityPrefix + "Constructability";
             }
 
             if (models.Count == 1)
@@ -106,7 +107,7 @@ namespace AutomatedClashRunner.Services
                 return GetConstructabilityClashName(firstParent);
             }
 
-            return "C-Constructability";
+            return AppConstants.ConstructabilityPrefix + "Constructability";
         }
     }
 }

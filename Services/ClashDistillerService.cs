@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
+using AutomatedClashRunner.Common;
 using AutomatedClashRunner.Services.Interfaces;
+using AutomatedClashRunner.Utils;
 
 namespace AutomatedClashRunner.Services
 {
@@ -70,15 +72,7 @@ namespace AutomatedClashRunner.Services
             }
         }
 
-        private static void DoEvents()
-        {
-            try
-            {
-                var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
-                dispatcher?.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
-            }
-            catch { }
-        }
+        private static void DoEvents() => DispatcherUtils.DoEvents();
 
         private static List<List<ClashResult>> ClusterResults(List<ClashResult> items, double maxDistMeters)
         {
@@ -191,7 +185,7 @@ namespace AutomatedClashRunner.Services
 
             // Navisworks internal coordinate system is ALWAYS in meters.
             // 1 foot = 0.3048 meters.
-            double maxDistMeters = maxProximityFt * 0.3048;
+            double maxDistMeters = maxProximityFt * AppConstants.MetersPerFoot;
 
             var testList = tests.ToList();
             int totalTests = testList.Count;

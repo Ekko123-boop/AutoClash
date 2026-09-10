@@ -5,6 +5,7 @@ using System.Runtime.ExceptionServices;
 using System.Security;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
+using AutomatedClashRunner.Common;
 using AutomatedClashRunner.Models;
 using AutomatedClashRunner.Services.Interfaces;
 
@@ -26,37 +27,41 @@ namespace AutomatedClashRunner.Services
             _logger = logger ?? LoggerService.Instance;
         }
 
-        [HandleProcessCorruptedStateExceptions]
-        [SecurityCritical]
-        public ExecutionResult RunClashMatrix(
-            Document doc,
-            List<SearchSetNode> manualSets,
-            List<ModelSourceNode> models,
-            ClashTestType testType = ClashTestType.Clearance,
-            double tolerance = 0.0,
-            Action<string, int, int> progressCallback = null)
+        private struct SingleClashTestConfig
         {
-            var result = new ExecutionResult();
+            public string TestName;
+            public ClashTestType TestType;
+            public double Tolerance;
+            public SelectionSource SelectionSourceA;
+            public ModelItemCollection ItemsB;
+            public Action<ClashTest> ConfigureRules;
+            public string LogDetail;
+        }
+
+        private bool TryInitializeClashExecution(
+            Document doc,
+            ExecutionResult result,
+            out DocumentClashTests clashTests,
+            out HashSet<string> existingTestNames)
+        {
+            clashTests = null;
+            existingTestNames = null;
 
             if (doc == null || doc.IsClear)
             {
                 result.FailedTests.Add("Active document is not available or is empty.");
-                return result;
+                return false;
             }
 
             var documentClash = doc.GetClash();
             if (documentClash == null)
             {
                 result.FailedTests.Add("Clash Detective is not available in this Navisworks edition.");
-                return result;
+                return false;
             }
 
-            var clashTests = documentClash.TestsData;
-            int totalCombinations = manualSets.Count * models.Count;
-            int currentCombination = 0;
-
-            // O(1) Pre-indexed hash set of existing test names across the document
-            var existingTestNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            clashTests = documentClash.TestsData;
+            existingTestNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (clashTests?.Tests != null)
             {
                 foreach (SavedItem item in clashTests.Tests)
@@ -68,70 +73,121 @@ namespace AutomatedClashRunner.Services
                 }
             }
 
+            return true;
+        }
+
+        private void ExecuteSingleClashTest(
+            Document doc,
+            DocumentClashTests clashTests,
+            HashSet<string> existingTestNames,
+            SingleClashTestConfig config,
+            ExecutionResult result)
+        {
+            // O(1) Check if test already exists in Clash Detective
+            if (existingTestNames.Contains(config.TestName))
+            {
+                result.SkippedTests.Add(config.TestName);
+                _logger.Log($"Skipped existing clash test: {config.TestName}");
+                return;
+            }
+
+            try
+            {
+                var test = new ClashTest
+                {
+                    DisplayName = config.TestName,
+                    TestType = config.TestType,
+                    Tolerance = config.Tolerance
+                };
+
+                // Apply rules if configured (e.g. same file rule)
+                config.ConfigureRules?.Invoke(test);
+
+                // Selection A: Search/Selection Set (ISS-041: strictly via SelectionSources.Add)
+                if (config.SelectionSourceA != null)
+                {
+                    test.SelectionA.Selection.SelectionSources.Add(config.SelectionSourceA);
+                }
+
+                // Selection B: Direct Standard NWC Model File(s) (ISS-041: CopyFrom)
+                if (config.ItemsB != null && config.ItemsB.Count > 0)
+                {
+                    test.SelectionB.Selection.CopyFrom(config.ItemsB);
+                }
+
+                clashTests.TestsAddCopy(test);
+                existingTestNames.Add(config.TestName);
+
+                var addedTest = clashTests.Tests.OfType<ClashTest>()
+                    .LastOrDefault(t => string.Equals(t.DisplayName, config.TestName, StringComparison.OrdinalIgnoreCase))
+                    ?? clashTests.Tests.LastOrDefault() as ClashTest;
+
+                if (addedTest != null)
+                {
+                    // Re-apply rules on added instance
+                    config.ConfigureRules?.Invoke(addedTest);
+
+                    clashTests.TestsRunTest(addedTest);
+                    System.Threading.Thread.Yield(); // Non-blocking thread yield instead of Thread.Sleep(30)
+                    result.SuccessfulTests.Add(config.TestName);
+                    string detail = !string.IsNullOrEmpty(config.LogDetail) ? $" {config.LogDetail}" : string.Empty;
+                    _logger.Log($"Successfully executed clash test: {config.TestName}{detail}");
+                }
+                else
+                {
+                    result.FailedTests.Add($"{config.TestName}: Failed to register test copy in Clash Detective.");
+                    _logger.LogWarning($"Failed to register test copy for: {config.TestName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                result.FailedTests.Add($"{config.TestName}: {ex.Message}");
+                _logger.LogError($"Error executing clash test '{config.TestName}'", ex);
+            }
+        }
+
+        [HandleProcessCorruptedStateExceptions]
+        [SecurityCritical]
+        public ExecutionResult RunClashMatrix(
+            Document doc,
+            List<SearchSetNode> manualSets,
+            List<ModelSourceNode> models,
+            ClashTestType testType = ClashTestType.Clearance,
+            double tolerance = AppConstants.DefaultToleranceMeters,
+            Action<string, int, int> progressCallback = null)
+        {
+            var result = new ExecutionResult();
+            if (!TryInitializeClashExecution(doc, result, out var clashTests, out var existingTestNames))
+                return result;
+
+            int totalCombinations = manualSets.Count * models.Count;
+            int currentCombination = 0;
+
             foreach (var manualSet in manualSets)
             {
+                if (manualSet?.OriginalSavedItem == null) continue;
+                var sourceA = doc.SelectionSets.CreateSelectionSource(manualSet.OriginalSavedItem);
+                if (sourceA == null) continue;
+
                 foreach (var model in models)
                 {
                     currentCombination++;
                     if (model?.OriginalModelItem == null) continue;
 
                     string testName = _naming.GetClashTestName(model.DisplayName, manualSet.OriginalSavedItem.DisplayName);
-
                     progressCallback?.Invoke($"Running test: {testName} ({currentCombination}/{totalCombinations})", currentCombination, totalCombinations);
 
-                    // O(1) Check if test already exists
-                    if (existingTestNames.Contains(testName))
+                    var config = new SingleClashTestConfig
                     {
-                        result.SkippedTests.Add(testName);
-                        _logger.Log($"Skipped existing clash test: {testName}");
-                        continue;
-                    }
+                        TestName = testName,
+                        TestType = testType,
+                        Tolerance = tolerance,
+                        SelectionSourceA = sourceA,
+                        ItemsB = new ModelItemCollection { model.OriginalModelItem },
+                        LogDetail = $"[Set: {manualSet.DisplayName} vs Model: {model.DisplayName}]"
+                    };
 
-                    try
-                    {
-                        var test = new ClashTest
-                        {
-                            DisplayName = testName,
-                            TestType = testType,
-                            Tolerance = tolerance
-                        };
-
-                        // Selection A: Search/Selection Set
-                        var sourceA = doc.SelectionSets.CreateSelectionSource(manualSet.OriginalSavedItem);
-                        if (sourceA != null)
-                        {
-                            test.SelectionA.Selection.SelectionSources.Add(sourceA);
-                        }
-
-                        // Selection B: Direct Standard NWC Model File
-                        var itemsB = new ModelItemCollection { model.OriginalModelItem };
-                        test.SelectionB.Selection.CopyFrom(itemsB);
-
-                        clashTests.TestsAddCopy(test);
-                        existingTestNames.Add(testName);
-
-                        var addedTest = clashTests.Tests.OfType<ClashTest>()
-                            .LastOrDefault(t => string.Equals(t.DisplayName, testName, StringComparison.OrdinalIgnoreCase))
-                            ?? clashTests.Tests.LastOrDefault() as ClashTest;
-
-                        if (addedTest != null)
-                        {
-                            clashTests.TestsRunTest(addedTest);
-                            System.Threading.Thread.Sleep(30);
-                            result.SuccessfulTests.Add(testName);
-                            _logger.Log($"Successfully executed clash test: {testName}");
-                        }
-                        else
-                        {
-                            result.FailedTests.Add($"{testName}: Failed to register test copy in Clash Detective.");
-                            _logger.LogWarning($"Failed to register test copy for: {testName}");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        result.FailedTests.Add($"{testName}: {ex.Message}");
-                        _logger.LogError($"Error executing clash test '{testName}'", ex);
-                    }
+                    ExecuteSingleClashTest(doc, clashTests, existingTestNames, config, result);
                 }
             }
 
@@ -144,30 +200,17 @@ namespace AutomatedClashRunner.Services
             Document doc,
             List<ModelSourceNode> models,
             ClashTestType testType = ClashTestType.Clearance,
-            double tolerance = 0.0,
+            double tolerance = AppConstants.DefaultToleranceMeters,
             Action<string, int, int> progressCallback = null)
         {
             var result = new ExecutionResult();
-
-            if (doc == null || doc.IsClear)
-            {
-                result.FailedTests.Add("Active document is not available or is empty.");
+            if (!TryInitializeClashExecution(doc, result, out var clashTests, out var existingTestNames))
                 return result;
-            }
 
-            var documentClash = doc.GetClash();
-            if (documentClash == null)
-            {
-                result.FailedTests.Add("Clash Detective is not available in this Navisworks edition.");
-                return result;
-            }
-
-            var clashTests = documentClash.TestsData;
             var allSets = _searchSets.GetManualSearchSets(doc)
                 .Where(s => !s.IsFolder && s.OriginalSavedItem != null)
                 .ToList();
 
-            // Index search sets by trimmed name for O(1) resolution
             var setsByName = new Dictionary<string, SearchSetNode>(StringComparer.OrdinalIgnoreCase);
             foreach (var s in allSets)
             {
@@ -175,19 +218,6 @@ namespace AutomatedClashRunner.Services
                 if (!string.IsNullOrEmpty(trimmed) && !setsByName.ContainsKey(trimmed))
                 {
                     setsByName[trimmed] = s;
-                }
-            }
-
-            // O(1) Pre-indexed hash set of existing test names across the document
-            var existingTestNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (clashTests?.Tests != null)
-            {
-                foreach (SavedItem item in clashTests.Tests)
-                {
-                    if (!string.IsNullOrEmpty(item?.DisplayName))
-                    {
-                        existingTestNames.Add(item.DisplayName);
-                    }
                 }
             }
 
@@ -205,12 +235,10 @@ namespace AutomatedClashRunner.Services
 
                 progressCallback?.Invoke($"Running tools test: {testName} ({current}/{total})", current, total);
 
-                // 1. Find corresponding selection set (matching targetSetCode, case-insensitive)
                 SearchSetNode matchedSet;
                 if (!setsByName.TryGetValue(targetSetCode, out matchedSet))
                 {
-                    // Secondary fallback: check if set name ends with target code
-                    matchedSet = allSets.FirstOrDefault(s => 
+                    matchedSet = allSets.FirstOrDefault(s =>
                         s.DisplayName != null && s.DisplayName.Trim().EndsWith(targetSetCode, StringComparison.OrdinalIgnoreCase));
                 }
 
@@ -222,59 +250,18 @@ namespace AutomatedClashRunner.Services
                     continue;
                 }
 
-                // 2. Check if test already exists in Clash Detective (O(1) lookup)
-                if (existingTestNames.Contains(testName))
+                var sourceA = doc.SelectionSets.CreateSelectionSource(matchedSet.OriginalSavedItem);
+                var config = new SingleClashTestConfig
                 {
-                    result.SkippedTests.Add(testName);
-                    _logger.Log($"Skipped existing clash test: {testName}");
-                    continue;
-                }
+                    TestName = testName,
+                    TestType = testType,
+                    Tolerance = tolerance,
+                    SelectionSourceA = sourceA,
+                    ItemsB = new ModelItemCollection { model.OriginalModelItem },
+                    LogDetail = $"[Set: {matchedSet.DisplayName} vs Model: {rawName}]"
+                };
 
-                try
-                {
-                    var test = new ClashTest
-                    {
-                        DisplayName = testName,
-                        TestType = testType,
-                        Tolerance = tolerance
-                    };
-
-                    // Selection A: Corresponding Selection / Search Set
-                    var sourceA = doc.SelectionSets.CreateSelectionSource(matchedSet.OriginalSavedItem);
-                    if (sourceA != null)
-                    {
-                        test.SelectionA.Selection.SelectionSources.Add(sourceA);
-                    }
-
-                    // Selection B: Direct Selected NWC Model Node
-                    var itemsB = new ModelItemCollection { model.OriginalModelItem };
-                    test.SelectionB.Selection.CopyFrom(itemsB);
-
-                    clashTests.TestsAddCopy(test);
-                    existingTestNames.Add(testName);
-
-                    var addedTest = clashTests.Tests.OfType<ClashTest>()
-                        .LastOrDefault(t => string.Equals(t.DisplayName, testName, StringComparison.OrdinalIgnoreCase))
-                        ?? clashTests.Tests.LastOrDefault() as ClashTest;
-
-                    if (addedTest != null)
-                    {
-                        clashTests.TestsRunTest(addedTest);
-                        System.Threading.Thread.Sleep(30);
-                        result.SuccessfulTests.Add(testName);
-                        _logger.Log($"Successfully executed tools clash test: {testName} [Set: {matchedSet.DisplayName} vs Model: {rawName}]");
-                    }
-                    else
-                    {
-                        result.FailedTests.Add($"{testName}: Failed to register test copy in Clash Detective.");
-                        _logger.LogWarning($"Failed to register test copy for: {testName}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    result.FailedTests.Add($"{testName}: {ex.Message}");
-                    _logger.LogError($"Error executing tools clash test '{testName}'", ex);
-                }
+                ExecuteSingleClashTest(doc, clashTests, existingTestNames, config, result);
             }
 
             return result;
@@ -286,42 +273,24 @@ namespace AutomatedClashRunner.Services
             Document doc,
             List<ModelSourceNode> models,
             ClashTestType testType = ClashTestType.Clearance,
-            double tolerance = 0.0,
+            double tolerance = AppConstants.DefaultToleranceMeters,
             Action<string, int, int> progressCallback = null)
         {
             var result = new ExecutionResult();
-
-            if (doc == null || doc.IsClear)
-            {
-                result.FailedTests.Add("Active document is not available or is empty.");
+            if (!TryInitializeClashExecution(doc, result, out var clashTests, out var existingTestNames))
                 return result;
-            }
 
-            var documentClash = doc.GetClash();
-            if (documentClash == null)
-            {
-                result.FailedTests.Add("Clash Detective is not available in this Navisworks edition.");
-                return result;
-            }
-
-            var clashTests = documentClash.TestsData;
             var allSets = _searchSets.GetManualSearchSets(doc)
                 .Where(s => !s.IsFolder && s.OriginalSavedItem != null)
                 .ToList();
 
-            // Find the "Base Build" selection/search set
             var baseBuildSet = allSets.FirstOrDefault(s =>
-                string.Equals(s.DisplayName?.Trim(), "Base Build", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(s.DisplayName?.Trim(), "BaseBuild", StringComparison.OrdinalIgnoreCase));
-
-            // Secondary fallback: ends with "Base Build" or contains "Base Build"
-            if (baseBuildSet == null)
-            {
-                baseBuildSet = allSets.FirstOrDefault(s =>
+                string.Equals(s.DisplayName?.Trim(), AppConstants.BaseBuildSetName, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(s.DisplayName?.Trim(), AppConstants.BaseBuildCompactSetName, StringComparison.OrdinalIgnoreCase))
+                ?? allSets.FirstOrDefault(s =>
                     s.DisplayName != null && (
-                        s.DisplayName.Trim().EndsWith("Base Build", StringComparison.OrdinalIgnoreCase) ||
-                        s.DisplayName.Trim().EndsWith("BaseBuild", StringComparison.OrdinalIgnoreCase)));
-            }
+                        s.DisplayName.Trim().EndsWith(AppConstants.BaseBuildSetName, StringComparison.OrdinalIgnoreCase) ||
+                        s.DisplayName.Trim().EndsWith(AppConstants.BaseBuildCompactSetName, StringComparison.OrdinalIgnoreCase)));
 
             if (baseBuildSet == null || baseBuildSet.OriginalSavedItem == null)
             {
@@ -331,19 +300,7 @@ namespace AutomatedClashRunner.Services
                 return result;
             }
 
-            // O(1) Pre-indexed hash set of existing test names across the document
-            var existingTestNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (clashTests?.Tests != null)
-            {
-                foreach (SavedItem item in clashTests.Tests)
-                {
-                    if (!string.IsNullOrEmpty(item?.DisplayName))
-                    {
-                        existingTestNames.Add(item.DisplayName);
-                    }
-                }
-            }
-
+            var sourceA = doc.SelectionSets.CreateSelectionSource(baseBuildSet.OriginalSavedItem);
             int total = models.Count;
             int current = 0;
 
@@ -357,59 +314,17 @@ namespace AutomatedClashRunner.Services
 
                 progressCallback?.Invoke($"Running base build test: {testName} ({current}/{total})", current, total);
 
-                // Check if test already exists in Clash Detective (O(1) lookup)
-                if (existingTestNames.Contains(testName))
+                var config = new SingleClashTestConfig
                 {
-                    result.SkippedTests.Add(testName);
-                    _logger.Log($"Skipped existing clash test: {testName}");
-                    continue;
-                }
+                    TestName = testName,
+                    TestType = testType,
+                    Tolerance = tolerance,
+                    SelectionSourceA = sourceA,
+                    ItemsB = new ModelItemCollection { model.OriginalModelItem },
+                    LogDetail = $"[Base Build vs Model: {rawName}]"
+                };
 
-                try
-                {
-                    var test = new ClashTest
-                    {
-                        DisplayName = testName,
-                        TestType = testType,
-                        Tolerance = tolerance
-                    };
-
-                    // Selection A: Base Build Selection / Search Set
-                    var sourceA = doc.SelectionSets.CreateSelectionSource(baseBuildSet.OriginalSavedItem);
-                    if (sourceA != null)
-                    {
-                        test.SelectionA.Selection.SelectionSources.Add(sourceA);
-                    }
-
-                    // Selection B: Direct Selected NWC Model Node
-                    var itemsB = new ModelItemCollection { model.OriginalModelItem };
-                    test.SelectionB.Selection.CopyFrom(itemsB);
-
-                    clashTests.TestsAddCopy(test);
-                    existingTestNames.Add(testName);
-
-                    var addedTest = clashTests.Tests.OfType<ClashTest>()
-                        .LastOrDefault(t => string.Equals(t.DisplayName, testName, StringComparison.OrdinalIgnoreCase))
-                        ?? clashTests.Tests.LastOrDefault() as ClashTest;
-
-                    if (addedTest != null)
-                    {
-                        clashTests.TestsRunTest(addedTest);
-                        System.Threading.Thread.Sleep(30);
-                        result.SuccessfulTests.Add(testName);
-                        _logger.Log($"Successfully executed base build clash test: {testName} [Base Build vs Model: {rawName}]");
-                    }
-                    else
-                    {
-                        result.FailedTests.Add($"{testName}: Failed to register test copy in Clash Detective.");
-                        _logger.LogWarning($"Failed to register test copy for: {testName}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    result.FailedTests.Add($"{testName}: {ex.Message}");
-                    _logger.LogError($"Error executing base build clash test '{testName}'", ex);
-                }
+                ExecuteSingleClashTest(doc, clashTests, existingTestNames, config, result);
             }
 
             return result;
@@ -420,16 +335,12 @@ namespace AutomatedClashRunner.Services
         public ExecutionResult RunConstructabilityTest(
             Document doc,
             List<ModelSourceNode> models,
-            double clearanceTolerance = 0.3048,
+            double clearanceTolerance = AppConstants.DefaultConstructabilityToleranceMeters,
             Action<string, int, int> progressCallback = null)
         {
             var result = new ExecutionResult();
-
-            if (doc == null || doc.IsClear)
-            {
-                result.FailedTests.Add("Active document is not available or is empty.");
+            if (!TryInitializeClashExecution(doc, result, out var clashTests, out var existingTestNames))
                 return result;
-            }
 
             if (models == null || models.Count == 0)
             {
@@ -437,16 +348,8 @@ namespace AutomatedClashRunner.Services
                 return result;
             }
 
-            var documentClash = doc.GetClash();
-            if (documentClash == null)
-            {
-                result.FailedTests.Add("Clash Detective is not available in this Navisworks edition.");
-                return result;
-            }
-
             progressCallback?.Invoke("Resolving POC Elements Search Set...", 1, 10);
 
-            // 1. Auto-generate or get the "POC Elements" Selection Set
             var pocSet = _searchSets.GetOrCreatePocSearchSet(doc, result);
             if (pocSet == null)
             {
@@ -456,91 +359,33 @@ namespace AutomatedClashRunner.Services
                 return result;
             }
 
-            var clashTests = documentClash.TestsData;
             string testName = _naming.GetConstructabilityClashName(models);
-
-            // O(1) Pre-indexed hash set of existing test names across the document
-            var existingTestNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (clashTests?.Tests != null)
-            {
-                foreach (SavedItem item in clashTests.Tests)
-                {
-                    if (!string.IsNullOrEmpty(item?.DisplayName))
-                    {
-                        existingTestNames.Add(item.DisplayName);
-                    }
-                }
-            }
-
-            if (existingTestNames.Contains(testName))
-            {
-                result.SkippedTests.Add(testName);
-                _logger.Log($"Skipped existing constructability clash test: {testName}");
-                return result;
-            }
-
             progressCallback?.Invoke($"Configuring test: {testName}...", 4, 10);
 
-            try
+            var sourceA = doc.SelectionSets.CreateSelectionSource(pocSet);
+            var itemsB = new ModelItemCollection();
+            foreach (var m in models)
             {
-                var test = new ClashTest
+                if (m?.OriginalModelItem != null)
                 {
-                    DisplayName = testName,
-                    TestType = ClashTestType.Clearance,
-                    Tolerance = clearanceTolerance
-                };
-
-                // Enable "Ignore items in same file" rule to prevent self-clashes
-                EnableSameFileRule(test);
-
-                // Selection A: POC Elements Search Set (strictly using SelectionSources per ISS-041)
-                var sourceA = doc.SelectionSets.CreateSelectionSource(pocSet);
-                if (sourceA != null)
-                {
-                    test.SelectionA.Selection.SelectionSources.Add(sourceA);
-                }
-
-                // Selection B: All selected models combined
-                var itemsB = new ModelItemCollection();
-                foreach (var m in models)
-                {
-                    if (m?.OriginalModelItem != null)
-                    {
-                        itemsB.Add(m.OriginalModelItem);
-                    }
-                }
-                test.SelectionB.Selection.CopyFrom(itemsB);
-
-                progressCallback?.Invoke($"Registering {testName} in Clash Detective...", 7, 10);
-
-                clashTests.TestsAddCopy(test);
-                existingTestNames.Add(testName);
-
-                var addedTest = clashTests.Tests.OfType<ClashTest>()
-                    .LastOrDefault(t => string.Equals(t.DisplayName, testName, StringComparison.OrdinalIgnoreCase))
-                    ?? clashTests.Tests.LastOrDefault() as ClashTest;
-
-                if (addedTest != null)
-                {
-                    EnableSameFileRule(addedTest);
-
-                    progressCallback?.Invoke($"Executing {testName} (Clearance: {clearanceTolerance:F4}m)...", 9, 10);
-                    clashTests.TestsRunTest(addedTest);
-                    System.Threading.Thread.Sleep(30);
-                    result.SuccessfulTests.Add(testName);
-                    _logger.Log($"Successfully executed constructability clash test: {testName} [POC vs {models.Count} Models, Clearance: {clearanceTolerance:F4}m]");
-                }
-                else
-                {
-                    result.FailedTests.Add($"{testName}: Failed to register test copy in Clash Detective.");
-                    _logger.LogWarning($"Failed to register test copy for: {testName}");
+                    itemsB.Add(m.OriginalModelItem);
                 }
             }
-            catch (Exception ex)
+
+            progressCallback?.Invoke($"Registering {testName} in Clash Detective...", 7, 10);
+
+            var config = new SingleClashTestConfig
             {
-                result.FailedTests.Add($"{testName}: {ex.Message}");
-                _logger.LogError($"Error executing constructability clash test '{testName}'", ex);
-            }
+                TestName = testName,
+                TestType = ClashTestType.Clearance,
+                Tolerance = clearanceTolerance,
+                SelectionSourceA = sourceA,
+                ItemsB = itemsB,
+                ConfigureRules = EnableSameFileRule,
+                LogDetail = $"[POC vs {models.Count} Models, Clearance: {clearanceTolerance:F4}m]"
+            };
+
+            ExecuteSingleClashTest(doc, clashTests, existingTestNames, config, result);
 
             progressCallback?.Invoke($"Completed {testName}", 10, 10);
             return result;

@@ -7,9 +7,11 @@ using System.Windows.Data;
 using System.Windows.Input;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
+using AutomatedClashRunner.Common;
 using AutomatedClashRunner.Models;
 using AutomatedClashRunner.Services;
 using AutomatedClashRunner.Services.Interfaces;
+using AutomatedClashRunner.Utils;
 
 namespace AutomatedClashRunner.ViewModels
 {
@@ -544,7 +546,7 @@ namespace AutomatedClashRunner.ViewModels
                 var result = _clashExecution.RunConstructabilityTest(
                     doc,
                     selectedModels,
-                    0.3048, // 1.0 ft in meters
+                    AppConstants.DefaultConstructabilityToleranceMeters,
                     (status, current, total) =>
                     {
                         ProgressText = status;
@@ -652,14 +654,6 @@ namespace AutomatedClashRunner.ViewModels
             }
         }
 
-        private static void DoEvents()
-        {
-            try
-            {
-                var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
-                dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
-            }
-            catch { }
-        }
+        private static void DoEvents() => DispatcherUtils.DoEvents();
     }
 }

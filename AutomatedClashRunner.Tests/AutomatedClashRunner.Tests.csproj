@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
     <PlatformTarget>x64</PlatformTarget>
@@ -33,6 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\AppConstants.cs" Link="Linked\AppConstants.cs" />
     <Compile Include="..\Services\NamingService.cs" Link="Linked\NamingService.cs" />
     <Compile Include="..\Services\HardwareFingerprint.cs" Link="Linked\HardwareFingerprint.cs" />
     <Compile Include="..\Services\StringProtection.cs" Link="Linked\StringProtection.cs" />

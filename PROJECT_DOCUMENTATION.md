@@ -65,24 +65,17 @@ Cypher Tools (`CypherNavisTools.dll`) is a modular, high-reliability Autodesk Na
 - **Base Build Naming**: `GetBaseBuildClashName` produces clean trimmed model code without `T-` prefix.
 - **Constructability Naming**: `GetConstructabilityClashName` formats clash tests with `C-` prefix (`C-[TrimmedCode]` for single model, `C-[ParentContainer]` like `C-MEI` when models share a container, or `C-Constructability`).
 
-### 2.4 ClashExecutionService
-- **Full Matrix Run**: Builds Cartesian product between selected Models and manual Search Sets, skipping duplicates.
-- **Tools Test (1-to-1 Automated Pairing)**:
-  - For each selected NWC model, automatically discovers its corresponding Selection Set by trimmed name matching (e.g. `F1-STS-HDLS202-MX.nwc` matches Selection Set `STS-HDLS202-MX`).
-  - Sets Selection A to the matching Selection Set and Selection B to the physical NWC model item.
-  - Automatically names test with `T-` prefix.
-- **Base Build Clash Runner**:
-  - Automatically identifies the document's `Base Build` / `BaseBuild` Selection Set.
-  - Sets Selection A to Base Build and Selection B to the direct NWC model item.
-  - Names generated clash tests with the clean model code (no `T-` prefix).
-- **Constructability (POC Clearance Clash Runner)**:
-  - Automatically ensures `Tests > POC Elements` Selection Set is created.
-  - Sets Selection A to `POC Elements` using dynamic `SelectionSources.Add` binding.
-  - Sets Selection B to all selected models combined.
-  - Sets clearance tolerance to 1.0 ft (0.3048 m) to verify physical accessibility envelope.
-  - Enables the "Ignore items in same file" rule on `ClashTest.IgnoreRules` to eliminate host pipe/duct self-clash false positives.
-- Bypasses the known Navisworks `new SelectionSourceCollection()` constructor crash.
-- Executes tests and gathers execution outcomes into `ExecutionResult`.
+### 2.4 ClashExecutionService (Unified Execution Pipeline)
+- **Unified Single-Test Engine (`ExecuteSingleClashTest`)**:
+  - Consolidates test creation, registration, execution, and verification into a single core pipeline method across all 4 runners (`RunClashMatrix`, `RunToolsTest`, `RunBaseBuildTest`, `RunConstructabilityTest`), eliminating ~350 lines of duplicate code.
+  - Bypasses known Navisworks `new SelectionSourceCollection()` constructor crash (ISS-001) by directly mutating `SelectionSources.Add(sourceA)`.
+  - Strictly enforces ISS-041: Selection A dynamically binds to the Sets tree via `SelectionSources.Add(sourceA)`, while Selection B directly binds to the model hierarchy via `CopyFrom(itemsB)`.
+  - Operates without outer document transactions (ISS-037), allowing Navisworks Clash Detective to manage per-test transaction atomicity internally.
+  - Replaced legacy blocking `Thread.Sleep(30)` with non-blocking `System.Threading.Thread.Yield()`, saving up to 15 seconds on 500-test runs.
+- **Full Matrix Run**: Builds Cartesian product between selected Models and manual Search Sets, skipping existing tests in $O(1)$ time.
+- **Tools Test (1-to-1 Automated Pairing)**: Automatically pairs each selected NWC model with its corresponding Selection Set by trimmed name matching, with `T-` prefix.
+- **Base Build Clash Runner**: Automatically pairs each selected NWC model with the document's `Base Build` Selection Set with clean model code naming.
+- **Constructability (POC Clearance Clash Runner)**: Ensures `Tests > POC Elements` Selection Set is created, clashes all selected models against POCs in a single combined test with `C-` prefix and 1.0 ft (0.3048 m) clearance tolerance, and enables the "Ignore items in same file" rule to eliminate false-positive self-clashes.
 
 ### 2.5 ClashDistillerService
 - **ReRunTests**: Runs tests against updated model geometry.
@@ -112,7 +105,11 @@ Cypher Tools (`CypherNavisTools.dll`) is a modular, high-reliability Autodesk Na
   - Primary Gate: `App.cs` entry point before any window is loaded.
   - Secondary Gate: `MainViewModel.cs` async background re-verification.
   - Clock Rollback Defense: Invalidation if local time is rewound behind last-seen UTC timestamp.
-- **Remote Revocation**: Setting `enabled: false` on the target machine HWID or `global_kill: true` in Firebase immediately locks down the tool and saves `.revoked` state.
+### 2.9 Common & Utility Subsystems
+- **`Common/AppConstants.cs`**:
+  - Centralized single source of truth for Navisworks internal unit conversion (`MetersPerFoot = 0.3048`), default tolerances (`0.0m` standard, `0.3048m` constructability), folder and set names (`Tests`, `POC Elements`, `Base Build`), and naming prefixes (`T-`, `C-`).
+- **`Utils/DispatcherUtils.cs`**:
+  - Standardized STA dispatcher message pumping (`DoEvents()`) across all tabs and services to maintain smooth UI rendering without stalling.
 
 ---
 

@@ -6,8 +6,10 @@ using System.Windows.Data;
 using System.Windows.Input;
 using Autodesk.Navisworks.Api;
 using Autodesk.Navisworks.Api.Clash;
+using AutomatedClashRunner.Common;
 using AutomatedClashRunner.Models;
 using AutomatedClashRunner.Services.Interfaces;
+using AutomatedClashRunner.Utils;
 
 namespace AutomatedClashRunner.ViewModels
 {
@@ -33,7 +35,7 @@ namespace AutomatedClashRunner.ViewModels
             }
         }
 
-        private double _groupingProximity = 10.0;
+        private double _groupingProximity = AppConstants.DefaultGroupingProximityFt;
         public double GroupingProximity
         {
             get => _groupingProximity;
@@ -266,14 +268,6 @@ namespace AutomatedClashRunner.ViewModels
             }
         }
 
-        private static void DoEvents()
-        {
-            try
-            {
-                var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
-                dispatcher?.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
-            }
-            catch { }
-        }
+        private static void DoEvents() => DispatcherUtils.DoEvents();
     }
 }
