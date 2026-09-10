@@ -102,14 +102,6 @@ namespace AutomatedClashRunner.Services
                         {
                             test.SelectionA.Selection.SelectionSources.Add(sourceA);
                         }
-                        if (manualSet.OriginalSavedItem is SelectionSet sSet)
-                        {
-                            var itemsA = sSet.GetSelectedItems();
-                            if (itemsA != null && itemsA.Count > 0)
-                            {
-                                test.SelectionA.Selection.CopyFrom(itemsA);
-                            }
-                        }
 
                         // Selection B: Direct Standard NWC Model File
                         var itemsB = new ModelItemCollection { model.OriginalModelItem };
@@ -253,14 +245,6 @@ namespace AutomatedClashRunner.Services
                     {
                         test.SelectionA.Selection.SelectionSources.Add(sourceA);
                     }
-                    if (matchedSet.OriginalSavedItem is SelectionSet sSet)
-                    {
-                        var itemsA = sSet.GetSelectedItems();
-                        if (itemsA != null && itemsA.Count > 0)
-                        {
-                            test.SelectionA.Selection.CopyFrom(itemsA);
-                        }
-                    }
 
                     // Selection B: Direct Selected NWC Model Node
                     var itemsB = new ModelItemCollection { model.OriginalModelItem };
@@ -395,14 +379,6 @@ namespace AutomatedClashRunner.Services
                     if (sourceA != null)
                     {
                         test.SelectionA.Selection.SelectionSources.Add(sourceA);
-                    }
-                    if (baseBuildSet.OriginalSavedItem is SelectionSet sSet)
-                    {
-                        var itemsA = sSet.GetSelectedItems();
-                        if (itemsA != null && itemsA.Count > 0)
-                        {
-                            test.SelectionA.Selection.CopyFrom(itemsA);
-                        }
                     }
 
                     // Selection B: Direct Selected NWC Model Node

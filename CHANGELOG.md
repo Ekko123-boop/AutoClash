@@ -2,6 +2,13 @@
 
 All notable changes to the Automated Clash Runner & Distiller addin are documented here.
 
+## [2.0.3] - 2026-09-10
+### Fixed
+- **Selection A Dynamic Set Hierarchy Binding (Clash Matrix, Tools Test & Base Build)**:
+  - Removed secondary `test.SelectionA.Selection.CopyFrom(itemsA)` calls that were overriding `SelectionSources` with explicit model elements.
+  - In Navisworks Clash Detective, Selection A now strictly selects the **Selection/Search Set** under the **"Sets"** tab (e.g., `Base Build`, `STS-HDLS202-MX`) rather than individual models under the "Standard" tree.
+  - Selection B remains cleanly bound to the physical NWC model node under the "Standard" tree hierarchy.
+
 ## [2.0.2] - 2026-09-10
 ### Fixed
 - **Host Fatal Crash Elimination on Open NWF/NWD (Navisworks 2023 & 2024)**:
