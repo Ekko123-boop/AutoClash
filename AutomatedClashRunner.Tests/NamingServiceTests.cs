@@ -177,5 +177,98 @@ namespace AutomatedClashRunner.Tests
             // Assert
             result.Should().Be("C-Constructability");
         }
+
+        [Theory]
+        [InlineData("F1-EGE-ASP1106-E-.nwc", "EGE-ASP1106-E")]
+        [InlineData("F1_EGE-ASP1106-E_.nwc", "EGE-ASP1106-E")]
+        [InlineData("MODEL-TEST---.nwd", "TEST")]
+        public void GetTrimmedModelCode_WithTrailingDelimiters_TrimsTrailingHyphensAndUnderscores(string input, string expected)
+        {
+            // Act
+            string result = _namingService.GetTrimmedModelCode(input);
+
+            // Assert
+            result.Should().Be(expected);
+        }
+
+        [Theory]
+        [InlineData("T-EGE-ASP1106-E-", "T-EGE-ASP1106-E")]
+        [InlineData("EGE-ASP1106-E--", "EGE-ASP1106-E")]
+        [InlineData("EGE-ASP1106-E_ ", "EGE-ASP1106-E")]
+        [InlineData("  TEST-MODEL-  ", "TEST-MODEL")]
+        [InlineData(null, "")]
+        [InlineData("", "")]
+        public void SanitizeTestDisplayName_StripsTrailingDelimiters(string input, string expected)
+        {
+            // Act
+            string result = _namingService.SanitizeTestDisplayName(input);
+
+            // Assert
+            result.Should().Be(expected);
+        }
+
+        [Fact]
+        public void FormatGroupName_WithTrailingDashTestName_FormatsWithSpaceAndUnpaddedNumber()
+        {
+            // Act
+            string result = _namingService.FormatGroupName("T-EGE-ASP1106-E-", 4);
+
+            // Assert
+            result.Should().Be("T-EGE-ASP1106-E 4");
+        }
+
+        [Fact]
+        public void FormatGroupName_WithCleanTestName_FormatsWithSpaceAndUnpaddedNumber()
+        {
+            // Act
+            string result = _namingService.FormatGroupName("EGE-ASP1106-E", 12);
+
+            // Assert
+            result.Should().Be("EGE-ASP1106-E 12");
+        }
+
+        [Fact]
+        public void FormatViewpointName_FromLegacyDoubleDashGroup_KeepsExactClashNumber()
+        {
+            // Act
+            string result = _namingService.FormatViewpointName("T-EGE-ASP1106-E-", "T-EGE-ASP1106-E--004");
+
+            // Assert
+            result.Should().Be("T-EGE-ASP1106-E 4");
+        }
+
+        [Fact]
+        public void FormatViewpointName_FromCleanGroup_KeepsExactClashNumber()
+        {
+            // Act
+            string result = _namingService.FormatViewpointName("T-EGE-ASP1106-E-", "T-EGE-ASP1106-E 5");
+
+            // Assert
+            result.Should().Be("T-EGE-ASP1106-E 5");
+        }
+
+        [Fact]
+        public void FormatViewpointName_FromRawClash_KeepsExactClashNumber()
+        {
+            // Act
+            string res1 = _namingService.FormatViewpointName("T-EGE-ASP1106-E-", "Clash 4");
+            string res2 = _namingService.FormatViewpointName("T-EGE-ASP1106-E-", "Clash16");
+
+            // Assert
+            res1.Should().Be("T-EGE-ASP1106-E 4");
+            res2.Should().Be("T-EGE-ASP1106-E 16");
+        }
+
+        [Fact]
+        public void FormatViewpointName_FilteredSubset_PreservesIndividualClashNumbers()
+        {
+            // Simulating exporting only Reviewed clashes (clash 4 and clash 5)
+            string vp4 = _namingService.FormatViewpointName("T-EGE-ASP1106-E-", "T-EGE-ASP1106-E--004", fallbackIndex: 1);
+            string vp5 = _namingService.FormatViewpointName("T-EGE-ASP1106-E-", "T-EGE-ASP1106-E--005", fallbackIndex: 2);
+
+            // Assert - must NOT renumber to 1 and 2!
+            vp4.Should().Be("T-EGE-ASP1106-E 4");
+            vp5.Should().Be("T-EGE-ASP1106-E 5");
+        }
     }
 }

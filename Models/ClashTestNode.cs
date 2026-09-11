@@ -90,27 +90,26 @@ namespace AutomatedClashRunner.Models
                     }
                     else if (child is ClashResultGroup group)
                     {
-                        int groupCount = group.Children != null ? group.Children.Count : 0;
-                        int countToAdd = groupCount > 0 ? groupCount : 1;
-                        total += countToAdd;
+                        // In Navisworks Clash Detective, each group counts as 1 item in test status totals
+                        total++;
 
                         switch (group.Status)
                         {
                             case ClashResultStatus.New:
                             case ClashResultStatus.Active:
-                                activeNew += countToAdd;
+                                activeNew++;
                                 break;
                             case ClashResultStatus.Reviewed:
-                                reviewed += countToAdd;
+                                reviewed++;
                                 break;
                             case ClashResultStatus.Approved:
-                                approved += countToAdd;
+                                approved++;
                                 break;
                             case ClashResultStatus.Resolved:
-                                resolved += countToAdd;
+                                resolved++;
                                 break;
                             default:
-                                activeNew += countToAdd;
+                                activeNew++;
                                 break;
                         }
                     }

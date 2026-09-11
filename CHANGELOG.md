@@ -2,6 +2,22 @@
 
 All notable changes to the Automated Clash Runner & Distiller addin are documented here.
 
+## [2.0.7] - 2026-09-11
+### Fixed
+- **Clash Detective Group Status & Totals Alignment (ISS-046)**:
+  - In `Models/ClashTestNode.cs`, updated `CalculateCounts()` so each top-level `ClashResultGroup` counts as **1 item** towards its assigned status (`group.Status`) and `TotalCount`, rather than unpacking internal child clashes.
+  - Fixes the bug where test `T-EGE-ASP1106-E-` with 5 groups in Clash Detective showed 21 clashes in the add-in UI (16 Active/New, 5 Reviewed). The UI now shows **3 Active/New, 2 Reviewed, Total 5**, matching Navisworks Clash Detective with 100% precision.
+- **Viewpoint Camera Location Mismatch (ISS-046)**:
+  - In `Services/ClashDistillerService.cs`, updated `GetTestsViewpointForResult` to accept `IClashResult` (implementing both `ClashResult` and `ClashResultGroup`).
+  - In `ExportViewpoints`, passed `(IClashResult)group` directly to trigger native `MakeClashResultView(state, group)`.
+  - Replaced the uncoordinated screen copy fallback (`doc.CurrentViewpoint.Value.CreateCopy()`) with a **smart geometric camera focus algorithm**: calculates camera eye position `cameraEye = center - (dir * focalDist)` targeting `Center` and `BoundingBox.Size` at an optimal framing distance. Saved viewpoints now focus directly on the clash in 3D space.
+- **Group & Viewpoint Clean Naming with Number Preservation (ISS-046)**:
+  - Centralized naming rules in `Services/NamingService.cs` (`SanitizeTestDisplayName`, `FormatGroupName`, `FormatViewpointName`).
+  - Automatically strips trailing hyphens, underscores, and spaces (`TrimEnd('-', '_', ' ')`) from test names and model codes (e.g. `F1-EGE-ASP1106-E-.nwc` and `T-EGE-ASP1106-E-`).
+  - Formats group names cleanly with a single space and unpadded digits: `${baseName} ${groupIndex}` (e.g. `T-EGE-ASP1106-E 4`), eliminating double dashes (`--004`) and 3-digit zero-padding.
+  - Automatically extracts the source clash number (`\d+$`) so viewpoint numbers strictly preserve clash numbers even when exporting filtered subsets (e.g. only exporting Reviewed clashes 4 and 5 produces viewpoints `... 4` and `... 5`, never renumbered to 1 and 2).
+  - Sanitizes the Saved Viewpoints folder name, ensuring clean directory structures without trailing dashes.
+
 ## [2.0.6] - 2026-09-10
 ### Refactored & Optimized
 - **Unified Clash Test Execution Pipeline**:

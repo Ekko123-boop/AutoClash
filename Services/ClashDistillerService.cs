@@ -12,12 +12,14 @@ namespace AutomatedClashRunner.Services
     public class ClashDistillerService : IClashDistillerService
     {
         private readonly ILoggerService _logger;
+        private readonly INamingService _naming;
 
-        public static ClashDistillerService Instance { get; } = new ClashDistillerService(LoggerService.Instance);
+        public static ClashDistillerService Instance { get; } = new ClashDistillerService(LoggerService.Instance, NamingService.Instance);
 
-        public ClashDistillerService(ILoggerService logger)
+        public ClashDistillerService(ILoggerService logger, INamingService naming = null)
         {
             _logger = logger ?? LoggerService.Instance;
+            _naming = naming ?? NamingService.Instance;
         }
 
         public void ReRunTests(Document doc, IEnumerable<ClashTest> tests)
@@ -272,7 +274,7 @@ namespace AutomatedClashRunner.Services
                     {
                         if (cluster.Count == 0) continue;
 
-                        string groupName = $"{test.DisplayName}-{groupIndex:D3}";
+                        string groupName = _naming.FormatGroupName(test.DisplayName, groupIndex);
                         var newGroup = new ClashResultGroup { DisplayName = groupName };
 
                         clashData.TestsAddCopy(test, newGroup);
@@ -407,8 +409,9 @@ namespace AutomatedClashRunner.Services
 
                     if (matchingGroups.Count == 0 && matchingRaw.Count == 0) continue;
 
-                    // Create folder for the clash test
-                    var folder = new FolderItem { DisplayName = test.DisplayName };
+                    // Create folder for the clash test (clean name without trailing delimiters)
+                    string folderName = _naming.SanitizeTestDisplayName(test.DisplayName);
+                    var folder = new FolderItem { DisplayName = folderName };
                     if (targetRootFolder != null)
                     {
                         savedViewpoints.AddCopy(targetRootFolder, folder);
@@ -427,14 +430,14 @@ namespace AutomatedClashRunner.Services
                     int testCreated = 0;
 
                     // Process Groups
+                    int gIdx = 1;
                     foreach (var group in matchingGroups)
                     {
-                        if (group.RepresentativeResult == null) continue;
-
-                        var vp = GetTestsViewpointForResult(clashData, group.RepresentativeResult);
+                        var vp = GetTestsViewpointForResult(clashData, group);
                         if (vp != null)
                         {
-                            var svp = new SavedViewpoint(vp) { DisplayName = group.DisplayName };
+                            string vpName = _naming.FormatViewpointName(test.DisplayName, group.DisplayName, gIdx);
+                            var svp = new SavedViewpoint(vp) { DisplayName = vpName };
                             savedViewpoints.AddCopy(actualFolder, svp);
                             viewpointsCreated++;
                             testCreated++;
@@ -448,15 +451,18 @@ namespace AutomatedClashRunner.Services
                                 DoEvents();
                             }
                         }
+                        gIdx++;
                     }
 
                     // Process Raw Results (if any)
+                    int rIdx = 1;
                     foreach (var raw in matchingRaw)
                     {
                         var vp = GetTestsViewpointForResult(clashData, raw);
                         if (vp != null)
                         {
-                            var svp = new SavedViewpoint(vp) { DisplayName = raw.DisplayName };
+                            string vpName = _naming.FormatViewpointName(test.DisplayName, raw.DisplayName, rIdx);
+                            var svp = new SavedViewpoint(vp) { DisplayName = vpName };
                             savedViewpoints.AddCopy(actualFolder, svp);
                             viewpointsCreated++;
                             testCreated++;
@@ -470,6 +476,7 @@ namespace AutomatedClashRunner.Services
                                 DoEvents();
                             }
                         }
+                        rIdx++;
                     }
 
                     _logger.Log($"Exported {testCreated} viewpoints for test: {test.DisplayName}");
@@ -482,33 +489,83 @@ namespace AutomatedClashRunner.Services
 
             return viewpointsCreated;
         }
-        private Viewpoint GetTestsViewpointForResult(DocumentClashTests clashData, ClashResult result)
+
+        private Viewpoint GetTestsViewpointForResult(DocumentClashTests clashData, IClashResult result)
         {
+            if (clashData == null || result == null) return null;
+
+            // 1. Primary: In Navisworks 2024+, TestsViewpointForResult exists on DocumentClashTests and takes IClashResult
             try
             {
-                // In Navisworks 2024+, TestsViewpointForResult exists on DocumentClashTests.
                 var method = typeof(DocumentClashTests).GetMethod("TestsViewpointForResult", 
                     System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
                 
                 if (method != null)
                 {
-                    return method.Invoke(clashData, new object[] { result }) as Viewpoint;
+                    var vp = method.Invoke(clashData, new object[] { result }) as Viewpoint;
+                    if (vp != null) return vp;
                 }
             }
             catch
             {
-                // Fallback to active document camera on reflection error
+                // Fall through to geometric camera positioning
             }
 
-            // Fallback for Navisworks 2023 (or when API method unavailable):
+            // 2. Focused geometric camera fallback (Navisworks 2023 or when native VP is null):
+            // Extract exact 3D coordinates and bounding box from the clash or group
             try
             {
-                var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
-                var activeVp = doc?.CurrentViewpoint?.Value;
-                if (activeVp != null)
+                Point3D center = Point3D.Origin;
+                BoundingBox3D bbox = null;
+                bool hasCoords = false;
+
+                if (result is ClashResult res)
                 {
-                    var copy = activeVp.CreateCopy();
-                    return copy;
+                    bbox = res.BoundingBox;
+                    center = res.Center;
+                    hasCoords = true;
+                }
+                else if (result is ClashResultGroup grp)
+                {
+                    bbox = grp.BoundingBox;
+                    if (grp.RepresentativeResult != null)
+                    {
+                        center = grp.RepresentativeResult.Center;
+                        hasCoords = true;
+                    }
+                    else if (bbox != null)
+                    {
+                        center = bbox.Center;
+                        hasCoords = true;
+                    }
+                }
+
+                var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
+                if (doc?.CurrentViewpoint?.Value != null)
+                {
+                    var vp = doc.CurrentViewpoint.Value.CreateCopy();
+                    if (hasCoords)
+                    {
+                        double radius = 3.0;
+                        if (bbox != null)
+                        {
+                            var extents = bbox.Size;
+                            radius = Math.Max(extents.Length * 0.5, 2.0);
+                        }
+
+                        // Standard comfortable isometric perspective direction
+                        Vector3D dir = new Vector3D(1.0, 1.0, -0.7).Normalize();
+                        double focalDist = Math.Max(radius * 3.0, 6.0); // 6 feet minimum distance
+                        Vector3D offset = dir * focalDist;
+                        Point3D cameraEye = new Point3D(center.X - offset.X, center.Y - offset.Y, center.Z - offset.Z);
+
+                        vp.Position = cameraEye;
+                        vp.PivotPoint = center;
+                        vp.FocalDistance = focalDist;
+                        vp.AlignDirection(dir);
+                        vp.AlignUp(new Vector3D(0, 0, 1));
+                    }
+                    return vp;
                 }
             }
             catch { }
