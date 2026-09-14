@@ -16,6 +16,15 @@ namespace AutomatedClashRunner.Services.Interfaces
             double tolerance = 0.0,
             Action<string, int, int> progressCallback = null);
 
+        ExecutionResult RunGenericClashMatrix(
+            Document doc,
+            List<ISelectableItem> itemsA,
+            List<ISelectableItem> itemsB,
+            ClashTestType testType = ClashTestType.Clearance,
+            double tolerance = 0.0,
+            string delimiter = "v",
+            Action<string, int, int> progressCallback = null);
+
         ExecutionResult RunToolsTest(
             Document doc,
             List<ModelSourceNode> models,

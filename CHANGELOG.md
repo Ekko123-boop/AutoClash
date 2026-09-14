@@ -2,6 +2,27 @@
 
 All notable changes to the Automated Clash Runner & Distiller addin are documented here.
 
+## [2.1.0-generic] - 2026-09-14 (Generic Clash Runner Branch)
+### Added
+- **Dual-Panel Tabbed Selection (ISS-047)**:
+  - Both Selection A and Selection B panels now feature independent tabs for **Models / NWCs** and **Selection & Search Sets**.
+  - Users can toggle and clash any cross-discipline combination:
+    - **Models vs Models**
+    - **Models vs Sets**
+    - **Sets vs Models**
+    - **Sets vs Sets**
+  - Completely independent collection instances (`ModelsA`/`SetsA` and `ModelsB`/`SetsB`) eliminate checkbox state cross-talk.
+- **Universal Naming Convention Formula (ISS-047)**:
+  - Clash test names automatically follow the formula: `"{Selection A name} {delimiter} {Selection B name}"` (e.g. `L0-BAE-E v L0-JCB-CW`).
+  - Configurable delimiter dropdown (`v`, `x`, `vs`) on the configuration card.
+  - Distilled groups automatically mirror the test name with unpadded number: `"{TestName} {groupIndex}"` (e.g. `L0-BAE-E v L0-JCB-CW 1`).
+  - Viewpoint names preserve exact clash numbers (e.g. `L0-BAE-E v L0-JCB-CW 1`).
+- **Clean Action Bar**:
+  - Removed project-specific buttons: `Base build`, `Tools test`, `Constructability`, and `Generate Sets`.
+  - Streamlined action bar with: `Refresh All`, `Clear Selection A`, `Clear Selection B`, `Clear All`, and `Run Clash Matrix ({0} Tests)`.
+- **Dedicated Standalone Installer**:
+  - `CypherGenericClash_Installer.exe` packaged and deployed for Navisworks 2020 through 2026.
+
 ## [2.0.7] - 2026-09-11
 ### Fixed
 - **Clash Detective Group Status & Totals Alignment (ISS-046)**:

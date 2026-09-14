@@ -33,6 +33,8 @@ namespace AutomatedClashRunner.Services
             public ClashTestType TestType;
             public double Tolerance;
             public SelectionSource SelectionSourceA;
+            public ModelItemCollection ItemsA;
+            public SelectionSource SelectionSourceB;
             public ModelItemCollection ItemsB;
             public Action<ClashTest> ConfigureRules;
             public string LogDetail;
@@ -103,14 +105,22 @@ namespace AutomatedClashRunner.Services
                 // Apply rules if configured (e.g. same file rule)
                 config.ConfigureRules?.Invoke(test);
 
-                // Selection A: Search/Selection Set (ISS-041: strictly via SelectionSources.Add)
+                // Selection A: Set (via SelectionSources.Add) or Model (via CopyFrom)
                 if (config.SelectionSourceA != null)
                 {
                     test.SelectionA.Selection.SelectionSources.Add(config.SelectionSourceA);
                 }
+                else if (config.ItemsA != null && config.ItemsA.Count > 0)
+                {
+                    test.SelectionA.Selection.CopyFrom(config.ItemsA);
+                }
 
-                // Selection B: Direct Standard NWC Model File(s) (ISS-041: CopyFrom)
-                if (config.ItemsB != null && config.ItemsB.Count > 0)
+                // Selection B: Set (via SelectionSources.Add) or Model (via CopyFrom)
+                if (config.SelectionSourceB != null)
+                {
+                    test.SelectionB.Selection.SelectionSources.Add(config.SelectionSourceB);
+                }
+                else if (config.ItemsB != null && config.ItemsB.Count > 0)
                 {
                     test.SelectionB.Selection.CopyFrom(config.ItemsB);
                 }
@@ -192,6 +202,114 @@ namespace AutomatedClashRunner.Services
             }
 
             return result;
+        }
+
+        [HandleProcessCorruptedStateExceptions]
+        [SecurityCritical]
+        public ExecutionResult RunGenericClashMatrix(
+            Document doc,
+            List<ISelectableItem> itemsA,
+            List<ISelectableItem> itemsB,
+            ClashTestType testType = ClashTestType.Clearance,
+            double tolerance = AppConstants.DefaultToleranceMeters,
+            string delimiter = "v",
+            Action<string, int, int> progressCallback = null)
+        {
+            var result = new ExecutionResult();
+            if (!TryInitializeClashExecution(doc, result, out var clashTests, out var existingTestNames))
+                return result;
+
+            if (itemsA == null || itemsA.Count == 0 || itemsB == null || itemsB.Count == 0)
+            {
+                result.FailedTests.Add("Both Selection A and Selection B must have at least one item selected.");
+                return result;
+            }
+
+            int totalCombinations = itemsA.Count * itemsB.Count;
+            int currentCombination = 0;
+
+            foreach (var itemA in itemsA)
+            {
+                string nameA = GetItemDisplayName(itemA);
+                var selSourceA = GetSelectionSource(doc, itemA);
+                var itemsCollA = GetModelItems(itemA);
+
+                foreach (var itemB in itemsB)
+                {
+                    currentCombination++;
+                    string nameB = GetItemDisplayName(itemB);
+
+                    // Skip self-clashes (e.g. same model against itself, or same set against itself)
+                    if (IsSameItem(itemA, itemB))
+                    {
+                        result.SkippedTests.Add($"{nameA} (Self-clash skipped)");
+                        continue;
+                    }
+
+                    string testName = _naming.GetGenericClashTestName(nameA, nameB, delimiter);
+                    progressCallback?.Invoke($"Running test: {testName} ({currentCombination}/{totalCombinations})", currentCombination, totalCombinations);
+
+                    var selSourceB = GetSelectionSource(doc, itemB);
+                    var itemsCollB = GetModelItems(itemB);
+
+                    var config = new SingleClashTestConfig
+                    {
+                        TestName = testName,
+                        TestType = testType,
+                        Tolerance = tolerance,
+                        SelectionSourceA = selSourceA,
+                        ItemsA = itemsCollA,
+                        SelectionSourceB = selSourceB,
+                        ItemsB = itemsCollB,
+                        LogDetail = $"[{nameA} {delimiter} {nameB}]"
+                    };
+
+                    ExecuteSingleClashTest(doc, clashTests, existingTestNames, config, result);
+                }
+            }
+
+            return result;
+        }
+
+        private string GetItemDisplayName(ISelectableItem item)
+        {
+            if (item is ModelSourceNode m) return m.DisplayName;
+            if (item is SearchSetNode s) return s.DisplayName ?? s.FullPath;
+            return string.Empty;
+        }
+
+        private SelectionSource GetSelectionSource(Document doc, ISelectableItem item)
+        {
+            if (item is SearchSetNode s && s.OriginalSavedItem != null)
+            {
+                return doc.SelectionSets.CreateSelectionSource(s.OriginalSavedItem);
+            }
+            return null;
+        }
+
+        private ModelItemCollection GetModelItems(ISelectableItem item)
+        {
+            if (item is ModelSourceNode m && m.OriginalModelItem != null)
+            {
+                return new ModelItemCollection { m.OriginalModelItem };
+            }
+            return null;
+        }
+
+        private bool IsSameItem(ISelectableItem itemA, ISelectableItem itemB)
+        {
+            if (itemA == null || itemB == null) return false;
+            if (ReferenceEquals(itemA, itemB)) return true;
+
+            if (itemA is ModelSourceNode mA && itemB is ModelSourceNode mB)
+            {
+                return string.Equals(mA.DisplayName, mB.DisplayName, StringComparison.OrdinalIgnoreCase);
+            }
+            if (itemA is SearchSetNode sA && itemB is SearchSetNode sB)
+            {
+                return string.Equals(sA.FullPath ?? sA.DisplayName, sB.FullPath ?? sB.DisplayName, StringComparison.OrdinalIgnoreCase);
+            }
+            return false;
         }
 
         [HandleProcessCorruptedStateExceptions]

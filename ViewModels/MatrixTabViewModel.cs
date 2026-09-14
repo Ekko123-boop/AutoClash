@@ -24,36 +24,105 @@ namespace AutomatedClashRunner.ViewModels
         private readonly ILoggerService _logger;
         private readonly INamingService _naming;
 
-        public ObservableCollection<ModelSourceNode> AllModels { get; } = new ObservableCollection<ModelSourceNode>();
-        public ICollectionView ModelsView { get; }
+        // Selection A collections
+        public ObservableCollection<ModelSourceNode> ModelsA { get; } = new ObservableCollection<ModelSourceNode>();
+        public ICollectionView ModelsViewA { get; }
 
-        public ObservableCollection<SearchSetNode> AllSearchSets { get; } = new ObservableCollection<SearchSetNode>();
-        public ICollectionView SearchSetsView { get; }
+        public ObservableCollection<SearchSetNode> SetsA { get; } = new ObservableCollection<SearchSetNode>();
+        public ICollectionView SetsViewA { get; }
 
-        private string _searchTextModels = string.Empty;
-        public string SearchTextModels
+        // Selection B collections
+        public ObservableCollection<ModelSourceNode> ModelsB { get; } = new ObservableCollection<ModelSourceNode>();
+        public ICollectionView ModelsViewB { get; }
+
+        public ObservableCollection<SearchSetNode> SetsB { get; } = new ObservableCollection<SearchSetNode>();
+        public ICollectionView SetsViewB { get; }
+
+        private int _activeTabIndexA;
+        public int ActiveTabIndexA
         {
-            get => _searchTextModels;
+            get => _activeTabIndexA;
             set
             {
-                if (SetProperty(ref _searchTextModels, value))
+                if (SetProperty(ref _activeTabIndexA, value))
                 {
-                    ModelsView.Refresh();
+                    UpdateSelectionState();
                 }
             }
         }
 
-        private string _searchTextSets = string.Empty;
-        public string SearchTextSets
+        private int _activeTabIndexB;
+        public int ActiveTabIndexB
         {
-            get => _searchTextSets;
+            get => _activeTabIndexB;
             set
             {
-                if (SetProperty(ref _searchTextSets, value))
+                if (SetProperty(ref _activeTabIndexB, value))
                 {
-                    SearchSetsView.Refresh();
+                    UpdateSelectionState();
                 }
             }
+        }
+
+        private string _searchTextModelsA = string.Empty;
+        public string SearchTextModelsA
+        {
+            get => _searchTextModelsA;
+            set
+            {
+                if (SetProperty(ref _searchTextModelsA, value))
+                {
+                    ModelsViewA.Refresh();
+                }
+            }
+        }
+
+        private string _searchTextSetsA = string.Empty;
+        public string SearchTextSetsA
+        {
+            get => _searchTextSetsA;
+            set
+            {
+                if (SetProperty(ref _searchTextSetsA, value))
+                {
+                    SetsViewA.Refresh();
+                }
+            }
+        }
+
+        private string _searchTextModelsB = string.Empty;
+        public string SearchTextModelsB
+        {
+            get => _searchTextModelsB;
+            set
+            {
+                if (SetProperty(ref _searchTextModelsB, value))
+                {
+                    ModelsViewB.Refresh();
+                }
+            }
+        }
+
+        private string _searchTextSetsB = string.Empty;
+        public string SearchTextSetsB
+        {
+            get => _searchTextSetsB;
+            set
+            {
+                if (SetProperty(ref _searchTextSetsB, value))
+                {
+                    SetsViewB.Refresh();
+                }
+            }
+        }
+
+        public string[] AvailableDelimiters => new[] { "v", "x", "vs" };
+
+        private string _selectedDelimiter = "v";
+        public string SelectedDelimiter
+        {
+            get => _selectedDelimiter;
+            set => SetProperty(ref _selectedDelimiter, value);
         }
 
         private ClashTestType _selectedClashType = ClashTestType.Clearance;
@@ -106,45 +175,56 @@ namespace AutomatedClashRunner.ViewModels
             set => SetProperty(ref _progressBarMax, value);
         }
 
-        public string ModelSelectionSummary =>
-            $"{AllModels.Count(x => x.IsSelected && x.IsSelectable)} of {AllModels.Count} selected";
+        public int SelectedModelsCountA => ModelsA.Count(x => x.IsSelected && x.IsSelectable);
+        public int SelectedSetsCountA => SetsA.Count(x => x.IsSelected && !x.IsFolder);
 
-        public string SetSelectionSummary =>
-            $"{AllSearchSets.Count(x => x.IsSelected && !x.IsFolder)} of {AllSearchSets.Count(x => !x.IsFolder)} selected";
+        public int SelectedModelsCountB => ModelsB.Count(x => x.IsSelected && x.IsSelectable);
+        public int SelectedSetsCountB => SetsB.Count(x => x.IsSelected && !x.IsFolder);
 
-        public bool HasNoModels => AllModels.Count == 0;
-        public bool HasNoSets => AllSearchSets.Count == 0;
+        public int SelectedCountA => ActiveTabIndexA == 0 ? SelectedModelsCountA : SelectedSetsCountA;
+        public int SelectedCountB => ActiveTabIndexB == 0 ? SelectedModelsCountB : SelectedSetsCountB;
 
-        public int SelectedModelCount => AllModels.Count(x => x.IsSelected && x.IsSelectable);
+        public string ModelSelectionSummaryA =>
+            $"{SelectedModelsCountA} of {ModelsA.Count} selected";
 
-        public int ExpectedTestCount
-        {
-            get
-            {
-                int m = SelectedModelCount;
-                int s = AllSearchSets.Count(x => x.IsSelected && !x.IsFolder);
-                return m * s;
-            }
-        }
+        public string SetSelectionSummaryA =>
+            $"{SelectedSetsCountA} of {SetsA.Count(x => !x.IsFolder)} selected";
+
+        public string ModelSelectionSummaryB =>
+            $"{SelectedModelsCountB} of {ModelsB.Count} selected";
+
+        public string SetSelectionSummaryB =>
+            $"{SelectedSetsCountB} of {SetsB.Count(x => !x.IsFolder)} selected";
+
+        public string TabHeaderModelsA => $"Models ({SelectedModelsCountA})";
+        public string TabHeaderSetsA => $"Sets ({SelectedSetsCountA})";
+
+        public string TabHeaderModelsB => $"Models ({SelectedModelsCountB})";
+        public string TabHeaderSetsB => $"Sets ({SelectedSetsCountB})";
+
+        public bool HasNoModelsA => ModelsA.Count == 0;
+        public bool HasNoSetsA => SetsA.Count == 0;
+        public bool HasNoModelsB => ModelsB.Count == 0;
+        public bool HasNoSetsB => SetsB.Count == 0;
+
+        public int ExpectedTestCount => SelectedCountA * SelectedCountB;
 
         public bool IsRunEnabled => ExpectedTestCount > 0 && !IsBusy;
-        public bool IsToolsTestEnabled => SelectedModelCount > 0 && !IsBusy;
-        public bool IsBaseBuildTestEnabled => SelectedModelCount > 0 && !IsBusy;
-        public bool IsConstructabilityEnabled => SelectedModelCount > 0 && !IsBusy;
-        public bool IsGenerateSetsEnabled => SelectedModelCount > 0 && !IsBusy;
 
+        public ICommand RefreshAllCommand { get; }
         public ICommand RefreshModelsCommand { get; }
         public ICommand RefreshSearchSetsCommand { get; }
-        public ICommand SelectAllModelsCommand { get; }
-        public ICommand DeselectAllModelsCommand { get; }
-        public ICommand SelectAllSetsCommand { get; }
-        public ICommand DeselectAllSetsCommand { get; }
+
+        public ICommand SelectAllACommand { get; }
+        public ICommand DeselectAllACommand { get; }
+        public ICommand ClearACommand { get; }
+
+        public ICommand SelectAllBCommand { get; }
+        public ICommand DeselectAllBCommand { get; }
+        public ICommand ClearBCommand { get; }
+
         public ICommand ClearAllCommand { get; }
         public ICommand RunCommand { get; }
-        public ICommand ToolsTestCommand { get; }
-        public ICommand BaseBuildTestCommand { get; }
-        public ICommand ConstructabilityCommand { get; }
-        public ICommand GenerateSelectionSetsCommand { get; }
 
         public MatrixTabViewModel(
             IModelDiscoveryService modelDiscovery,
@@ -161,49 +241,80 @@ namespace AutomatedClashRunner.ViewModels
             _logger = logger;
             _naming = naming ?? NamingService.Instance;
 
-            ModelsView = CollectionViewSource.GetDefaultView(AllModels);
-            ModelsView.Filter = FilterModelItem;
+            // Selection A views
+            ModelsViewA = CollectionViewSource.GetDefaultView(ModelsA);
+            ModelsViewA.Filter = FilterModelItemA;
 
-            SearchSetsView = CollectionViewSource.GetDefaultView(AllSearchSets);
-            SearchSetsView.Filter = FilterSearchSetItem;
+            SetsViewA = CollectionViewSource.GetDefaultView(SetsA);
+            SetsViewA.Filter = FilterSearchSetItemA;
 
+            // Selection B views
+            ModelsViewB = CollectionViewSource.GetDefaultView(ModelsB);
+            ModelsViewB.Filter = FilterModelItemB;
+
+            SetsViewB = CollectionViewSource.GetDefaultView(SetsB);
+            SetsViewB.Filter = FilterSearchSetItemB;
+
+            RefreshAllCommand = new RelayCommand(_ => LoadAll());
             RefreshModelsCommand = new RelayCommand(_ => LoadModels());
             RefreshSearchSetsCommand = new RelayCommand(_ => LoadSearchSets());
 
-            SelectAllModelsCommand = new RelayCommand(_ => SelectAllVisibleModels(true));
-            DeselectAllModelsCommand = new RelayCommand(_ => SelectAllVisibleModels(false));
+            SelectAllACommand = new RelayCommand(_ => SelectAllVisibleA(true));
+            DeselectAllACommand = new RelayCommand(_ => SelectAllVisibleA(false));
+            ClearACommand = new RelayCommand(_ => ClearSelectionA());
 
-            SelectAllSetsCommand = new RelayCommand(_ => SelectAllVisibleSets(true));
-            DeselectAllSetsCommand = new RelayCommand(_ => SelectAllVisibleSets(false));
+            SelectAllBCommand = new RelayCommand(_ => SelectAllVisibleB(true));
+            DeselectAllBCommand = new RelayCommand(_ => SelectAllVisibleB(false));
+            ClearBCommand = new RelayCommand(_ => ClearSelectionB());
 
             ClearAllCommand = new RelayCommand(_ => ClearAllSelections());
             RunCommand = new RelayCommand(_ => RunClashTests(), _ => IsRunEnabled);
-            ToolsTestCommand = new RelayCommand(_ => RunToolsTests(), _ => IsToolsTestEnabled);
-            BaseBuildTestCommand = new RelayCommand(_ => RunBaseBuildTests(), _ => IsBaseBuildTestEnabled);
-            ConstructabilityCommand = new RelayCommand(_ => RunConstructabilityTests(), _ => IsConstructabilityEnabled);
-            GenerateSelectionSetsCommand = new RelayCommand(_ => GenerateSelectionSets(), _ => IsGenerateSetsEnabled);
 
-            LoadModels();
-            LoadSearchSets();
+            LoadAll();
         }
 
-        private bool FilterModelItem(object obj)
+        private bool FilterModelItemA(object obj)
         {
             if (!(obj is ModelSourceNode node)) return false;
-            if (string.IsNullOrWhiteSpace(SearchTextModels)) return true;
+            if (string.IsNullOrWhiteSpace(SearchTextModelsA)) return true;
 
-            string q = SearchTextModels.Trim();
+            string q = SearchTextModelsA.Trim();
             return (node.DisplayName != null && node.DisplayName.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0) ||
                    (node.ParentContainerName != null && node.ParentContainerName.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
-        private bool FilterSearchSetItem(object obj)
+        private bool FilterSearchSetItemA(object obj)
         {
             if (!(obj is SearchSetNode node)) return false;
-            if (string.IsNullOrWhiteSpace(SearchTextSets)) return true;
+            if (string.IsNullOrWhiteSpace(SearchTextSetsA)) return true;
 
-            string q = SearchTextSets.Trim();
+            string q = SearchTextSetsA.Trim();
             return node.FullPath != null && node.FullPath.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private bool FilterModelItemB(object obj)
+        {
+            if (!(obj is ModelSourceNode node)) return false;
+            if (string.IsNullOrWhiteSpace(SearchTextModelsB)) return true;
+
+            string q = SearchTextModelsB.Trim();
+            return (node.DisplayName != null && node.DisplayName.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                   (node.ParentContainerName != null && node.ParentContainerName.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private bool FilterSearchSetItemB(object obj)
+        {
+            if (!(obj is SearchSetNode node)) return false;
+            if (string.IsNullOrWhiteSpace(SearchTextSetsB)) return true;
+
+            string q = SearchTextSetsB.Trim();
+            return node.FullPath != null && node.FullPath.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        public void LoadAll()
+        {
+            LoadModels();
+            LoadSearchSets();
         }
 
         public void LoadModels()
@@ -211,29 +322,40 @@ namespace AutomatedClashRunner.ViewModels
             try
             {
                 var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
-                var previousSelections = new HashSet<string>(
-                    AllModels.Where(x => x.IsSelected).Select(x => x.DisplayName ?? string.Empty));
+                var prevA = new HashSet<string>(
+                    ModelsA.Where(x => x.IsSelected).Select(x => x.DisplayName ?? string.Empty));
+                var prevB = new HashSet<string>(
+                    ModelsB.Where(x => x.IsSelected).Select(x => x.DisplayName ?? string.Empty));
 
-                // Unsubscribe existing
-                foreach (var m in AllModels)
-                {
-                    m.PropertyChanged -= OnModelPropertyChanged;
-                }
+                foreach (var m in ModelsA) m.PropertyChanged -= OnModelPropertyChanged;
+                foreach (var m in ModelsB) m.PropertyChanged -= OnModelPropertyChanged;
 
-                AllModels.Clear();
+                ModelsA.Clear();
+                ModelsB.Clear();
 
                 var discovered = _modelDiscovery.DiscoverModels(doc);
                 foreach (var node in discovered)
                 {
-                    if (previousSelections.Contains(node.DisplayName ?? string.Empty))
+                    // Selection A node
+                    if (prevA.Contains(node.DisplayName ?? string.Empty))
                     {
                         node.IsSelected = true;
                     }
                     node.PropertyChanged += OnModelPropertyChanged;
-                    AllModels.Add(node);
+                    ModelsA.Add(node);
+
+                    // Selection B node (cloned for independent selection)
+                    var nodeB = node.Clone();
+                    if (prevB.Contains(nodeB.DisplayName ?? string.Empty))
+                    {
+                        nodeB.IsSelected = true;
+                    }
+                    nodeB.PropertyChanged += OnModelPropertyChanged;
+                    ModelsB.Add(nodeB);
                 }
 
-                ModelsView.Refresh();
+                ModelsViewA.Refresh();
+                ModelsViewB.Refresh();
                 UpdateSelectionState();
             }
             catch (Exception ex)
@@ -248,29 +370,40 @@ namespace AutomatedClashRunner.ViewModels
             try
             {
                 var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
-                var previousSelections = new HashSet<string>(
-                    AllSearchSets.Where(x => x.IsSelected).Select(x => x.FullPath ?? string.Empty));
+                var prevA = new HashSet<string>(
+                    SetsA.Where(x => x.IsSelected).Select(x => x.FullPath ?? string.Empty));
+                var prevB = new HashSet<string>(
+                    SetsB.Where(x => x.IsSelected).Select(x => x.FullPath ?? string.Empty));
 
-                // Unsubscribe existing
-                foreach (var s in AllSearchSets)
-                {
-                    s.PropertyChanged -= OnSetPropertyChanged;
-                }
+                foreach (var s in SetsA) s.PropertyChanged -= OnSetPropertyChanged;
+                foreach (var s in SetsB) s.PropertyChanged -= OnSetPropertyChanged;
 
-                AllSearchSets.Clear();
+                SetsA.Clear();
+                SetsB.Clear();
 
                 var sets = _searchSets.GetManualSearchSets(doc);
                 foreach (var node in sets)
                 {
-                    if (previousSelections.Contains(node.FullPath ?? string.Empty))
+                    // Selection A node
+                    if (prevA.Contains(node.FullPath ?? string.Empty))
                     {
                         node.IsSelected = true;
                     }
                     node.PropertyChanged += OnSetPropertyChanged;
-                    AllSearchSets.Add(node);
+                    SetsA.Add(node);
+
+                    // Selection B node (cloned for independent selection)
+                    var setB = node.Clone();
+                    if (prevB.Contains(setB.FullPath ?? string.Empty))
+                    {
+                        setB.IsSelected = true;
+                    }
+                    setB.PropertyChanged += OnSetPropertyChanged;
+                    SetsB.Add(setB);
                 }
 
-                SearchSetsView.Refresh();
+                SetsViewA.Refresh();
+                SetsViewB.Refresh();
                 UpdateSelectionState();
             }
             catch (Exception ex)
@@ -298,89 +431,168 @@ namespace AutomatedClashRunner.ViewModels
 
         private void UpdateSelectionState()
         {
-            OnPropertyChanged(nameof(SelectedModelCount));
+            OnPropertyChanged(nameof(SelectedModelsCountA));
+            OnPropertyChanged(nameof(SelectedSetsCountA));
+            OnPropertyChanged(nameof(SelectedModelsCountB));
+            OnPropertyChanged(nameof(SelectedSetsCountB));
+            OnPropertyChanged(nameof(SelectedCountA));
+            OnPropertyChanged(nameof(SelectedCountB));
             OnPropertyChanged(nameof(ExpectedTestCount));
             OnPropertyChanged(nameof(IsRunEnabled));
-            OnPropertyChanged(nameof(IsToolsTestEnabled));
-            OnPropertyChanged(nameof(IsBaseBuildTestEnabled));
-            OnPropertyChanged(nameof(IsConstructabilityEnabled));
-            OnPropertyChanged(nameof(IsGenerateSetsEnabled));
-            OnPropertyChanged(nameof(ModelSelectionSummary));
-            OnPropertyChanged(nameof(SetSelectionSummary));
-            OnPropertyChanged(nameof(HasNoModels));
-            OnPropertyChanged(nameof(HasNoSets));
+            OnPropertyChanged(nameof(ModelSelectionSummaryA));
+            OnPropertyChanged(nameof(SetSelectionSummaryA));
+            OnPropertyChanged(nameof(ModelSelectionSummaryB));
+            OnPropertyChanged(nameof(SetSelectionSummaryB));
+            OnPropertyChanged(nameof(TabHeaderModelsA));
+            OnPropertyChanged(nameof(TabHeaderSetsA));
+            OnPropertyChanged(nameof(TabHeaderModelsB));
+            OnPropertyChanged(nameof(TabHeaderSetsB));
+            OnPropertyChanged(nameof(HasNoModelsA));
+            OnPropertyChanged(nameof(HasNoSetsA));
+            OnPropertyChanged(nameof(HasNoModelsB));
+            OnPropertyChanged(nameof(HasNoSetsB));
             (RunCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (ToolsTestCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (BaseBuildTestCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (ConstructabilityCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (GenerateSelectionSetsCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
-        private void SelectAllVisibleModels(bool isSelected)
+        private void SelectAllVisibleA(bool isSelected)
         {
-            foreach (var item in ModelsView)
+            if (ActiveTabIndexA == 0)
             {
-                if (item is ModelSourceNode node && node.IsSelectable)
+                foreach (var item in ModelsViewA)
                 {
-                    node.IsSelected = isSelected;
+                    if (item is ModelSourceNode node && node.IsSelectable)
+                    {
+                        node.IsSelected = isSelected;
+                    }
+                }
+            }
+            else
+            {
+                foreach (var item in SetsViewA)
+                {
+                    if (item is SearchSetNode node && !node.IsFolder)
+                    {
+                        node.IsSelected = isSelected;
+                    }
                 }
             }
         }
 
-        private void SelectAllVisibleSets(bool isSelected)
+        private void SelectAllVisibleB(bool isSelected)
         {
-            foreach (var item in SearchSetsView)
+            if (ActiveTabIndexB == 0)
             {
-                if (item is SearchSetNode node && !node.IsFolder)
+                foreach (var item in ModelsViewB)
                 {
-                    node.IsSelected = isSelected;
+                    if (item is ModelSourceNode node && node.IsSelectable)
+                    {
+                        node.IsSelected = isSelected;
+                    }
                 }
             }
+            else
+            {
+                foreach (var item in SetsViewB)
+                {
+                    if (item is SearchSetNode node && !node.IsFolder)
+                    {
+                        node.IsSelected = isSelected;
+                    }
+                }
+            }
+        }
+
+        private void ClearSelectionA()
+        {
+            foreach (var m in ModelsA) m.IsSelected = false;
+            foreach (var s in SetsA) s.IsSelected = false;
+        }
+
+        private void ClearSelectionB()
+        {
+            foreach (var m in ModelsB) m.IsSelected = false;
+            foreach (var s in SetsB) s.IsSelected = false;
         }
 
         private void ClearAllSelections()
         {
-            foreach (var m in AllModels) m.IsSelected = false;
-            foreach (var s in AllSearchSets) s.IsSelected = false;
+            ClearSelectionA();
+            ClearSelectionB();
         }
 
         private void RunClashTests()
         {
-            var selectedModels = AllModels.Where(x => x.IsSelected && x.IsSelectable).ToList();
-            var selectedSets = AllSearchSets.Where(x => x.IsSelected && !x.IsFolder).ToList();
-
-            if (selectedSets.Count == 0)
+            List<ISelectableItem> itemsA;
+            string typeAName;
+            if (ActiveTabIndexA == 0)
             {
-                _dialogService.ShowWarning("Please select at least one Search Set from the right panel.", "No Sets Selected");
+                itemsA = ModelsA.Where(x => x.IsSelected && x.IsSelectable).Cast<ISelectableItem>().ToList();
+                typeAName = "Model(s)";
+            }
+            else
+            {
+                itemsA = SetsA.Where(x => x.IsSelected && !x.IsFolder).Cast<ISelectableItem>().ToList();
+                typeAName = "Set(s)";
+            }
+
+            List<ISelectableItem> itemsB;
+            string typeBName;
+            if (ActiveTabIndexB == 0)
+            {
+                itemsB = ModelsB.Where(x => x.IsSelected && x.IsSelectable).Cast<ISelectableItem>().ToList();
+                typeBName = "Model(s)";
+            }
+            else
+            {
+                itemsB = SetsB.Where(x => x.IsSelected && !x.IsFolder).Cast<ISelectableItem>().ToList();
+                typeBName = "Set(s)";
+            }
+
+            if (itemsA.Count == 0)
+            {
+                _dialogService.ShowWarning($"Please select at least one item from Selection A ({typeAName}).", "No Selection A");
                 return;
             }
-            if (selectedModels.Count == 0)
+            if (itemsB.Count == 0)
             {
-                _dialogService.ShowWarning("Please select at least one Model from the left panel.", "No Models Selected");
+                _dialogService.ShowWarning($"Please select at least one item from Selection B ({typeBName}).", "No Selection B");
                 return;
             }
 
-            int count = selectedModels.Count * selectedSets.Count;
+            int count = itemsA.Count * itemsB.Count;
             bool confirm = _dialogService.ShowConfirmation(
-                $"Generate and run {count} clash test combinations?\n\nModels: {selectedModels.Count}\nSearch Sets: {selectedSets.Count}\nClash Type: {SelectedClashType}\nTolerance: {Tolerance:F4} m",
+                $"Generate and run {count} clash test combinations?\n\n" +
+                $"Selection A: {itemsA.Count} {typeAName}\n" +
+                $"Selection B: {itemsB.Count} {typeBName}\n" +
+                $"Clash Type: {SelectedClashType}\n" +
+                $"Tolerance: {Tolerance:F4} m\n" +
+                $"Delimiter: '{SelectedDelimiter}'\n\n" +
+                $"Naming formula: Selection A {SelectedDelimiter} Selection B",
                 "Confirm Clash Matrix Execution");
 
             if (!confirm) return;
 
             var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
+            if (doc == null || doc.IsClear)
+            {
+                _dialogService.ShowError("Active document is not available or is empty.");
+                return;
+            }
+
             IsBusy = true;
-            ProgressText = "Initializing...";
+            ProgressText = "Initializing Clash Matrix...";
             ProgressBarValue = 0;
             ProgressBarMax = count;
 
             try
             {
-                var result = _clashExecution.RunClashMatrix(
+                var result = _clashExecution.RunGenericClashMatrix(
                     doc,
-                    selectedSets,
-                    selectedModels,
+                    itemsA,
+                    itemsB,
                     SelectedClashType,
                     Tolerance,
+                    SelectedDelimiter,
                     (status, current, total) =>
                     {
                         ProgressText = status;
@@ -404,256 +616,7 @@ namespace AutomatedClashRunner.ViewModels
             }
         }
 
-        private void RunToolsTests()
-        {
-            var selectedModels = AllModels.Where(x => x.IsSelected && x.IsSelectable).ToList();
-            if (selectedModels.Count == 0)
-            {
-                _dialogService.ShowWarning("Please select at least one NWC Model from the left panel.", "No Models Selected");
-                return;
-            }
-
-            bool confirm = _dialogService.ShowConfirmation(
-                $"Run Tools Test for {selectedModels.Count} selected model(s)?\n\nEach model will be automatically paired with its corresponding Selection Set (stripping level prefix).\n\nClash Type: {SelectedClashType}\nTolerance: {Tolerance:F4} m\nNaming Prefix: T-",
-                "Confirm Tools Test Execution");
-
-            if (!confirm) return;
-
-            var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
-            IsBusy = true;
-            ProgressText = "Initializing Tools Tests...";
-            ProgressBarValue = 0;
-            ProgressBarMax = selectedModels.Count;
-
-            try
-            {
-                var result = _clashExecution.RunToolsTest(
-                    doc,
-                    selectedModels,
-                    SelectedClashType,
-                    Tolerance,
-                    (status, current, total) =>
-                    {
-                        ProgressText = status;
-                        ProgressBarValue = current;
-                        ProgressBarMax = total;
-                        DoEvents();
-                    });
-
-                _dialogService.ShowSummary(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("Fatal error in tools clash test execution", ex);
-                _dialogService.ShowError($"Tools test execution failed: {ex.Message}");
-            }
-            finally
-            {
-                IsBusy = false;
-                ProgressText = string.Empty;
-                ProgressBarValue = 0;
-            }
-        }
-
-        private void RunBaseBuildTests()
-        {
-            var selectedModels = AllModels.Where(x => x.IsSelected && x.IsSelectable).ToList();
-            if (selectedModels.Count == 0)
-            {
-                _dialogService.ShowWarning("Please select at least one NWC Model from the left panel.", "No Models Selected");
-                return;
-            }
-
-            bool confirm = _dialogService.ShowConfirmation(
-                $"Run Base Build clash test for {selectedModels.Count} selected model(s)?\n\nEach model will be clashed against the 'Base Build' Selection Set.\n\nClash Type: {SelectedClashType}\nTolerance: {Tolerance:F4} m\nNaming: Model Code without T- prefix",
-                "Confirm Base Build Clash Test Execution");
-
-            if (!confirm) return;
-
-            var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
-            IsBusy = true;
-            ProgressText = "Initializing Base Build Tests...";
-            ProgressBarValue = 0;
-            ProgressBarMax = selectedModels.Count;
-
-            try
-            {
-                var result = _clashExecution.RunBaseBuildTest(
-                    doc,
-                    selectedModels,
-                    SelectedClashType,
-                    Tolerance,
-                    (status, current, total) =>
-                    {
-                        ProgressText = status;
-                        ProgressBarValue = current;
-                        ProgressBarMax = total;
-                        DoEvents();
-                    });
-
-                _dialogService.ShowSummary(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("Fatal error in base build clash test execution", ex);
-                _dialogService.ShowError($"Base build test execution failed: {ex.Message}");
-            }
-            finally
-            {
-                IsBusy = false;
-                ProgressText = string.Empty;
-                ProgressBarValue = 0;
-            }
-        }
-
-        private void RunConstructabilityTests()
-        {
-            var selectedModels = AllModels.Where(x => x.IsSelected && x.IsSelectable).ToList();
-            if (selectedModels.Count == 0)
-            {
-                _dialogService.ShowWarning("Please select at least one NWC Model from the left panel.", "No Models Selected");
-                return;
-            }
-
-            string testName = _naming.GetConstructabilityClashName(selectedModels);
-
-            bool confirm = _dialogService.ShowConfirmation(
-                $"Run Constructability clearance clash test for {selectedModels.Count} selected model(s)?\n\n" +
-                $"• Test Name: {testName}\n" +
-                $"• Selection A: All POC Elements (auto-generated set in 'Tests' folder)\n" +
-                $"• Selection B: {selectedModels.Count} Selected Model(s)\n" +
-                $"• Clearance: 1.0 ft (0.3048 m)\n" +
-                $"• Rule: Ignore items in same file\n" +
-                $"• Naming Prefix: C-",
-                "Confirm Constructability Clash Test Execution");
-
-            if (!confirm) return;
-
-            var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
-            if (doc == null || doc.IsClear)
-            {
-                _dialogService.ShowError("Active document is not available or is empty.");
-                return;
-            }
-
-            IsBusy = true;
-            ProgressText = "Initializing Constructability Tests...";
-            ProgressBarValue = 0;
-            ProgressBarMax = 10;
-
-            try
-            {
-                var result = _clashExecution.RunConstructabilityTest(
-                    doc,
-                    selectedModels,
-                    AppConstants.DefaultConstructabilityToleranceMeters,
-                    (status, current, total) =>
-                    {
-                        ProgressText = status;
-                        ProgressBarValue = current;
-                        ProgressBarMax = total;
-                        DoEvents();
-                    });
-
-                _dialogService.ShowSummary(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("Fatal error in constructability clash test execution", ex);
-                _dialogService.ShowError($"Constructability test execution failed: {ex.Message}");
-            }
-            finally
-            {
-                IsBusy = false;
-                ProgressText = string.Empty;
-                ProgressBarValue = 0;
-            }
-        }
-
-        private void GenerateSelectionSets()
-        {
-            var selectedModels = AllModels.Where(x => x.IsSelected && x.IsSelectable).ToList();
-            if (selectedModels.Count == 0)
-            {
-                _dialogService.ShowWarning("Please select at least one NWC Model from the left panel.", "No Models Selected");
-                return;
-            }
-
-            bool confirm = _dialogService.ShowConfirmation(
-                $"Generate Selection Sets for {selectedModels.Count} selected NWC model(s)?\n\nFor each selected NWC, a Selection Set will be created containing all sibling NWCs under the same parent NWD (excluding the selected NWC itself).\n\nGenerated sets will be placed in the 'Tests' folder in Selection Sets.",
-                "Confirm Selection Set Generation");
-
-            if (!confirm) return;
-
-            var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
-            if (doc == null || doc.IsClear)
-            {
-                _dialogService.ShowError("Active document is not available or is empty.");
-                return;
-            }
-
-            IsBusy = true;
-            ProgressText = "Generating Selection Sets...";
-            ProgressBarValue = 0;
-            ProgressBarMax = selectedModels.Count;
-
-            var result = new ExecutionResult();
-            int current = 0;
-
-            try
-            {
-                using (var trans = doc.BeginTransaction("Automated Generate Selection Sets"))
-                {
-                    var testsFolder = _searchSets.EnsureTestsFolder(doc);
-                    bool anyCreated = false;
-
-                    foreach (var model in selectedModels)
-                    {
-                        current++;
-                        ProgressText = $"Generating set for {model.DisplayName} ({current}/{selectedModels.Count})...";
-                        ProgressBarValue = current;
-                        DoEvents();
-
-                        var siblings = _modelDiscovery.GetSiblingNwcs(doc, model);
-                        if (siblings.Count == 0)
-                        {
-                            string warnMsg = $"{model.DisplayName}: No sibling NWCs found under parent NWD.";
-                            result.FailedTests.Add(warnMsg);
-                            _logger.LogWarning(warnMsg);
-                            continue;
-                        }
-
-                        var set = _searchSets.GenerateSiblingSearchSet(doc, model, siblings, testsFolder, result);
-                        if (set != null)
-                        {
-                            anyCreated = true;
-                        }
-                    }
-
-                    if (anyCreated)
-                    {
-                        trans.Commit();
-                    }
-                }
-
-                // Refresh search sets list to display newly generated sets
-                LoadSearchSets();
-
-                _dialogService.ShowSummary(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("Fatal error in generating selection sets", ex);
-                _dialogService.ShowError($"Selection Set generation failed: {ex.Message}");
-            }
-            finally
-            {
-                IsBusy = false;
-                ProgressText = string.Empty;
-                ProgressBarValue = 0;
-            }
-        }
-
         private static void DoEvents() => DispatcherUtils.DoEvents();
     }
 }
+

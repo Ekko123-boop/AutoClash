@@ -270,5 +270,32 @@ namespace AutomatedClashRunner.Tests
             vp4.Should().Be("T-EGE-ASP1106-E 4");
             vp5.Should().Be("T-EGE-ASP1106-E 5");
         }
+
+        [Theory]
+        [InlineData("F1-L0-BAE-E.nwc", "L0-BAE-E")]
+        [InlineData("Tests/L0-BAE-E-", "L0-BAE-E")]
+        [InlineData("Folder\\SubFolder\\L0-JCB-CW", "L0-JCB-CW")]
+        [InlineData("F1_L0-JCB-CW.nwd", "L0-JCB-CW")]
+        [InlineData("Clearance Set", "Clearance Set")]
+        [InlineData(null, "")]
+        [InlineData("", "")]
+        public void SanitizeItemName_CleansPathsAndExtensions(string input, string expected)
+        {
+            string result = _namingService.SanitizeItemName(input);
+            result.Should().Be(expected);
+        }
+
+        [Theory]
+        [InlineData("F1-L0-BAE-E.nwc", "F1-L0-JCB-CW.nwc", "v", "L0-BAE-E v L0-JCB-CW")]
+        [InlineData("F1-L0-BAE-E.nwc", "F1-L0-JCB-CW.nwc", "x", "L0-BAE-E x L0-JCB-CW")]
+        [InlineData("F1-L0-BAE-E.nwc", "F1-L0-JCB-CW.nwc", "vs", "L0-BAE-E vs L0-JCB-CW")]
+        [InlineData("F1-L0-BAE-E.nwc", "Tests/Base Build", "v", "L0-BAE-E v Base Build")]
+        [InlineData("Tests/Electrical", "Tests/Mechanical", "v", "Electrical v Mechanical")]
+        [InlineData("L0-BAE-E", "L0-JCB-CW", "", "L0-BAE-E v L0-JCB-CW")]
+        public void GetGenericClashTestName_GeneratesCleanCombinationNames(string itemA, string itemB, string delimiter, string expected)
+        {
+            string result = _namingService.GetGenericClashTestName(itemA, itemB, delimiter);
+            result.Should().Be(expected);
+        }
     }
 }

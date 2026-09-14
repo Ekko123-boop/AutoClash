@@ -29,6 +29,21 @@ namespace AutomatedClashRunner.Models
         public string WarningMessage { get; set; }
         public string DisplayType => IsDirectNwc ? "Direct NWC" : "NWD Branch";
 
+        public ModelSourceNode Clone()
+        {
+            return new ModelSourceNode
+            {
+                DisplayName = DisplayName,
+                SourceFilePath = SourceFilePath,
+                IsDirectNwc = IsDirectNwc,
+                ParentContainerName = ParentContainerName,
+                OriginalModelItem = OriginalModelItem,
+                IsSelectable = IsSelectable,
+                WarningMessage = WarningMessage,
+                IsSelected = false
+            };
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {

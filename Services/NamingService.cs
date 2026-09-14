@@ -117,6 +117,38 @@ namespace AutomatedClashRunner.Services
             return testDisplayName.Trim().TrimEnd('-', '_', ' ');
         }
 
+        public string SanitizeItemName(string rawName)
+        {
+            if (string.IsNullOrWhiteSpace(rawName)) return string.Empty;
+            string clean = rawName.Trim();
+
+            // If it's a full path or folder path (e.g. "Tests/L0-BAE-E" or "Folder\Set"), get the leaf name
+            int lastSlash = Math.Max(clean.LastIndexOf('/'), clean.LastIndexOf('\\'));
+            if (lastSlash >= 0 && lastSlash < clean.Length - 1)
+            {
+                clean = clean.Substring(lastSlash + 1).Trim();
+            }
+
+            // If it has a model file extension, pass through GetTrimmedModelCode
+            if (clean.EndsWith(".nwc", StringComparison.OrdinalIgnoreCase) ||
+                clean.EndsWith(".nwd", StringComparison.OrdinalIgnoreCase) ||
+                clean.EndsWith(".dwg", StringComparison.OrdinalIgnoreCase) ||
+                clean.EndsWith(".ifc", StringComparison.OrdinalIgnoreCase))
+            {
+                return GetTrimmedModelCode(clean);
+            }
+
+            return clean.TrimEnd('-', '_', ' ');
+        }
+
+        public string GetGenericClashTestName(string itemAName, string itemBName, string delimiter = "v")
+        {
+            string cleanA = SanitizeItemName(itemAName);
+            string cleanB = SanitizeItemName(itemBName);
+            string delim = string.IsNullOrWhiteSpace(delimiter) ? "v" : delimiter.Trim();
+            return $"{cleanA} {delim} {cleanB}";
+        }
+
         public string FormatGroupName(string testDisplayName, int groupIndex)
         {
             string baseName = SanitizeTestDisplayName(testDisplayName);

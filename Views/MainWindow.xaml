@@ -343,6 +343,44 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Modern SubTabItem Style for Inner Selection Tabs -->
+        <Style x:Key="SubTabItem" TargetType="TabItem">
+            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#64748B"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="SubTabBorder" 
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="Transparent"
+                                BorderThickness="0,0,0,2"
+                                Padding="{TemplateBinding Padding}"
+                                Margin="0,0,8,0"
+                                Cursor="Hand">
+                            <ContentPresenter ContentSource="Header" 
+                                              HorizontalAlignment="Center" 
+                                              VerticalAlignment="Center" 
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="SubTabBorder" Property="BorderBrush" Value="#0284C7"/>
+                                <Setter Property="Foreground" Value="#0284C7"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#0F172A"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -370,6 +408,9 @@
             <!-- ========================================================================= -->
             <!-- TAB 1: GENERATE MATRIX                                                    -->
             <!-- ========================================================================= -->
+            <!-- ========================================================================= -->
+            <!-- TAB 1: GENERATE MATRIX (GENERIC DUAL-TAB SELECTION)                       -->
+            <!-- ========================================================================= -->
             <TabItem Header="Generate Matrix" Style="{StaticResource ModernTabItem}" DataContext="{Binding MatrixTab}">
                 <Grid Margin="0,12,0,0">
                     <Grid.RowDefinitions>
@@ -382,96 +423,223 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Left: Models / NWCs -->
+                    <!-- Left: Selection A Panel -->
                     <Border Grid.Row="0" Grid.Column="0" Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Margin="0,0,6,8" Padding="12">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
 
                             <DockPanel Grid.Row="0" Margin="0,0,0,8">
-                                <TextBlock Text="Selected Models / NWCs" FontWeight="Bold" FontSize="13" Foreground="#0F172A" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding ModelSelectionSummary}" HorizontalAlignment="Right" Foreground="#64748B" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Text="Selection A" FontWeight="Bold" FontSize="14" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                <TextBlock HorizontalAlignment="Right" Foreground="#64748B" FontSize="11" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="{Binding ModelSelectionSummaryA}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ActiveTabIndexA}" Value="1">
+                                                    <Setter Property="Text" Value="{Binding SetSelectionSummaryA}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </DockPanel>
 
-                            <DockPanel Grid.Row="1" Margin="0,0,0,8">
-                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
-                                    <Button Content="All" Command="{Binding SelectAllModelsCommand}" Style="{StaticResource MiniButton}"/>
-                                    <Button Content="None" Command="{Binding DeselectAllModelsCommand}" Style="{StaticResource MiniButton}"/>
-                                </StackPanel>
-                                <TextBox Style="{StaticResource ModernSearchBox}" 
-                                         Tag="Filter models by name..." 
-                                         Text="{Binding SearchTextModels, UpdateSourceTrigger=PropertyChanged}"/>
-                            </DockPanel>
+                            <!-- Selection A Dual Tabs -->
+                            <TabControl Grid.Row="1" SelectedIndex="{Binding ActiveTabIndexA}" Background="Transparent" BorderThickness="0">
+                                <!-- Selection A - Tab 1: Models -->
+                                <TabItem Header="{Binding TabHeaderModelsA}" Style="{StaticResource SubTabItem}">
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
 
-                            <ListView x:Name="ListViewModels" Grid.Row="2" ItemsSource="{Binding ModelsView}" 
-                                      SelectionMode="Extended"
-                                      ItemContainerStyle="{StaticResource MultiSelectListViewItemStyle}"
-                                      BorderBrush="#E2E8F0" Background="#FFFFFF">
-                                <ListView.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" Margin="0,3">
-                                            <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="{Binding IsSelectable}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                            <Border Background="#F1F5F9" CornerRadius="3" Padding="5,1" Margin="0,0,6,0">
-                                                <TextBlock Text="{Binding DisplayType}" FontSize="10" Foreground="#475569" FontWeight="SemiBold"/>
-                                            </Border>
-                                            <TextBlock Text="{Binding DisplayName}" FontWeight="Medium" Foreground="#0F172A" VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding WarningMessage}" Foreground="#DC2626" Margin="8,0,0,0" FontStyle="Italic" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
+                                        <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
+                                                <Button Content="All" Command="{Binding SelectAllACommand}" Style="{StaticResource MiniButton}"/>
+                                                <Button Content="None" Command="{Binding DeselectAllACommand}" Style="{StaticResource MiniButton}"/>
+                                            </StackPanel>
+                                            <TextBox Style="{StaticResource ModernSearchBox}" 
+                                                     Tag="Filter models by name..." 
+                                                     Text="{Binding SearchTextModelsA, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DockPanel>
 
-                            <TextBlock Grid.Row="2" Text="No NWC models found in document." 
-                                       Foreground="#94A3B8" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       Visibility="{Binding HasNoModels, Converter={StaticResource BoolToVis}}"/>
+                                        <ListView x:Name="ListViewSelectionAModels" Grid.Row="1" ItemsSource="{Binding ModelsViewA}" 
+                                                  SelectionMode="Extended"
+                                                  ItemContainerStyle="{StaticResource MultiSelectListViewItemStyle}"
+                                                  BorderBrush="#E2E8F0" Background="#FFFFFF">
+                                            <ListView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                                                        <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="{Binding IsSelectable}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                        <Border Background="#F1F5F9" CornerRadius="3" Padding="5,1" Margin="0,0,6,0">
+                                                            <TextBlock Text="{Binding DisplayType}" FontSize="10" Foreground="#475569" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Text="{Binding DisplayName}" FontWeight="Medium" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding WarningMessage}" Foreground="#DC2626" Margin="8,0,0,0" FontStyle="Italic" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ListView.ItemTemplate>
+                                        </ListView>
+
+                                        <TextBlock Grid.Row="1" Text="No NWC models found in document." 
+                                                   Foreground="#94A3B8" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Visibility="{Binding HasNoModelsA, Converter={StaticResource BoolToVis}}"/>
+                                    </Grid>
+                                </TabItem>
+
+                                <!-- Selection A - Tab 2: Sets -->
+                                <TabItem Header="{Binding TabHeaderSetsA}" Style="{StaticResource SubTabItem}">
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+
+                                        <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
+                                                <Button Content="All" Command="{Binding SelectAllACommand}" Style="{StaticResource MiniButton}"/>
+                                                <Button Content="None" Command="{Binding DeselectAllACommand}" Style="{StaticResource MiniButton}"/>
+                                            </StackPanel>
+                                            <TextBox Style="{StaticResource ModernSearchBox}" 
+                                                     Tag="Filter search sets by path..." 
+                                                     Text="{Binding SearchTextSetsA, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DockPanel>
+
+                                        <ListView x:Name="ListViewSelectionASets" Grid.Row="1" ItemsSource="{Binding SetsViewA}" 
+                                                  SelectionMode="Extended"
+                                                  ItemContainerStyle="{StaticResource MultiSelectListViewItemStyle}"
+                                                  BorderBrush="#E2E8F0" Background="#FFFFFF">
+                                            <ListView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                                                        <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="True" VerticalAlignment="Center" Margin="0,0,8,0"
+                                                                  Visibility="{Binding IsSet, Converter={StaticResource BoolToVis}}"/>
+                                                        <TextBlock Text="{Binding FullPath}" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ListView.ItemTemplate>
+                                        </ListView>
+
+                                        <TextBlock Grid.Row="1" Text="No manual search sets found in document." 
+                                                   Foreground="#94A3B8" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Visibility="{Binding HasNoSetsA, Converter={StaticResource BoolToVis}}"/>
+                                    </Grid>
+                                </TabItem>
+                            </TabControl>
                         </Grid>
                     </Border>
 
-                    <!-- Right: Search Sets -->
+                    <!-- Right: Selection B Panel -->
                     <Border Grid.Row="0" Grid.Column="1" Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Margin="6,0,0,8" Padding="12">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
 
                             <DockPanel Grid.Row="0" Margin="0,0,0,8">
-                                <TextBlock Text="Manual Search Sets" FontWeight="Bold" FontSize="13" Foreground="#0F172A" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding SetSelectionSummary}" HorizontalAlignment="Right" Foreground="#64748B" FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Text="Selection B" FontWeight="Bold" FontSize="14" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                <TextBlock HorizontalAlignment="Right" Foreground="#64748B" FontSize="11" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="{Binding ModelSelectionSummaryB}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ActiveTabIndexB}" Value="1">
+                                                    <Setter Property="Text" Value="{Binding SetSelectionSummaryB}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </DockPanel>
 
-                            <DockPanel Grid.Row="1" Margin="0,0,0,8">
-                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
-                                    <Button Content="All" Command="{Binding SelectAllSetsCommand}" Style="{StaticResource MiniButton}"/>
-                                    <Button Content="None" Command="{Binding DeselectAllSetsCommand}" Style="{StaticResource MiniButton}"/>
-                                </StackPanel>
-                                <TextBox Style="{StaticResource ModernSearchBox}" 
-                                         Tag="Filter search sets by path..." 
-                                         Text="{Binding SearchTextSets, UpdateSourceTrigger=PropertyChanged}"/>
-                            </DockPanel>
+                            <!-- Selection B Dual Tabs -->
+                            <TabControl Grid.Row="1" SelectedIndex="{Binding ActiveTabIndexB}" Background="Transparent" BorderThickness="0">
+                                <!-- Selection B - Tab 1: Models -->
+                                <TabItem Header="{Binding TabHeaderModelsB}" Style="{StaticResource SubTabItem}">
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
 
-                            <ListView x:Name="ListViewSearchSets" Grid.Row="2" ItemsSource="{Binding SearchSetsView}" 
-                                      SelectionMode="Extended"
-                                      ItemContainerStyle="{StaticResource MultiSelectListViewItemStyle}"
-                                      BorderBrush="#E2E8F0" Background="#FFFFFF">
-                                <ListView.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" Margin="0,3">
-                                            <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="True" VerticalAlignment="Center" Margin="0,0,8,0"
-                                                      Visibility="{Binding IsSet, Converter={StaticResource BoolToVis}}"/>
-                                            <TextBlock Text="{Binding FullPath}" Foreground="#0F172A" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
+                                        <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
+                                                <Button Content="All" Command="{Binding SelectAllBCommand}" Style="{StaticResource MiniButton}"/>
+                                                <Button Content="None" Command="{Binding DeselectAllBCommand}" Style="{StaticResource MiniButton}"/>
+                                            </StackPanel>
+                                            <TextBox Style="{StaticResource ModernSearchBox}" 
+                                                     Tag="Filter models by name..." 
+                                                     Text="{Binding SearchTextModelsB, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DockPanel>
 
-                            <TextBlock Grid.Row="2" Text="No manual search sets found in document." 
-                                       Foreground="#94A3B8" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       Visibility="{Binding HasNoSets, Converter={StaticResource BoolToVis}}"/>
+                                        <ListView x:Name="ListViewSelectionBModels" Grid.Row="1" ItemsSource="{Binding ModelsViewB}" 
+                                                  SelectionMode="Extended"
+                                                  ItemContainerStyle="{StaticResource MultiSelectListViewItemStyle}"
+                                                  BorderBrush="#E2E8F0" Background="#FFFFFF">
+                                            <ListView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                                                        <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="{Binding IsSelectable}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                        <Border Background="#F1F5F9" CornerRadius="3" Padding="5,1" Margin="0,0,6,0">
+                                                            <TextBlock Text="{Binding DisplayType}" FontSize="10" Foreground="#475569" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                        <TextBlock Text="{Binding DisplayName}" FontWeight="Medium" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding WarningMessage}" Foreground="#DC2626" Margin="8,0,0,0" FontStyle="Italic" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ListView.ItemTemplate>
+                                        </ListView>
+
+                                        <TextBlock Grid.Row="1" Text="No NWC models found in document." 
+                                                   Foreground="#94A3B8" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Visibility="{Binding HasNoModelsB, Converter={StaticResource BoolToVis}}"/>
+                                    </Grid>
+                                </TabItem>
+
+                                <!-- Selection B - Tab 2: Sets -->
+                                <TabItem Header="{Binding TabHeaderSetsB}" Style="{StaticResource SubTabItem}">
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+
+                                        <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
+                                                <Button Content="All" Command="{Binding SelectAllBCommand}" Style="{StaticResource MiniButton}"/>
+                                                <Button Content="None" Command="{Binding DeselectAllBCommand}" Style="{StaticResource MiniButton}"/>
+                                            </StackPanel>
+                                            <TextBox Style="{StaticResource ModernSearchBox}" 
+                                                     Tag="Filter search sets by path..." 
+                                                     Text="{Binding SearchTextSetsB, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DockPanel>
+
+                                        <ListView x:Name="ListViewSelectionBSets" Grid.Row="1" ItemsSource="{Binding SetsViewB}" 
+                                                  SelectionMode="Extended"
+                                                  ItemContainerStyle="{StaticResource MultiSelectListViewItemStyle}"
+                                                  BorderBrush="#E2E8F0" Background="#FFFFFF">
+                                            <ListView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,3">
+                                                        <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="True" VerticalAlignment="Center" Margin="0,0,8,0"
+                                                                  Visibility="{Binding IsSet, Converter={StaticResource BoolToVis}}"/>
+                                                        <TextBlock Text="{Binding FullPath}" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ListView.ItemTemplate>
+                                        </ListView>
+
+                                        <TextBlock Grid.Row="1" Text="No manual search sets found in document." 
+                                                   Foreground="#94A3B8" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Visibility="{Binding HasNoSetsB, Converter={StaticResource BoolToVis}}"/>
+                                    </Grid>
+                                </TabItem>
+                            </TabControl>
                         </Grid>
                     </Border>
 
@@ -484,44 +652,49 @@
                             <TextBlock Text="Tolerance (m): " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334155"/>
                             <TextBox Text="{Binding Tolerance, UpdateSourceTrigger=PropertyChanged}" Width="70" Margin="0,0,20,0" Padding="6,3" VerticalContentAlignment="Center"/>
 
-                            <TextBlock Text="Selection B Mode: " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334155"/>
-                            <TextBlock Text="Standard Model Hierarchy | " VerticalAlignment="Center" Foreground="#00875A" FontWeight="SemiBold" Margin="0,0,8,0"/>
+                            <TextBlock Text="Delimiter: " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334155"/>
+                            <ComboBox ItemsSource="{Binding AvailableDelimiters}" SelectedItem="{Binding SelectedDelimiter}" Width="65" Margin="0,0,20,0" Padding="6,3"/>
 
-                            <TextBlock Text="Composite Clashing: " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334155"/>
-                            <TextBlock Text="Enabled" VerticalAlignment="Center" Foreground="#64748B"/>
+                            <TextBlock Text="Naming Formula: " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334155"/>
+                            <TextBlock Text="Selection A " VerticalAlignment="Center" Foreground="#0284C7" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding SelectedDelimiter}" VerticalAlignment="Center" Foreground="#0284C7" FontWeight="Bold"/>
+                            <TextBlock Text=" Selection B" VerticalAlignment="Center" Foreground="#0284C7" FontWeight="SemiBold"/>
                         </WrapPanel>
                     </Border>
 
                     <!-- Footer Action Bar -->
                     <DockPanel Grid.Row="2" Grid.ColumnSpan="2">
                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                            <Button Command="{Binding RefreshModelsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0">
+                            <Button Command="{Binding RefreshAllCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                                    ToolTip="Refresh all models and search sets across both Selection A and Selection B.">
                                 <StackPanel Orientation="Horizontal">
                                     <Path Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
                                           Fill="#475569" Width="13" Height="13" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Refresh Models" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Refresh All" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
-                            <Button Command="{Binding RefreshSearchSetsCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0">
-                                <StackPanel Orientation="Horizontal">
-                                    <Path Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
-                                          Fill="#475569" Width="13" Height="13" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Refresh Sets" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                            <Button Command="{Binding ClearAllCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0">
+                            <Button Command="{Binding ClearACommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                                    ToolTip="Clear all selections in Selection A.">
                                 <StackPanel Orientation="Horizontal">
                                     <Path Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
                                           Fill="#64748B" Width="11" Height="11" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Clear All" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Clear Selection A" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
-                            <Button Command="{Binding GenerateSelectionSetsCommand}" Style="{StaticResource SecondaryButton}"
-                                    ToolTip="Auto-create Selection Sets for each selected NWC containing all sibling NWCs under the same parent NWD (excluding the NWC itself). Sets are placed in the 'Tests' folder.">
+                            <Button Command="{Binding ClearBCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                                    ToolTip="Clear all selections in Selection B.">
                                 <StackPanel Orientation="Horizontal">
-                                    <Path Data="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9.07l-9-7-9 7 1.63 1.27L12 16zm0-11.47L17.74 9 12 13.47 6.26 9 12 4.53z"
-                                          Fill="#0284C7" Width="14" Height="14" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Generate Sets" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <Path Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                          Fill="#64748B" Width="11" Height="11" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Clear Selection B" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding ClearAllCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                                    ToolTip="Clear all selections across both Selection A and Selection B.">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                          Fill="#DC2626" Width="11" Height="11" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Clear All" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
@@ -529,31 +702,8 @@
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button Content="Cancel" Command="{Binding DataContext.CancelCommand, RelativeSource={RelativeSource AncestorType=Window}}" 
                                     Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
-                            <Button Command="{Binding BaseBuildTestCommand}" Style="{StaticResource PrimaryOrangeButton}" Margin="0,0,10,0"
-                                    ToolTip="Runs clash tests for each selected NWC against the 'Base Build' Selection Set (no T- prefix).">
-                                <StackPanel Orientation="Horizontal">
-                                    <Path Data="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"
-                                          Fill="White" Width="14" Height="14" Stretch="Uniform" Margin="0,0,7,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding SelectedModelCount, StringFormat='Base Build ({0} NWCs)'}" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                            <Button Command="{Binding ToolsTestCommand}" Style="{StaticResource PrimaryBlueButton}" Margin="0,0,10,0"
-                                    ToolTip="Automatically pairs each selected NWC model with its corresponding Selection Set (T- prefix) and runs 1-to-1 clash tests.">
-                                <StackPanel Orientation="Horizontal">
-                                    <Path Data="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"
-                                          Fill="White" Width="14" Height="14" Stretch="Uniform" Margin="0,0,7,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding SelectedModelCount, StringFormat='Tools test ({0} NWCs)'}" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                            <Button Command="{Binding ConstructabilityCommand}" Style="{StaticResource PrimaryPurpleButton}" Margin="0,0,10,0"
-                                    ToolTip="Auto-creates 'POC Elements' Selection Set and runs 1.0 ft clearance clash test for selected models vs all POCs (C- prefix).">
-                                <StackPanel Orientation="Horizontal">
-                                    <Path Data="M19.04 4.55l-1.42-1.42a2 2 0 0 0-2.83 0l-8.02 8.02a2 2 0 0 0 0 2.83l1.42 1.42a2 2 0 0 0 2.83 0l8.02-8.02a2 2 0 0 0 0-2.83zM10.5 13.5l-1.42-1.42 1.42-1.42 1.42 1.42-1.42 1.42zm2.83-2.83l-1.42-1.42 1.42-1.42 1.42 1.42-1.42 1.42zm2.83-2.83l-1.42-1.42 1.42-1.42 1.42 1.42-1.42 1.42z"
-                                          Fill="White" Width="14" Height="14" Stretch="Uniform" Margin="0,0,7,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding SelectedModelCount, StringFormat='Constructability ({0} NWCs)'}" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                            <Button Command="{Binding RunCommand}" Style="{StaticResource PrimaryGreenButton}">
+                            <Button Command="{Binding RunCommand}" Style="{StaticResource PrimaryGreenButton}"
+                                    ToolTip="Generates and executes clash tests between selected items in Selection A and Selection B.">
                                 <StackPanel Orientation="Horizontal">
                                     <Path Data="M8 5v14l11-7z"
                                           Fill="White" Width="13" Height="13" Stretch="Uniform" Margin="0,0,7,0" VerticalAlignment="Center"/>

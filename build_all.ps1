@@ -18,7 +18,12 @@ Write-Host "Using MSBuild: $msbuild" -ForegroundColor Green
 if (Test-Path "bin") { Remove-Item "bin" -Recurse -Force }
 if (Test-Path "obj") { Remove-Item "obj" -Recurse -Force }
 
-# 2. Build Multi-Version Plugin DLLs
+# 2. Restore NuGet Packages
+Write-Host ">>> Restoring NuGet Packages..." -ForegroundColor Cyan
+& $msbuild "AutomatedClashRunner.csproj" -t:restore -p:Configuration=Release2023 -p:Platform=x64
+if ($LASTEXITCODE -ne 0) { throw "NuGet restore failed." }
+
+# 3. Build Multi-Version Plugin DLLs
 Write-Host ">>> 1. Building Navisworks 2023 Engine (Release2023)..." -ForegroundColor Cyan
 & $msbuild "AutomatedClashRunner.csproj" -p:Configuration=Release2023 -p:Platform=x64
 if ($LASTEXITCODE -ne 0) { throw "2023 Plugin build failed." }
@@ -27,7 +32,7 @@ Write-Host ">>> 2. Building Navisworks 2024 Engine (Release2024)..." -Foreground
 & $msbuild "AutomatedClashRunner.csproj" -p:Configuration=Release2024 -p:Platform=x64
 if ($LASTEXITCODE -ne 0) { throw "2024 Plugin build failed." }
 
-# 3. Package Multi-Version bundle.zip for Standalone Installer
+# 4. Package Multi-Version bundle.zip for Standalone Installer
 Write-Host ">>> 3. Staging and Packaging Multi-Version bundle.zip..." -ForegroundColor Cyan
 $staging = "$env:TEMP\cyphertools_bundle_staging"
 if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
@@ -57,14 +62,16 @@ if (Test-Path $zipDest) { Remove-Item $zipDest -Force }
 Compress-Archive -Path "$staging\*" -DestinationPath $zipDest -Force
 Remove-Item $staging -Recurse -Force
 
-# 4. Build Standalone Installer EXE (CypherTools_Installer.exe)
-Write-Host ">>> 4. Compiling Modern Standalone CypherTools_Installer.exe..." -ForegroundColor Cyan
+# 5. Build Standalone Installer EXE
+Write-Host ">>> 4. Compiling Modern Standalone CypherGenericClash_Installer.exe..." -ForegroundColor Cyan
 & $msbuild "Installer\Installer.csproj" -p:Configuration=Release -p:Platform=x64
 if ($LASTEXITCODE -ne 0) { throw "Installer build failed." }
 
+Copy-Item "Installer\bin\Release\CypherTools_Installer.exe" -Destination "CypherGenericClash_Installer.exe" -Force
 Copy-Item "Installer\bin\Release\CypherTools_Installer.exe" -Destination "CypherTools_Installer.exe" -Force
+Get-Item "CypherGenericClash_Installer.exe" | Unblock-File -ErrorAction SilentlyContinue
 Get-Item "CypherTools_Installer.exe" | Unblock-File -ErrorAction SilentlyContinue
-Write-Host " - Standalone Installer ready at: CypherTools_Installer.exe" -ForegroundColor Green
+Write-Host " - Standalone Generic Installer ready at: CypherGenericClash_Installer.exe" -ForegroundColor Green
 
 # 5. Direct AppData Deployment: Multi-Version ApplicationPlugins Bundle
 Write-Host ">>> 5. Deploying Multi-Version CypherNavisTools.bundle to Navisworks ApplicationPlugins..." -ForegroundColor Cyan

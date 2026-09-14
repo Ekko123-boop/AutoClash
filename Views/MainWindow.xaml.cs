@@ -8,8 +8,10 @@ namespace AutomatedClashRunner.Views
         {
             InitializeComponent();
 
-            ShiftClickBehavior.SetIsEnabled(ListViewModels, true);
-            ShiftClickBehavior.SetIsEnabled(ListViewSearchSets, true);
+            ShiftClickBehavior.SetIsEnabled(ListViewSelectionAModels, true);
+            ShiftClickBehavior.SetIsEnabled(ListViewSelectionASets, true);
+            ShiftClickBehavior.SetIsEnabled(ListViewSelectionBModels, true);
+            ShiftClickBehavior.SetIsEnabled(ListViewSelectionBSets, true);
             ShiftClickBehavior.SetIsEnabled(ListViewDistillerTests, true);
             ShiftClickBehavior.SetIsEnabled(ListViewViewpointsTests, true);
         }

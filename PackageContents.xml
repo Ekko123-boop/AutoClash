@@ -3,8 +3,8 @@
     SchemaVersion="1.0"
     AutodeskProduct="Navisworks"
     Name="CypherNavisTools"
-    AppVersion="2.0.6"
-    Description="Cypher Tools - Automated Model Clash Runner and Distiller for Navisworks"
+    AppVersion="2.1.0"
+    Description="Cypher Generic Clash Runner - Universal Model and Selection Set Matrix Add-in for Navisworks"
     ProductType="Application">
 
     <CompanyDetails Name="Cypher" />

@@ -153,5 +153,67 @@ namespace AutomatedClashRunner.Tests
             vm.SelectedTabIndex.Should().Be(2);
             vm.ViewpointsRefreshed.Should().BeTrue();
         }
+
+        [Fact]
+        public void ModelSourceNode_IndependentSelection_AllowsDistinctCheckedStates()
+        {
+            var nodeA = new ModelSourceNode
+            {
+                DisplayName = "F1-L0-BAE-E.nwc",
+                SourceFilePath = "C:\\Models\\F1-L0-BAE-E.nwc",
+                IsDirectNwc = true,
+                ParentContainerName = "MEI.nwd",
+                IsSelectable = true,
+                IsSelected = true
+            };
+
+            var nodeB = new ModelSourceNode
+            {
+                DisplayName = nodeA.DisplayName,
+                SourceFilePath = nodeA.SourceFilePath,
+                IsDirectNwc = nodeA.IsDirectNwc,
+                ParentContainerName = nodeA.ParentContainerName,
+                IsSelectable = nodeA.IsSelectable,
+                IsSelected = false
+            };
+
+            nodeA.IsSelected.Should().BeTrue();
+            nodeB.IsSelected.Should().BeFalse();
+
+            nodeB.IsSelected = true;
+            nodeA.IsSelected = false;
+
+            nodeA.IsSelected.Should().BeFalse();
+            nodeB.IsSelected.Should().BeTrue();
+        }
+
+        [Fact]
+        public void SearchSetNode_IndependentSelection_AllowsDistinctCheckedStates()
+        {
+            var setA = new SearchSetNode
+            {
+                DisplayName = "L0-BAE-E",
+                FullPath = "Tests/L0-BAE-E",
+                IsFolder = false,
+                IsSelected = true
+            };
+
+            var setB = new SearchSetNode
+            {
+                DisplayName = setA.DisplayName,
+                FullPath = setA.FullPath,
+                IsFolder = setA.IsFolder,
+                IsSelected = false
+            };
+
+            setA.IsSelected.Should().BeTrue();
+            setB.IsSelected.Should().BeFalse();
+
+            setB.IsSelected = true;
+            setA.IsSelected = false;
+
+            setA.IsSelected.Should().BeFalse();
+            setB.IsSelected.Should().BeTrue();
+        }
     }
 }

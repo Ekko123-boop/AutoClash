@@ -9,6 +9,8 @@ namespace AutomatedClashRunner.Services.Interfaces
         string GetConstructabilityClashName(string modelDisplayName);
         string GetConstructabilityClashName(System.Collections.Generic.List<AutomatedClashRunner.Models.ModelSourceNode> models);
         string SanitizeTestDisplayName(string testDisplayName);
+        string SanitizeItemName(string rawName);
+        string GetGenericClashTestName(string itemAName, string itemBName, string delimiter = "v");
         string FormatGroupName(string testDisplayName, int groupIndex);
         string FormatViewpointName(string testDisplayName, string sourceItemDisplayName, int fallbackIndex = 0);
     }

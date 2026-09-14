@@ -26,6 +26,18 @@ namespace AutomatedClashRunner.Models
         public bool IsSet => !IsFolder;
         public SavedItem OriginalSavedItem { get; set; }
 
+        public SearchSetNode Clone()
+        {
+            return new SearchSetNode
+            {
+                DisplayName = DisplayName,
+                FullPath = FullPath,
+                IsFolder = IsFolder,
+                OriginalSavedItem = OriginalSavedItem,
+                IsSelected = false
+            };
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
