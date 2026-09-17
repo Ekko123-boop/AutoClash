@@ -453,14 +453,17 @@
                                 <TabItem Header="{Binding TabHeaderModelsA}" Style="{StaticResource SubTabItem}">
                                     <Grid Margin="0,8,0,0">
                                         <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="*"/>
+                                             <RowDefinition Height="Auto"/>
+                                             <RowDefinition Height="*"/>
                                         </Grid.RowDefinitions>
 
                                         <DockPanel Grid.Row="0" Margin="0,0,0,8">
                                             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
                                                 <Button Content="All" Command="{Binding SelectAllACommand}" Style="{StaticResource MiniButton}"/>
                                                 <Button Content="None" Command="{Binding DeselectAllACommand}" Style="{StaticResource MiniButton}"/>
+                                                <Border Width="1" Background="#CBD5E1" Margin="5,3"/>
+                                                <Button Content="{Binding SortNameTextA}" Command="{Binding ToggleSortNameACommand}" Style="{StaticResource MiniButton}" ToolTip="Sort models by Name (A-Z / Z-A)"/>
+                                                <Button Content="{Binding SortTypeTextA}" Command="{Binding ToggleSortTypeACommand}" Style="{StaticResource MiniButton}" ToolTip="Sort models by Type (NWC / NWD)"/>
                                             </StackPanel>
                                             <TextBox Style="{StaticResource ModernSearchBox}" 
                                                      Tag="Filter models by name..." 
@@ -475,8 +478,30 @@
                                                 <DataTemplate>
                                                     <StackPanel Orientation="Horizontal" Margin="0,3">
                                                         <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="{Binding IsSelectable}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                                        <Border Background="#F1F5F9" CornerRadius="3" Padding="5,1" Margin="0,0,6,0">
-                                                            <TextBlock Text="{Binding DisplayType}" FontSize="10" Foreground="#475569" FontWeight="SemiBold"/>
+                                                        <Border CornerRadius="3" Padding="5,1" Margin="0,0,6,0">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Background" Value="#F1F5F9"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsNwd}" Value="True">
+                                                                            <Setter Property="Background" Value="#E0F2FE"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <TextBlock FontSize="10" FontWeight="Bold">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Text" Value="{Binding DisplayType}"/>
+                                                                        <Setter Property="Foreground" Value="#475569"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsNwd}" Value="True">
+                                                                                <Setter Property="Foreground" Value="#0369A1"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
                                                         </Border>
                                                         <TextBlock Text="{Binding DisplayName}" FontWeight="Medium" Foreground="#0F172A" VerticalAlignment="Center"/>
                                                         <TextBlock Text="{Binding WarningMessage}" Foreground="#DC2626" Margin="8,0,0,0" FontStyle="Italic" VerticalAlignment="Center"/>
@@ -485,7 +510,7 @@
                                             </ListView.ItemTemplate>
                                         </ListView>
 
-                                        <TextBlock Grid.Row="1" Text="No NWC models found in document." 
+                                        <TextBlock Grid.Row="1" Text="No models found in document." 
                                                    Foreground="#94A3B8" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"
                                                    Visibility="{Binding HasNoModelsA, Converter={StaticResource BoolToVis}}"/>
                                     </Grid>
@@ -503,6 +528,8 @@
                                             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
                                                 <Button Content="All" Command="{Binding SelectAllACommand}" Style="{StaticResource MiniButton}"/>
                                                 <Button Content="None" Command="{Binding DeselectAllACommand}" Style="{StaticResource MiniButton}"/>
+                                                <Border Width="1" Background="#CBD5E1" Margin="5,3"/>
+                                                <Button Content="{Binding SortSetsTextA}" Command="{Binding ToggleSortSetsACommand}" Style="{StaticResource MiniButton}" ToolTip="Sort sets by Path (A-Z / Z-A)"/>
                                             </StackPanel>
                                             <TextBox Style="{StaticResource ModernSearchBox}" 
                                                      Tag="Filter search sets by path..." 
@@ -571,6 +598,9 @@
                                             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
                                                 <Button Content="All" Command="{Binding SelectAllBCommand}" Style="{StaticResource MiniButton}"/>
                                                 <Button Content="None" Command="{Binding DeselectAllBCommand}" Style="{StaticResource MiniButton}"/>
+                                                <Border Width="1" Background="#CBD5E1" Margin="5,3"/>
+                                                <Button Content="{Binding SortNameTextB}" Command="{Binding ToggleSortNameBCommand}" Style="{StaticResource MiniButton}" ToolTip="Sort models by Name (A-Z / Z-A)"/>
+                                                <Button Content="{Binding SortTypeTextB}" Command="{Binding ToggleSortTypeBCommand}" Style="{StaticResource MiniButton}" ToolTip="Sort models by Type (NWC / NWD)"/>
                                             </StackPanel>
                                             <TextBox Style="{StaticResource ModernSearchBox}" 
                                                      Tag="Filter models by name..." 
@@ -585,8 +615,30 @@
                                                 <DataTemplate>
                                                     <StackPanel Orientation="Horizontal" Margin="0,3">
                                                         <CheckBox IsChecked="{Binding IsSelected}" IsEnabled="{Binding IsSelectable}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                                        <Border Background="#F1F5F9" CornerRadius="3" Padding="5,1" Margin="0,0,6,0">
-                                                            <TextBlock Text="{Binding DisplayType}" FontSize="10" Foreground="#475569" FontWeight="SemiBold"/>
+                                                        <Border CornerRadius="3" Padding="5,1" Margin="0,0,6,0">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Background" Value="#F1F5F9"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsNwd}" Value="True">
+                                                                            <Setter Property="Background" Value="#E0F2FE"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <TextBlock FontSize="10" FontWeight="Bold">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Text" Value="{Binding DisplayType}"/>
+                                                                        <Setter Property="Foreground" Value="#475569"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsNwd}" Value="True">
+                                                                                <Setter Property="Foreground" Value="#0369A1"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
                                                         </Border>
                                                         <TextBlock Text="{Binding DisplayName}" FontWeight="Medium" Foreground="#0F172A" VerticalAlignment="Center"/>
                                                         <TextBlock Text="{Binding WarningMessage}" Foreground="#DC2626" Margin="8,0,0,0" FontStyle="Italic" VerticalAlignment="Center"/>
@@ -595,7 +647,7 @@
                                             </ListView.ItemTemplate>
                                         </ListView>
 
-                                        <TextBlock Grid.Row="1" Text="No NWC models found in document." 
+                                        <TextBlock Grid.Row="1" Text="No models found in document." 
                                                    Foreground="#94A3B8" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center"
                                                    Visibility="{Binding HasNoModelsB, Converter={StaticResource BoolToVis}}"/>
                                     </Grid>
@@ -613,6 +665,8 @@
                                             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
                                                 <Button Content="All" Command="{Binding SelectAllBCommand}" Style="{StaticResource MiniButton}"/>
                                                 <Button Content="None" Command="{Binding DeselectAllBCommand}" Style="{StaticResource MiniButton}"/>
+                                                <Border Width="1" Background="#CBD5E1" Margin="5,3"/>
+                                                <Button Content="{Binding SortSetsTextB}" Command="{Binding ToggleSortSetsBCommand}" Style="{StaticResource MiniButton}" ToolTip="Sort sets by Path (A-Z / Z-A)"/>
                                             </StackPanel>
                                             <TextBox Style="{StaticResource ModernSearchBox}" 
                                                      Tag="Filter search sets by path..." 

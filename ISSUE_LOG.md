@@ -54,6 +54,8 @@ This document records the full engineering history, bugs encountered, root cause
 | **ISS-045** | Architecture & Performance | `ClashExecutionService.cs`, `DispatcherUtils.cs`, `AppConstants.cs` | Code duplication (~350 lines) across 4 clash test runners, artificial UI lag from `Thread.Sleep(30)` in inner loops, duplicate `DoEvents` implementations, and scattered hardcoded constants | 1) The 4 clash runners (`RunClashMatrix`, `RunToolsTest`, `RunBaseBuildTest`, `RunConstructabilityTest`) repeated ~75% identical test creation, registration, execution, and verification logic. 2) Legacy `Thread.Sleep(30)` added 15s of artificial lag on 500-test runs. 3) `DoEvents()` was copied across 4 classes. 4) Magic numbers (`0.3048`, `10*1024*1024`, `20`) lacked central definitions. | 1) Refactored `ClashExecutionService` to use a unified `ExecuteSingleClashTest` pipeline, reducing file size from 570 to 345 lines with zero code duplication while preserving all API workarounds (ISS-001, ISS-037, ISS-041, ISS-044). 2) Replaced blocking `Thread.Sleep(30)` with non-blocking `Thread.Yield()`. 3) Centralized dispatcher pump into `Utils/DispatcherUtils.cs`. 4) Created `Common/AppConstants.cs` for units, set names, and folder conventions. 5) Added structured warning logs to silent exception catches in `SearchSetService`. |
 | **ISS-046** | Consistency & Viewpoints | `ClashTestNode.cs`, `ClashDistillerService.cs`, `NamingService.cs` | 1) Clash counts unpacked group children showing 21 clashes instead of 5 groups. 2) Exported viewpoints stamped user's active viewport screen instead of looking at the clash. 3) Group and viewpoint names had double hyphens and zero-padding (`T-EGE-ASP1106-E--004`). | 1) `CalculateCounts()` added `group.Children.Count` to group status counts rather than counting each group as 1 top-level row. 2) `ExportViewpoints` passed child `RepresentativeResult` instead of `(IClashResult)group`, and fell back to `doc.CurrentViewpoint.Value.CreateCopy()`. 3) Distiller string formatting did not strip trailing hyphens from test names and padded numbers. | 1) Count each top-level group as 1 item in `CalculateCounts()`, matching Clash Detective. 2) Pass `(IClashResult)group` to `TestsViewpointForResult` and implement smart geometric camera fallback focusing on `Center` and `BoundingBox`. 3) Implement `FormatGroupName` and `FormatViewpointName` in `NamingService` to strip trailing delimiters and format clean `${baseName} ${index}` (e.g. `EGE-ASP1106-E 4`) while strictly matching clash numbers. |
 | **ISS-047** | Architecture & UI/UX | `MatrixTabViewModel.cs`, `MainWindow.xaml`, `NamingService.cs`, `ClashExecutionService.cs`, `Program.cs`, `build_all.ps1` | Hardcoded project-specific workflows (Tools Test, Base Build, Constructability, Generate Sets) and single fixed model-to-set layout restricted universal multi-project adoption | Previous layout restricted left panel to Models and right panel to Sets with hardcoded prefixes (`T-`, `C-`). Users could not run Model vs Model or Set vs Set cross-clashes, and project-specific buttons cluttered the UI. | 1) Transformed Selection A and Selection B panels into dual tabs (`Models` / `Sets`), supporting all 4 combinations (Model vs Model, Model vs Set, Set vs Model, Set vs Set). 2) Separated node collections (`ModelsA`/`SetsA` and `ModelsB`/`SetsB`) preventing checkbox cross-talk. 3) Implemented universal naming: `"{Selection A} {delimiter} {Selection B}"` (delimiter `v`, `x`, `vs`) with unpadded group naming `"{TestName} {groupIndex}"`. 4) Removed customized buttons; provided clean action bar with `Run Clash Matrix ({0} Tests)`. 5) Created dedicated standalone installer `CypherGenericClash_Installer.exe` and isolated Git branch `generic-clash-runner`. |
+| **ISS-048** | Model & Sets Discovery / UI / Sorting | `ModelDiscoveryService.cs`, `SearchSetService.cs`, `ModelSourceNode.cs`, `MatrixTabViewModel.cs`, `MainWindow.xaml` | 1) Sets tab showed 0 sets. 2) Tab headers displayed misleading `Models (0)` when items were present. 3) UI displayed "Direct NWC" badges. 4) Tree only discovered `.nwc` files, omitting `.nwd` models, and lacked sorting by Name and Type. | 1) `SearchSetService` only traversed `RootItem.Children`, missing sets under `doc.SelectionSets.Value` or COM `state.SelectionSetsEx()`. 2) Tab headers bound to selected count instead of total count when unselected. 3) Hardcoded `"Direct NWC"` string in `DisplayType`. 4) `ModelDiscoveryService` strictly matched `.EndsWith(".nwc")` and lacked NWD handling and collection sorting. | 1) Implemented 3-tier sets retrieval (.NET RootItem -> .NET Value -> COM fallback) with Guid deduplication. 2) Discovered `.nwd` parent/standalone models alongside `.nwc` with distinct badge styling (blue for NWD, slate for NWC). 3) Replaced "Direct NWC" with clean `ModelType` badges. 4) Added `[Name ⇅]` / `[Type ⇅]` model sorting and `[Path ⇅]` set sorting with ascending/descending toggling. 5) Fixed tab header counts to show total items when unselected (`Models (47)`) and selection ratio when checked (`Models (3/47)`). |
+
 
 ---
 
@@ -187,6 +189,10 @@ In [`Services/ClashExecutionService.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCS
 | **Clash Status Counts** | Unpacking `group.Children.Count` into status metrics | Count each `ClashResultGroup` as 1 item, matching Clash Detective's status bar |
 | **Viewpoint Generation** | Stamping `doc.CurrentViewpoint.Value.CreateCopy()` without target focus | Pass `(IClashResult)group` to `TestsViewpointForResult` and use geometric target focus |
 | **Naming Format** | Hardcoding `${test.DisplayName}-${index:D3}` without trimming hyphens | Use `_naming.FormatGroupName` / `_naming.FormatViewpointName` (`${baseName} ${index}`) |
+| **Sets Traversal** | Relying only on `doc.SelectionSets.RootItem.Children` | Implement 3-tier traversal (.NET RootItem -> .NET Value -> COM `SelectionSetsEx`) with Guid deduplication |
+| **Model Tree Discovery** | Matching only `.EndsWith(".nwc")` | Discover `.nwd` container/standalone models (`ModelType = "NWD"`) and nested `.nwc` files (`ModelType = "NWC"`) |
+| **Tab Header Counts** | Binding tab counts to selection counts when 0 are checked | Display total items when unselected (`Models (47)`), and selection ratio when checked (`Models (3/47)`) |
+
 
 ---
 
@@ -202,6 +208,45 @@ A coworker reported three critical defects:
 1. **Counting groups**: In [`ClashTestNode.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Models/ClashTestNode.cs), `groupCount = group.Children.Count` added raw children to status totals. Fixed by counting each top-level `ClashResultGroup` as 1 item.
 2. **Viewpoint retrieval & geometric focus**: In [`ClashDistillerService.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Services/ClashDistillerService.cs), `ExportViewpoints` passed `group.RepresentativeResult` (often null or missing a viewpoint). Changed to pass `(IClashResult)group` directly to `TestsViewpointForResult`. In addition, replaced the uncoordinated screen copy fallback with a smart geometric focus algorithm calculating `cameraEye = center - (dir * focalDist)` targeting `center` and `bbox`.
 3. **Clean naming & number preservation**: In [`NamingService.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Services/NamingService.cs), implemented `SanitizeTestDisplayName`, `FormatGroupName`, and `FormatViewpointName`. Stripped trailing hyphens/underscores/spaces (`TrimEnd('-', '_', ' ')`), formatted names with a single space and unpadded digits (e.g. `EGE-ASP1106-E 4`), and extracted the exact trailing digit from source clash items (`\d+$`) so viewpoint numbers strictly preserve clash numbers even when exporting filtered subsets.
+
+---
+
+### 6. Detailed Breakdown: ISS-048 (3-Tier Sets Traversal, NWD Discovery, Sorting & UI Polish)
+
+#### Context & Symptoms
+In the generic clash matrix interface on branch `generic-clash-runner`:
+1. **Empty Selection Sets List**: When toggling to the Sets tab in Selection A or B, the panel reported `"No manual search sets found in document"` and tab header showed `Sets (0)` despite user sets existing in the document.
+2. **Misleading Tab Headers**: Tab headers displayed `Models (0)` when items were present but none were checked, giving the impression that model loading failed.
+3. **Outdated Badge Wording**: Model items displayed a badge reading `"Direct NWC"`, which was confusing and visually cluttered.
+4. **Missing NWD File Detection**: Appended `.nwd` container files and standalone `.nwd` models were ignored by `ModelDiscoveryService`, which strictly looked for `.EndsWith(".nwc")`.
+5. **Lack of Sorting Controls**: Users had no way to sort models alphabetically by name or group them by file type (`NWC` vs `NWD`), nor sort sets by path.
+
+#### Root Causes
+1. **Selection Sets Storage Variations in Navisworks**: `SearchSetService.GetManualSearchSets` relied solely on `doc.SelectionSets.RootItem.Children`. In certain Navisworks files (particularly appended NWFs or models where sets were created in specific legacy versions or via batch scripts), sets are placed directly in `doc.SelectionSets.Value` or only indexed via the COM API `state.SelectionSetsEx()`.
+2. **Count Binding Defect**: Tab header properties `TabHeaderModelsA`, `TabHeaderSetsA`, etc., evaluated `SelectedModelsCountA` instead of `ModelsA.Count`. When nothing was selected, it displayed `Models (0)`.
+3. **Hardcoded Model DisplayType**: `ModelSourceNode.DisplayType` hardcoded `"Direct NWC"` vs `"NWD Branch"`.
+4. **Hardcoded NWC Filter**: `ModelDiscoveryService` strictly checked `item.DisplayName.EndsWith(".nwc", StringComparison.OrdinalIgnoreCase)`. When an `.nwd` model was loaded or appended, it was treated as a generic node and skipped, dropping all top-level NWD models and their nested content.
+
+#### Architectural Solutions & Implementation
+1. **Resilient 3-Tier Sets Traversal with COM Fallback**:
+   - In [`Services/SearchSetService.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Services/SearchSetService.cs), implemented a fallback hierarchy:
+     - **Tier 1 (.NET Primary)**: Traversal of `doc.SelectionSets.RootItem.Children`.
+     - **Tier 2 (.NET Fallback)**: Traversal of `doc.SelectionSets.Value` for legacy or non-hierarchical sets.
+     - **Tier 3 (COM Fallback)**: COM `ComApiBridge.State.SelectionSetsEx()` traversal, resolving COM indices back to .NET `SavedItem` via `doc.SelectionSets.ResolveIndexPath(indices)`.
+   - Added `HashSet<Guid>` deduplication to guarantee no duplicated set entries appear across tiers.
+2. **NWD Model Discovery & Classification**:
+   - In [`Services/ModelDiscoveryService.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Services/ModelDiscoveryService.cs), extended discovery to detect `.nwd` models via `model.FileName` and `model.RootItem.DisplayName`.
+   - Top-level `.nwd` files are added as selectable model nodes with `ModelType = "NWD"`, and any nested `.nwc` child files are discovered under them with `ModelType = "NWC"`.
+3. **Clean Badge Styling & Elimination of "Direct NWC"**:
+   - In [`Models/ModelSourceNode.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Models/ModelSourceNode.cs), added explicit `ModelType` (`"NWC"`, `"NWD"`) and `IsNwd` properties.
+   - Replaced `"Direct NWC"` with clean, modern badges: slate badge for `NWC`, blue badge for `NWD` with custom WPF border and foreground palettes in [`Views/MainWindow.xaml`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Views/MainWindow.xaml).
+4. **Bidirectional Sorting**:
+   - In [`ViewModels/MatrixTabViewModel.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/ViewModels/MatrixTabViewModel.cs), added `ToggleSortNameACommand`, `ToggleSortTypeACommand`, `ToggleSortSetsACommand` (and B equivalents).
+   - Toggles ascending/descending states with dynamic button labels (`[Name ▲]`, `[Name ▼]`, `[Type ▲]`, etc.).
+   - Model lists sort by `DisplayName` (Name) or `ModelType` then `DisplayName` (Type). Sets sort by `Path`.
+5. **Accurate Tab Header Counts & Auto-Loading**:
+   - When 0 items are checked, headers display `Models (47)` or `Sets (12)`. When items are checked, headers display `Models (3/47)` or `Sets (2/12)`.
+   - Added auto-loading of selection sets when switching to the Sets tab if sets have not been populated yet.
 
 
 

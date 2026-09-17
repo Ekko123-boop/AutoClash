@@ -46,6 +46,10 @@ namespace AutomatedClashRunner.ViewModels
             {
                 if (SetProperty(ref _activeTabIndexA, value))
                 {
+                    if (value == 1 && SetsA.Count == 0)
+                    {
+                        LoadSearchSets();
+                    }
                     UpdateSelectionState();
                 }
             }
@@ -59,6 +63,10 @@ namespace AutomatedClashRunner.ViewModels
             {
                 if (SetProperty(ref _activeTabIndexB, value))
                 {
+                    if (value == 1 && SetsB.Count == 0)
+                    {
+                        LoadSearchSets();
+                    }
                     UpdateSelectionState();
                 }
             }
@@ -196,16 +204,43 @@ namespace AutomatedClashRunner.ViewModels
         public string SetSelectionSummaryB =>
             $"{SelectedSetsCountB} of {SetsB.Count(x => !x.IsFolder)} selected";
 
-        public string TabHeaderModelsA => $"Models ({SelectedModelsCountA})";
-        public string TabHeaderSetsA => $"Sets ({SelectedSetsCountA})";
+        public string TabHeaderModelsA => SelectedModelsCountA > 0 
+            ? $"Models ({SelectedModelsCountA}/{ModelsA.Count})" 
+            : $"Models ({ModelsA.Count})";
 
-        public string TabHeaderModelsB => $"Models ({SelectedModelsCountB})";
-        public string TabHeaderSetsB => $"Sets ({SelectedSetsCountB})";
+        public string TabHeaderSetsA => SelectedSetsCountA > 0 
+            ? $"Sets ({SelectedSetsCountA}/{SetsA.Count(x => !x.IsFolder)})" 
+            : $"Sets ({SetsA.Count(x => !x.IsFolder)})";
+
+        public string TabHeaderModelsB => SelectedModelsCountB > 0 
+            ? $"Models ({SelectedModelsCountB}/{ModelsB.Count})" 
+            : $"Models ({ModelsB.Count})";
+
+        public string TabHeaderSetsB => SelectedSetsCountB > 0 
+            ? $"Sets ({SelectedSetsCountB}/{SetsB.Count(x => !x.IsFolder)})" 
+            : $"Sets ({SetsB.Count(x => !x.IsFolder)})";
 
         public bool HasNoModelsA => ModelsA.Count == 0;
         public bool HasNoSetsA => SetsA.Count == 0;
         public bool HasNoModelsB => ModelsB.Count == 0;
         public bool HasNoSetsB => SetsB.Count == 0;
+
+        // Sorting state
+        private ListSortDirection? _sortModelNameA;
+        private ListSortDirection? _sortModelTypeA;
+        private ListSortDirection? _sortModelNameB;
+        private ListSortDirection? _sortModelTypeB;
+        private ListSortDirection? _sortSetsPathA;
+        private ListSortDirection? _sortSetsPathB;
+
+        public string SortNameTextA => _sortModelNameA == ListSortDirection.Ascending ? "Name ▲" : (_sortModelNameA == ListSortDirection.Descending ? "Name ▼" : "Name ⇅");
+        public string SortTypeTextA => _sortModelTypeA == ListSortDirection.Ascending ? "Type ▲" : (_sortModelTypeA == ListSortDirection.Descending ? "Type ▼" : "Type ⇅");
+
+        public string SortNameTextB => _sortModelNameB == ListSortDirection.Ascending ? "Name ▲" : (_sortModelNameB == ListSortDirection.Descending ? "Name ▼" : "Name ⇅");
+        public string SortTypeTextB => _sortModelTypeB == ListSortDirection.Ascending ? "Type ▲" : (_sortModelTypeB == ListSortDirection.Descending ? "Type ▼" : "Type ⇅");
+
+        public string SortSetsTextA => _sortSetsPathA == ListSortDirection.Ascending ? "Path ▲" : (_sortSetsPathA == ListSortDirection.Descending ? "Path ▼" : "Path ⇅");
+        public string SortSetsTextB => _sortSetsPathB == ListSortDirection.Ascending ? "Path ▲" : (_sortSetsPathB == ListSortDirection.Descending ? "Path ▼" : "Path ⇅");
 
         public int ExpectedTestCount => SelectedCountA * SelectedCountB;
 
@@ -222,6 +257,13 @@ namespace AutomatedClashRunner.ViewModels
         public ICommand SelectAllBCommand { get; }
         public ICommand DeselectAllBCommand { get; }
         public ICommand ClearBCommand { get; }
+
+        public ICommand ToggleSortNameACommand { get; }
+        public ICommand ToggleSortTypeACommand { get; }
+        public ICommand ToggleSortNameBCommand { get; }
+        public ICommand ToggleSortTypeBCommand { get; }
+        public ICommand ToggleSortSetsACommand { get; }
+        public ICommand ToggleSortSetsBCommand { get; }
 
         public ICommand ClearAllCommand { get; }
         public ICommand RunCommand { get; }
@@ -266,6 +308,13 @@ namespace AutomatedClashRunner.ViewModels
             SelectAllBCommand = new RelayCommand(_ => SelectAllVisibleB(true));
             DeselectAllBCommand = new RelayCommand(_ => SelectAllVisibleB(false));
             ClearBCommand = new RelayCommand(_ => ClearSelectionB());
+
+            ToggleSortNameACommand = new RelayCommand(_ => ToggleSortNameA());
+            ToggleSortTypeACommand = new RelayCommand(_ => ToggleSortTypeA());
+            ToggleSortNameBCommand = new RelayCommand(_ => ToggleSortNameB());
+            ToggleSortTypeBCommand = new RelayCommand(_ => ToggleSortTypeB());
+            ToggleSortSetsACommand = new RelayCommand(_ => ToggleSortSetsA());
+            ToggleSortSetsBCommand = new RelayCommand(_ => ToggleSortSetsB());
 
             ClearAllCommand = new RelayCommand(_ => ClearAllSelections());
             RunCommand = new RelayCommand(_ => RunClashTests(), _ => IsRunEnabled);
@@ -356,6 +405,8 @@ namespace AutomatedClashRunner.ViewModels
 
                 ModelsViewA.Refresh();
                 ModelsViewB.Refresh();
+                ApplyModelSortA();
+                ApplyModelSortB();
                 UpdateSelectionState();
             }
             catch (Exception ex)
@@ -404,6 +455,8 @@ namespace AutomatedClashRunner.ViewModels
 
                 SetsViewA.Refresh();
                 SetsViewB.Refresh();
+                ApplySetsSortA();
+                ApplySetsSortB();
                 UpdateSelectionState();
             }
             catch (Exception ex)
@@ -411,6 +464,128 @@ namespace AutomatedClashRunner.ViewModels
                 _logger.LogError("Failed to load search sets", ex);
                 _dialogService.ShowError($"Error loading search sets: {ex.Message}");
             }
+        }
+
+        private void ToggleSortNameA()
+        {
+            _sortModelTypeA = null;
+            if (_sortModelNameA == null || _sortModelNameA == ListSortDirection.Descending)
+                _sortModelNameA = ListSortDirection.Ascending;
+            else
+                _sortModelNameA = ListSortDirection.Descending;
+            ApplyModelSortA();
+        }
+
+        private void ToggleSortTypeA()
+        {
+            _sortModelNameA = null;
+            if (_sortModelTypeA == null || _sortModelTypeA == ListSortDirection.Descending)
+                _sortModelTypeA = ListSortDirection.Ascending;
+            else
+                _sortModelTypeA = ListSortDirection.Descending;
+            ApplyModelSortA();
+        }
+
+        private void ApplyModelSortA()
+        {
+            using (ModelsViewA.DeferRefresh())
+            {
+                ModelsViewA.SortDescriptions.Clear();
+                if (_sortModelTypeA.HasValue)
+                {
+                    ModelsViewA.SortDescriptions.Add(new SortDescription(nameof(ModelSourceNode.ModelType), _sortModelTypeA.Value));
+                    ModelsViewA.SortDescriptions.Add(new SortDescription(nameof(ModelSourceNode.DisplayName), ListSortDirection.Ascending));
+                }
+                else if (_sortModelNameA.HasValue)
+                {
+                    ModelsViewA.SortDescriptions.Add(new SortDescription(nameof(ModelSourceNode.DisplayName), _sortModelNameA.Value));
+                }
+            }
+            OnPropertyChanged(nameof(SortNameTextA));
+            OnPropertyChanged(nameof(SortTypeTextA));
+        }
+
+        private void ToggleSortNameB()
+        {
+            _sortModelTypeB = null;
+            if (_sortModelNameB == null || _sortModelNameB == ListSortDirection.Descending)
+                _sortModelNameB = ListSortDirection.Ascending;
+            else
+                _sortModelNameB = ListSortDirection.Descending;
+            ApplyModelSortB();
+        }
+
+        private void ToggleSortTypeB()
+        {
+            _sortModelNameB = null;
+            if (_sortModelTypeB == null || _sortModelTypeB == ListSortDirection.Descending)
+                _sortModelTypeB = ListSortDirection.Ascending;
+            else
+                _sortModelTypeB = ListSortDirection.Descending;
+            ApplyModelSortB();
+        }
+
+        private void ApplyModelSortB()
+        {
+            using (ModelsViewB.DeferRefresh())
+            {
+                ModelsViewB.SortDescriptions.Clear();
+                if (_sortModelTypeB.HasValue)
+                {
+                    ModelsViewB.SortDescriptions.Add(new SortDescription(nameof(ModelSourceNode.ModelType), _sortModelTypeB.Value));
+                    ModelsViewB.SortDescriptions.Add(new SortDescription(nameof(ModelSourceNode.DisplayName), ListSortDirection.Ascending));
+                }
+                else if (_sortModelNameB.HasValue)
+                {
+                    ModelsViewB.SortDescriptions.Add(new SortDescription(nameof(ModelSourceNode.DisplayName), _sortModelNameB.Value));
+                }
+            }
+            OnPropertyChanged(nameof(SortNameTextB));
+            OnPropertyChanged(nameof(SortTypeTextB));
+        }
+
+        private void ToggleSortSetsA()
+        {
+            if (_sortSetsPathA == null || _sortSetsPathA == ListSortDirection.Descending)
+                _sortSetsPathA = ListSortDirection.Ascending;
+            else
+                _sortSetsPathA = ListSortDirection.Descending;
+            ApplySetsSortA();
+        }
+
+        private void ApplySetsSortA()
+        {
+            using (SetsViewA.DeferRefresh())
+            {
+                SetsViewA.SortDescriptions.Clear();
+                if (_sortSetsPathA.HasValue)
+                {
+                    SetsViewA.SortDescriptions.Add(new SortDescription(nameof(SearchSetNode.FullPath), _sortSetsPathA.Value));
+                }
+            }
+            OnPropertyChanged(nameof(SortSetsTextA));
+        }
+
+        private void ToggleSortSetsB()
+        {
+            if (_sortSetsPathB == null || _sortSetsPathB == ListSortDirection.Descending)
+                _sortSetsPathB = ListSortDirection.Ascending;
+            else
+                _sortSetsPathB = ListSortDirection.Descending;
+            ApplySetsSortB();
+        }
+
+        private void ApplySetsSortB()
+        {
+            using (SetsViewB.DeferRefresh())
+            {
+                SetsViewB.SortDescriptions.Clear();
+                if (_sortSetsPathB.HasValue)
+                {
+                    SetsViewB.SortDescriptions.Add(new SortDescription(nameof(SearchSetNode.FullPath), _sortSetsPathB.Value));
+                }
+            }
+            OnPropertyChanged(nameof(SortSetsTextB));
         }
 
         private void OnModelPropertyChanged(object sender, PropertyChangedEventArgs e)

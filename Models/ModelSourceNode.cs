@@ -27,7 +27,9 @@ namespace AutomatedClashRunner.Models
         public ModelItem OriginalModelItem { get; set; }
         public bool IsSelectable { get; set; } = true;
         public string WarningMessage { get; set; }
-        public string DisplayType => IsDirectNwc ? "Direct NWC" : "NWD Branch";
+        public string ModelType { get; set; } = "NWC";
+        public bool IsNwd => string.Equals(ModelType, "NWD", System.StringComparison.OrdinalIgnoreCase);
+        public string DisplayType => !string.IsNullOrEmpty(ModelType) ? ModelType : (IsDirectNwc ? "NWC" : "NWD");
 
         public ModelSourceNode Clone()
         {
@@ -35,6 +37,7 @@ namespace AutomatedClashRunner.Models
             {
                 DisplayName = DisplayName,
                 SourceFilePath = SourceFilePath,
+                ModelType = ModelType,
                 IsDirectNwc = IsDirectNwc,
                 ParentContainerName = ParentContainerName,
                 OriginalModelItem = OriginalModelItem,

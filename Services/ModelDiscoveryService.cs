@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Autodesk.Navisworks.Api;
 using AutomatedClashRunner.Common;
 using AutomatedClashRunner.Models;
@@ -28,7 +29,38 @@ namespace AutomatedClashRunner.Services
             {
                 foreach (var model in doc.Models)
                 {
-                    FindModelNodes(model.RootItem, "Document Root", nodes, 0);
+                    if (model?.RootItem == null) continue;
+
+                    string modelFileName = model.FileName ?? string.Empty;
+                    string rootName = model.RootItem.DisplayName ?? string.Empty;
+
+                    bool isNwd = modelFileName.EndsWith(".nwd", StringComparison.OrdinalIgnoreCase) ||
+                                 rootName.EndsWith(".nwd", StringComparison.OrdinalIgnoreCase);
+
+                    if (isNwd)
+                    {
+                        string nwdDisplayName = !string.IsNullOrEmpty(rootName) ? rootName : System.IO.Path.GetFileName(modelFileName);
+                        nodes.Add(new ModelSourceNode
+                        {
+                            DisplayName = nwdDisplayName,
+                            SourceFilePath = modelFileName,
+                            ModelType = "NWD",
+                            IsDirectNwc = false,
+                            ParentContainerName = "Document Root",
+                            OriginalModelItem = model.RootItem,
+                            IsSelectable = true
+                        });
+
+                        // Recurse into NWD to discover any nested NWC models
+                        foreach (var child in model.RootItem.Children)
+                        {
+                            FindModelNodes(child, nwdDisplayName, nodes, 1);
+                        }
+                    }
+                    else
+                    {
+                        FindModelNodes(model.RootItem, "Document Root", nodes, 0);
+                    }
                 }
             }
             catch (Exception ex)
@@ -36,6 +68,7 @@ namespace AutomatedClashRunner.Services
                 _logger.LogError("Error discovering models in document", ex);
             }
 
+            _logger.Log($"Discovered {nodes.Count} models ({nodes.Count(n => n.ModelType == "NWD")} NWD, {nodes.Count(n => n.ModelType == "NWC")} NWC) in document.");
             return nodes;
         }
 
@@ -58,6 +91,7 @@ namespace AutomatedClashRunner.Services
                 {
                     DisplayName = name,
                     SourceFilePath = name,
+                    ModelType = "NWC",
                     IsDirectNwc = true,
                     ParentContainerName = parentName,
                     OriginalModelItem = item,
@@ -65,6 +99,28 @@ namespace AutomatedClashRunner.Services
                 });
 
                 // Do not recurse into NWC inner geometry
+                return;
+            }
+
+            // Nested NWD models or containers
+            if (!string.IsNullOrEmpty(name) && name.EndsWith(".nwd", StringComparison.OrdinalIgnoreCase))
+            {
+                nodes.Add(new ModelSourceNode
+                {
+                    DisplayName = name,
+                    SourceFilePath = name,
+                    ModelType = "NWD",
+                    IsDirectNwc = false,
+                    ParentContainerName = parentName,
+                    OriginalModelItem = item,
+                    IsSelectable = true
+                });
+
+                // Recurse into NWD to find child NWCs
+                foreach (var child in item.Children)
+                {
+                    FindModelNodes(child, name, nodes, depth + 1);
+                }
                 return;
             }
 

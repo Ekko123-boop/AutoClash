@@ -28,48 +28,160 @@ namespace AutomatedClashRunner.Services
 
             try
             {
-                var root = doc.SelectionSets.RootItem;
-                TraverseSets(root, "", list, root);
+                var visitedGuids = new HashSet<Guid>();
+
+                // 1. Primary .NET traversal: doc.SelectionSets.RootItem.Children
+                if (doc.SelectionSets?.RootItem != null && doc.SelectionSets.RootItem.Children != null)
+                {
+                    foreach (SavedItem child in doc.SelectionSets.RootItem.Children)
+                    {
+                        TraverseSets(child, "", list, visitedGuids);
+                    }
+                }
+
+                // 2. Secondary fallback: doc.SelectionSets.Value
+                if (doc.SelectionSets?.Value != null)
+                {
+                    foreach (SavedItem item in doc.SelectionSets.Value)
+                    {
+                        TraverseSets(item, "", list, visitedGuids);
+                    }
+                }
+
+                // 3. Tertiary fallback via COM API if .NET traversal found 0 items
+                if (list.Count == 0)
+                {
+                    TryLoadFromComApi(doc, list, visitedGuids);
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError("Error traversing search sets", ex);
             }
 
+            _logger.Log($"Discovered {list.Count} selection/search sets ({list.Count(x => !x.IsFolder)} selectable sets, {list.Count(x => x.IsFolder)} folders) in document.");
             return list;
         }
 
-        private void TraverseSets(SavedItem item, string path, List<SearchSetNode> list, SavedItem rootItem)
+        private void TraverseSets(SavedItem item, string path, List<SearchSetNode> list, HashSet<Guid> visitedGuids)
         {
             if (item == null) return;
 
-            string currentPath = string.IsNullOrEmpty(path) ? item.DisplayName : $"{path} > {item.DisplayName}";
+            // Prevent circular or duplicate visits
+            if (item.Guid != Guid.Empty && visitedGuids.Contains(item.Guid))
+                return;
 
-            if (item != rootItem)
+            string currentPath = string.IsNullOrEmpty(path) ? (item.DisplayName ?? "Unnamed") : $"{path} > {item.DisplayName ?? "Unnamed"}";
+
+            if (item.Guid != Guid.Empty)
             {
-                list.Add(new SearchSetNode
-                {
-                    DisplayName = item.DisplayName,
-                    FullPath = currentPath,
-                    IsFolder = item.IsGroup,
-                    OriginalSavedItem = item
-                });
+                visitedGuids.Add(item.Guid);
             }
 
-            if (item is FolderItem folder)
+            list.Add(new SearchSetNode
             {
-                string childPath = (item == rootItem) ? "" : currentPath;
-                foreach (var child in folder.Children)
+                DisplayName = item.DisplayName ?? "Unnamed",
+                FullPath = currentPath,
+                IsFolder = item.IsGroup,
+                OriginalSavedItem = item
+            });
+
+            if (item is GroupItem group && group.Children != null)
+            {
+                foreach (SavedItem child in group.Children)
                 {
-                    TraverseSets(child, childPath, list, rootItem);
+                    TraverseSets(child, currentPath, list, visitedGuids);
                 }
             }
-            else if (item is GroupItem group)
+        }
+
+        private void TryLoadFromComApi(Document doc, List<SearchSetNode> list, HashSet<Guid> visitedGuids)
+        {
+            try
             {
-                string childPath = (item == rootItem) ? "" : currentPath;
-                foreach (var child in group.Children)
+                var state = Autodesk.Navisworks.Api.ComApi.ComApiBridge.State;
+                if (state == null) return;
+
+                var oSSExColl = state.SelectionSetsEx();
+                if (oSSExColl == null || oSSExColl.Count == 0) return;
+
+                _logger.Log($"Checking COM API selection sets ({oSSExColl.Count} root items)...");
+                TraverseComCollection(doc, oSSExColl, new List<int>(), "", list, visitedGuids);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"COM API selection sets fallback warning: {ex.Message}");
+            }
+        }
+
+        private void TraverseComCollection(
+            Document doc,
+            Autodesk.Navisworks.Api.Interop.ComApi.InwSelectionSetExColl coll,
+            List<int> parentIndices,
+            string path,
+            List<SearchSetNode> list,
+            HashSet<Guid> visitedGuids)
+        {
+            if (coll == null) return;
+
+            for (int i = 1; i <= coll.Count; i++)
+            {
+                try
                 {
-                    TraverseSets(child, childPath, list, rootItem);
+                    var item = coll[i];
+                    var currentIndices = new List<int>(parentIndices) { i - 1 };
+
+                    SavedItem netItem = null;
+                    try
+                    {
+                        netItem = doc.SelectionSets.ResolveIndexPath(currentIndices);
+                    }
+                    catch { }
+
+                    if (item is Autodesk.Navisworks.Api.Interop.ComApi.InwSelectionSetFolder folder)
+                    {
+                        string folderName = folder.name ?? "Folder";
+                        string currentPath = string.IsNullOrEmpty(path) ? folderName : $"{path} > {folderName}";
+
+                        if (netItem != null && (netItem.Guid == Guid.Empty || !visitedGuids.Contains(netItem.Guid)))
+                        {
+                            if (netItem.Guid != Guid.Empty) visitedGuids.Add(netItem.Guid);
+                            list.Add(new SearchSetNode
+                            {
+                                DisplayName = folderName,
+                                FullPath = currentPath,
+                                IsFolder = true,
+                                OriginalSavedItem = netItem
+                            });
+                        }
+
+                        var subColl = folder.SelectionSets();
+                        if (subColl != null && subColl.Count > 0)
+                        {
+                            TraverseComCollection(doc, subColl, currentIndices, currentPath, list, visitedGuids);
+                        }
+                    }
+                    else if (item is Autodesk.Navisworks.Api.Interop.ComApi.InwOpSelectionSet set)
+                    {
+                        string setName = set.name ?? "Set";
+                        string currentPath = string.IsNullOrEmpty(path) ? setName : $"{path} > {setName}";
+
+                        if (netItem != null && (netItem.Guid == Guid.Empty || !visitedGuids.Contains(netItem.Guid)))
+                        {
+                            if (netItem.Guid != Guid.Empty) visitedGuids.Add(netItem.Guid);
+                            list.Add(new SearchSetNode
+                            {
+                                DisplayName = setName,
+                                FullPath = currentPath,
+                                IsFolder = false,
+                                OriginalSavedItem = netItem
+                            });
+                        }
+                    }
+                }
+                catch (Exception itemEx)
+                {
+                    _logger.LogWarning($"Error traversing COM set item at index {i}: {itemEx.Message}");
                 }
             }
         }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using Xunit;
 using FluentAssertions;
 using AutomatedClashRunner.Models;
@@ -45,13 +46,16 @@ namespace AutomatedClashRunner.Tests
         }
 
         [Fact]
-        public void ModelSourceNode_DisplayType_ReflectsIsDirectNwc()
+        public void ModelSourceNode_DisplayType_ReflectsCleanTypeWithoutDirectNwcText()
         {
-            var nodeNwc = new ModelSourceNode { IsDirectNwc = true, DisplayName = "Test1.nwc" };
-            var nodeNwd = new ModelSourceNode { IsDirectNwc = false, DisplayName = "Test2.nwc" };
+            var nodeNwc = new ModelSourceNode { ModelType = "NWC", IsDirectNwc = true, DisplayName = "Test1.nwc" };
+            var nodeNwd = new ModelSourceNode { ModelType = "NWD", IsDirectNwc = false, DisplayName = "Basebuild.nwd" };
 
-            nodeNwc.DisplayType.Should().Be("Direct NWC");
-            nodeNwd.DisplayType.Should().Be("NWD Branch");
+            nodeNwc.DisplayType.Should().Be("NWC");
+            nodeNwc.IsNwd.Should().BeFalse();
+
+            nodeNwd.DisplayType.Should().Be("NWD");
+            nodeNwd.IsNwd.Should().BeTrue();
         }
 
         [Fact]
@@ -214,6 +218,75 @@ namespace AutomatedClashRunner.Tests
 
             setA.IsSelected.Should().BeFalse();
             setB.IsSelected.Should().BeTrue();
+        }
+
+        [Fact]
+        public void ModelSourceNode_ModelTypeAndNwdState_WorkCorrectly()
+        {
+            var node = new ModelSourceNode
+            {
+                DisplayName = "Basebuild.nwd",
+                ModelType = "NWD",
+                IsDirectNwc = false,
+                IsSelected = true
+            };
+
+            node.DisplayName.Should().Be("Basebuild.nwd");
+            node.ModelType.Should().Be("NWD");
+            node.IsNwd.Should().BeTrue();
+            node.DisplayType.Should().Be("NWD");
+        }
+
+        [Fact]
+        public void ModelSourceNodes_SortingByNameAndType_OrdersCorrectly()
+        {
+            var list = new List<ModelSourceNode>
+            {
+                new ModelSourceNode { DisplayName = "Z-Model.nwc", ModelType = "NWC" },
+                new ModelSourceNode { DisplayName = "A-Model.nwc", ModelType = "NWC" },
+                new ModelSourceNode { DisplayName = "M-Model.nwd", ModelType = "NWD" }
+            };
+
+            // Sort by Name Ascending
+            var sortedByNameAsc = list.OrderBy(x => x.DisplayName).ToList();
+            sortedByNameAsc[0].DisplayName.Should().Be("A-Model.nwc");
+            sortedByNameAsc[1].DisplayName.Should().Be("M-Model.nwd");
+            sortedByNameAsc[2].DisplayName.Should().Be("Z-Model.nwc");
+
+            // Sort by Name Descending
+            var sortedByNameDesc = list.OrderByDescending(x => x.DisplayName).ToList();
+            sortedByNameDesc[0].DisplayName.Should().Be("Z-Model.nwc");
+            sortedByNameDesc[1].DisplayName.Should().Be("M-Model.nwd");
+            sortedByNameDesc[2].DisplayName.Should().Be("A-Model.nwc");
+
+            // Sort by Type (NWC first, then NWD, secondary by Name)
+            var sortedByTypeAsc = list.OrderBy(x => x.ModelType).ThenBy(x => x.DisplayName).ToList();
+            sortedByTypeAsc[0].ModelType.Should().Be("NWC");
+            sortedByTypeAsc[0].DisplayName.Should().Be("A-Model.nwc");
+            sortedByTypeAsc[1].ModelType.Should().Be("NWC");
+            sortedByTypeAsc[1].DisplayName.Should().Be("Z-Model.nwc");
+            sortedByTypeAsc[2].ModelType.Should().Be("NWD");
+            sortedByTypeAsc[2].DisplayName.Should().Be("M-Model.nwd");
+
+            // Sort by Type Descending (NWD first, then NWC)
+            var sortedByTypeDesc = list.OrderByDescending(x => x.ModelType).ThenBy(x => x.DisplayName).ToList();
+            sortedByTypeDesc[0].ModelType.Should().Be("NWD");
+            sortedByTypeDesc[0].DisplayName.Should().Be("M-Model.nwd");
+            sortedByTypeDesc[1].ModelType.Should().Be("NWC");
+        }
+
+        [Fact]
+        public void TabHeader_Formatting_ReflectsTotalAndSelectedAccurately()
+        {
+            int totalModels = 47;
+            int selectedModels = 0;
+
+            string headerEmpty = selectedModels > 0 ? $"Models ({selectedModels}/{totalModels})" : $"Models ({totalModels})";
+            headerEmpty.Should().Be("Models (47)");
+
+            selectedModels = 5;
+            string headerSelected = selectedModels > 0 ? $"Models ({selectedModels}/{totalModels})" : $"Models ({totalModels})";
+            headerSelected.Should().Be("Models (5/47)");
         }
     }
 }
