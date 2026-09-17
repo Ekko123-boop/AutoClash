@@ -100,6 +100,19 @@ if (Test-Path "Images") {
 Get-ChildItem $bundleDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
 Write-Host " - Multi-Version Bundle deployed to: $bundleDir" -ForegroundColor Green
 
+# 5b. Attempt ProgramData deployment if writable
+$globalBundle = "$env:ProgramData\Autodesk\ApplicationPlugins\CypherNavisTools.bundle"
+try {
+    if (Test-Path $globalBundle) {
+        Copy-Item "PackageContents.xml" -Destination $globalBundle -Force -ErrorAction Stop
+        Copy-Item "bin\Release\2023\*.dll" -Destination "$globalBundle\Contents\2023" -Force -ErrorAction Stop
+        Copy-Item "bin\Release\2024\*.dll" -Destination "$globalBundle\Contents\2024" -Force -ErrorAction Stop
+        Write-Host " - Successfully updated Global ProgramData bundle: $globalBundle" -ForegroundColor Green
+    }
+} catch {
+    Write-Host " - Note: ProgramData is Administrator-protected. Run CypherGenericClash_Installer.exe as Administrator to update ProgramData." -ForegroundColor Yellow
+}
+
 # 6. Clean Standalone User Plugins Directory (eliminating duplicate plugin loading)
 Write-Host ">>> 6. Ensuring Clean User Plugins Directory (eliminating duplicate loading)..." -ForegroundColor Cyan
 $legacyUserPlugins = @(

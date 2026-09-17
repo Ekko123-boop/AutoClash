@@ -27,6 +27,7 @@ namespace AutomatedClashRunner.Services
 
             try
             {
+                string docFileName = doc.CurrentFileName ?? string.Empty;
                 foreach (var model in doc.Models)
                 {
                     if (model?.RootItem == null) continue;
@@ -34,16 +35,22 @@ namespace AutomatedClashRunner.Services
                     string modelFileName = model.FileName ?? string.Empty;
                     string rootName = model.RootItem.DisplayName ?? string.Empty;
 
-                    bool isNwd = modelFileName.EndsWith(".nwd", StringComparison.OrdinalIgnoreCase) ||
-                                 rootName.EndsWith(".nwd", StringComparison.OrdinalIgnoreCase);
+                    bool isNwd = (!string.IsNullOrEmpty(modelFileName) && modelFileName.IndexOf(".nwd", StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                 (!string.IsNullOrEmpty(rootName) && rootName.IndexOf(".nwd", StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                 (!string.IsNullOrEmpty(docFileName) && docFileName.IndexOf(".nwd", StringComparison.OrdinalIgnoreCase) >= 0 && doc.Models.Count == 1);
 
                     if (isNwd)
                     {
-                        string nwdDisplayName = !string.IsNullOrEmpty(rootName) ? rootName : System.IO.Path.GetFileName(modelFileName);
+                        string nwdDisplayName = !string.IsNullOrEmpty(rootName)
+                            ? rootName
+                            : (!string.IsNullOrEmpty(modelFileName)
+                                ? System.IO.Path.GetFileName(modelFileName)
+                                : System.IO.Path.GetFileName(docFileName));
+
                         nodes.Add(new ModelSourceNode
                         {
                             DisplayName = nwdDisplayName,
-                            SourceFilePath = modelFileName,
+                            SourceFilePath = !string.IsNullOrEmpty(modelFileName) ? modelFileName : docFileName,
                             ModelType = "NWD",
                             IsDirectNwc = false,
                             ParentContainerName = "Document Root",
@@ -85,7 +92,7 @@ namespace AutomatedClashRunner.Services
             string name = item.DisplayName;
 
             // Direct NWC models
-            if (!string.IsNullOrEmpty(name) && name.EndsWith(".nwc", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(name) && (name.EndsWith(".nwc", StringComparison.OrdinalIgnoreCase) || name.IndexOf(".nwc", StringComparison.OrdinalIgnoreCase) >= 0))
             {
                 nodes.Add(new ModelSourceNode
                 {
@@ -103,7 +110,7 @@ namespace AutomatedClashRunner.Services
             }
 
             // Nested NWD models or containers
-            if (!string.IsNullOrEmpty(name) && name.EndsWith(".nwd", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(name) && (name.EndsWith(".nwd", StringComparison.OrdinalIgnoreCase) || name.IndexOf(".nwd", StringComparison.OrdinalIgnoreCase) >= 0))
             {
                 nodes.Add(new ModelSourceNode
                 {
@@ -144,7 +151,7 @@ namespace AutomatedClashRunner.Services
                 while (current != null)
                 {
                     string dName = current.DisplayName ?? string.Empty;
-                    if (dName.EndsWith(".nwd", StringComparison.OrdinalIgnoreCase))
+                    if (dName.EndsWith(".nwd", StringComparison.OrdinalIgnoreCase) || dName.IndexOf(".nwd", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         container = current;
                         break;

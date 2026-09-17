@@ -314,7 +314,23 @@ namespace AutomatedClashRunner.Installer
     {
         public static bool IsNavisworksRunning()
         {
-            return Process.GetProcessesByName("Roamer").Length > 0;
+            try
+            {
+                return Process.GetProcesses().Any(p =>
+                {
+                    try
+                    {
+                        string name = p.ProcessName;
+                        return name.IndexOf("roamer", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                               name.IndexOf("navisworks", StringComparison.OrdinalIgnoreCase) >= 0;
+                    }
+                    catch { return false; }
+                });
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public static List<string> GetInstalledNavisworksDirectories()
@@ -433,11 +449,14 @@ namespace AutomatedClashRunner.Installer
 
                     // 2. Deploy Global ProgramData ApplicationPlugins bundle
                     bool progDataSuccess = false;
+                    string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                    string globalBundle = Path.Combine(progData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
                     try
                     {
-                        string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-                        string globalBundle = Path.Combine(progData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
-                        if (Directory.Exists(globalBundle)) Directory.Delete(globalBundle, true);
+                        if (Directory.Exists(globalBundle))
+                        {
+                            try { Directory.Delete(globalBundle, true); } catch { }
+                        }
                         CopyDirectory(tempDir, globalBundle);
                         log("✓ Deployed Global ApplicationPlugins Bundle (ProgramData)");
                         successCount++;
@@ -445,7 +464,7 @@ namespace AutomatedClashRunner.Installer
                     }
                     catch (Exception ex)
                     {
-                        log($"ℹ ProgramData deployment: {ex.Message}");
+                        log($"⚠ ProgramData deployment warning: {ex.Message}");
                     }
 
                     // 3. If ProgramData succeeded, clean AppData bundle to ensure exactly ONE copy exists.
@@ -613,8 +632,19 @@ namespace AutomatedClashRunner.Installer
             foreach (string file in Directory.GetFiles(sourceDir))
             {
                 string destFile = Path.Combine(destDir, Path.GetFileName(file));
-                File.Copy(file, destFile, true);
-                try { File.Delete(destFile + ":Zone.Identifier"); } catch { }
+                try
+                {
+                    if (File.Exists(destFile))
+                    {
+                        File.SetAttributes(destFile, FileAttributes.Normal);
+                    }
+                    File.Copy(file, destFile, true);
+                    try { File.Delete(destFile + ":Zone.Identifier"); } catch { }
+                }
+                catch (Exception copyEx)
+                {
+                    throw new IOException($"Could not overwrite '{destFile}': {copyEx.Message}", copyEx);
+                }
             }
             foreach (string dir in Directory.GetDirectories(sourceDir))
             {

@@ -235,8 +235,9 @@ In the generic clash matrix interface on branch `generic-clash-runner`:
      - **Tier 3 (COM Fallback)**: COM `ComApiBridge.State.SelectionSetsEx()` traversal, resolving COM indices back to .NET `SavedItem` via `doc.SelectionSets.ResolveIndexPath(indices)`.
    - Added `HashSet<Guid>` deduplication to guarantee no duplicated set entries appear across tiers.
 2. **NWD Model Discovery & Classification**:
-   - In [`Services/ModelDiscoveryService.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Services/ModelDiscoveryService.cs), extended discovery to detect `.nwd` models via `model.FileName` and `model.RootItem.DisplayName`.
+   - In [`Services/ModelDiscoveryService.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Services/ModelDiscoveryService.cs), extended discovery to inspect `model.FileName`, `model.RootItem.DisplayName`, and `doc.CurrentFileName` using case-insensitive substring matching (`IndexOf(".nwd")`) to accommodate display name aliases and read-only flags.
    - Top-level `.nwd` files are added as selectable model nodes with `ModelType = "NWD"`, and any nested `.nwc` child files are discovered under them with `ModelType = "NWC"`.
+   - In `FindModelNodes` and `GetSiblingNwcs`, container and model checks use resilient `IndexOf(".nwd")` / `IndexOf(".nwc")` matching.
 3. **Clean Badge Styling & Elimination of "Direct NWC"**:
    - In [`Models/ModelSourceNode.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Models/ModelSourceNode.cs), added explicit `ModelType` (`"NWC"`, `"NWD"`) and `IsNwd` properties.
    - Replaced `"Direct NWC"` with clean, modern badges: slate badge for `NWC`, blue badge for `NWD` with custom WPF border and foreground palettes in [`Views/MainWindow.xaml`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Views/MainWindow.xaml).
@@ -247,6 +248,10 @@ In the generic clash matrix interface on branch `generic-clash-runner`:
 5. **Accurate Tab Header Counts & Auto-Loading**:
    - When 0 items are checked, headers display `Models (47)` or `Sets (12)`. When items are checked, headers display `Models (3/47)` or `Sets (2/12)`.
    - Added auto-loading of selection sets when switching to the Sets tab if sets have not been populated yet.
+6. **Robust Installer Deployment (Admin ProgramData Overwrite)**:
+   - In [`Installer/Program.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Installer/Program.cs), enhanced `IsNavisworksRunning()` to check both `roamer` and `navisworks` case-insensitively across all processes.
+   - Updated `CopyDirectory` to strip `ReadOnly` attributes on destination files before overwriting.
+   - Guaranteed that ProgramData deployment proceeds directly to `CopyDirectory` overwrite even if `Directory.Delete` encounters locked or protected files.
 
 
 
