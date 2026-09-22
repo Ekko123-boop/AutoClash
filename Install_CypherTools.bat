@@ -68,11 +68,31 @@ for /d %%D in ("%AUTODESK_DIR%\Navisworks*") do (
     )
 )
 
-:: Also purge user AppData bundle so there is only one authoritative bundle on the system
-if exist "%APPDATA%\Autodesk\ApplicationPlugins\CypherNavisTools.bundle" (
-    rmdir /s /q "%APPDATA%\Autodesk\ApplicationPlugins\CypherNavisTools.bundle" 2>nul
-    echo      - Cleaned duplicate user bundle from AppData.
+:: Also deploy user AppData bundle so current user has direct access
+set "USER_BUNDLE=%APPDATA%\Autodesk\ApplicationPlugins\CypherNavisTools.bundle"
+if exist "%USER_BUNDLE%" rmdir /s /q "%USER_BUNDLE%"
+mkdir "%USER_BUNDLE%\Contents\2023\en-US" 2>nul
+mkdir "%USER_BUNDLE%\Contents\2023\Images" 2>nul
+mkdir "%USER_BUNDLE%\Contents\2024\en-US" 2>nul
+mkdir "%USER_BUNDLE%\Contents\2024\Images" 2>nul
+mkdir "%USER_BUNDLE%\en-US" 2>nul
+mkdir "%USER_BUNDLE%\Images" 2>nul
+
+copy /Y "%ROOT%PackageContents.xml" "%USER_BUNDLE%\" >nul
+copy /Y "%ROOT%en-US\*.xaml" "%USER_BUNDLE%\en-US\" >nul
+copy /Y "%ROOT%Images\*.png" "%USER_BUNDLE%\Images\" >nul
+
+if exist "%BIN2023%\CypherNavisTools.dll" (
+    copy /Y "%BIN2023%\CypherNavisTools.dll" "%USER_BUNDLE%\Contents\2023\" >nul
+    copy /Y "%ROOT%en-US\*.xaml" "%USER_BUNDLE%\Contents\2023\en-US\" >nul
+    copy /Y "%ROOT%Images\*.png" "%USER_BUNDLE%\Contents\2023\Images\" >nul
 )
+if exist "%BIN2024%\CypherNavisTools.dll" (
+    copy /Y "%BIN2024%\CypherNavisTools.dll" "%USER_BUNDLE%\Contents\2024\" >nul
+    copy /Y "%ROOT%en-US\*.xaml" "%USER_BUNDLE%\Contents\2024\en-US\" >nul
+    copy /Y "%ROOT%Images\*.png" "%USER_BUNDLE%\Contents\2024\Images\" >nul
+)
+echo      - User AppData Bundle deployed successfully.
 
 :: 3. Finish
 echo.

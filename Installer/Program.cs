@@ -195,7 +195,7 @@ namespace AutomatedClashRunner.Installer
         private void LoadInstalledVersions()
         {
             clbVersions.Items.Clear();
-            clbVersions.Items.Add("Global Bundle (ProgramData ApplicationPlugins)", true);
+            clbVersions.Items.Add("ApplicationPlugins Bundle (Recommended)", true);
 
             var detected = InstallerEngine.GetInstalledNavisworksDirectories();
             foreach (var dir in detected)
@@ -395,7 +395,8 @@ namespace AutomatedClashRunner.Installer
                 }
 
                 bool deployGlobal = selectedTargets == null || selectedTargets.Count == 0 ||
-                    selectedTargets.Any(x => x.IndexOf("Global Bundle", StringComparison.OrdinalIgnoreCase) >= 0);
+                    selectedTargets.Any(x => x.IndexOf("Bundle", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             x.IndexOf("ApplicationPlugins", StringComparison.OrdinalIgnoreCase) >= 0);
 
                 if (deployGlobal)
                 {
@@ -447,12 +448,27 @@ namespace AutomatedClashRunner.Installer
                         }
                     }
 
-                    // 2. Deploy Global ProgramData ApplicationPlugins bundle
-                    bool progDataSuccess = false;
-                    string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-                    string globalBundle = Path.Combine(progData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
+                    // 2. Deploy User AppData ApplicationPlugins bundle (canonical location for current user)
+                    string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                    string userBundle = Path.Combine(appData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
                     try
                     {
+                        if (Directory.Exists(userBundle)) Directory.Delete(userBundle, true);
+                        CopyDirectory(tempDir, userBundle);
+                        log("✓ Deployed User ApplicationPlugins Bundle (AppData)");
+                        successCount++;
+                    }
+                    catch (Exception appEx)
+                    {
+                        log($"⚠ Error deploying bundle to AppData: {appEx.Message}");
+                        failureCount++;
+                    }
+
+                    // 3. Also deploy Global ProgramData ApplicationPlugins bundle (for machine-wide multi-user availability)
+                    try
+                    {
+                        string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                        string globalBundle = Path.Combine(progData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
                         if (Directory.Exists(globalBundle))
                         {
                             try { Directory.Delete(globalBundle, true); } catch { }
@@ -460,38 +476,10 @@ namespace AutomatedClashRunner.Installer
                         CopyDirectory(tempDir, globalBundle);
                         log("✓ Deployed Global ApplicationPlugins Bundle (ProgramData)");
                         successCount++;
-                        progDataSuccess = true;
                     }
                     catch (Exception ex)
                     {
-                        log($"⚠ ProgramData deployment warning: {ex.Message}");
-                    }
-
-                    // 3. If ProgramData succeeded, clean AppData bundle to ensure exactly ONE copy exists.
-                    //    If ProgramData failed, deploy User AppData bundle as canonical fallback.
-                    string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                    string userBundle = Path.Combine(appData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
-                    if (progDataSuccess)
-                    {
-                        if (Directory.Exists(userBundle))
-                        {
-                            try { Directory.Delete(userBundle, true); log("✓ Purged redundant user bundle from AppData"); } catch { }
-                        }
-                    }
-                    else
-                    {
-                        try
-                        {
-                            if (Directory.Exists(userBundle)) Directory.Delete(userBundle, true);
-                            CopyDirectory(tempDir, userBundle);
-                            log("✓ Deployed User ApplicationPlugins Bundle (AppData)");
-                            successCount++;
-                        }
-                        catch (Exception appEx)
-                        {
-                            log($"⚠ Error deploying bundle to AppData: {appEx.Message}");
-                            failureCount++;
-                        }
+                        log($"Note: ProgramData deployment skipped/warning: {ex.Message}");
                     }
                 }
                 else
