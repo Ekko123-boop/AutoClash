@@ -58,6 +58,7 @@ This document records the full engineering history, bugs encountered, root cause
 | **ISS-049** | UI Branding & Polish | `MainWindow.xaml`, `App.cs`, `DynamicRibbonService.cs`, `DistillerTabViewModel.cs`, `ClashDistillerService.cs`, `RimoRibbon.xaml`, `CypherRibbon.xaml`, `AssemblyInfo.cs`, `MatrixTabViewModel.cs` | 1) Window title bar showed verbose "Automated Model Clash Runner & Distiller". 2) Header subtitle "Autodesk Navisworks Automated Coordination Suite" cluttered UI. 3) "Distill Clashes" tab name was confusing to users. 4) Default delimiter was "v" instead of user-preferred "x". | UI text was carried over from early development and did not match minimalist branding goals. "Distill" terminology confused users who preferred "Group". Default delimiter "v" conflicted with team naming convention that uses "x". | 1) Simplified window title and header to "Cypher Tools". 2) Removed subtitle entirely. 3) Renamed all user-facing "Distill/Distillation" text to "Group/Grouping" across tabs, buttons, ribbons, dialog messages, progress text, and log messages (8 files, ~25 lines). 4) Changed default delimiter from "v" to "x" and reordered array. Internal class/command names preserved. |
 | **ISS-050** | UI & Filtering | `MainWindow.xaml`, `MatrixTabViewModel.cs`, `ViewModelAndSelectionTests.cs`, `build_all.ps1` | 1) Sets search bar watermark displayed verbose "by path". 2) Users risked accidentally selecting the wrong file type (mixing NWC and NWD). | 1) Watermark text hardcoded "Filter search sets by path...". 2) Models list lacked a quick file-type toggle filter to view/select only NWC or only NWD. | 1) Cleaned Sets watermark to "Filter search sets...". 2) Added Type Filter dropdown menu (`Type: All ▾`) with checkboxes for NWC Files and NWD Files in both Selection A and B Models toolbars. Unchecking a type immediately clears selections of that type and excludes them from clash test execution. |
 | **ISS-051** | Deployment / Autoloader Manifest | `PackageContents.xml`, `Installer/Program.cs`, `Install_CypherTools.bat` | Add-in disappeared from Navisworks after running installer | 1) `PackageContents.xml` contained `AutodeskProduct="Navisworks"` which the Autodesk autoloader schema rejects (valid schema requires omitting it for Navisworks). 2) `Installer/Program.cs` purged the working `%APPDATA%\Autodesk\ApplicationPlugins\CypherNavisTools.bundle` whenever ProgramData deployment succeeded, but Navisworks was not loading from ProgramData due to manifest rejection. 3) Manifest lacked discrete per-year series definitions. | 1) Removed `AutodeskProduct="Navisworks"` and added discrete components for 2020-2026 (`Nw17`-`Nw23`) matching Autodesk SDK samples. 2) Fixed installer to always deploy to `%APPDATA%\Autodesk\ApplicationPlugins` and never purge it. 3) Rebuilt and verified bundle in `%APPDATA%`. |
+| **ISS-052** | Clash Detective / Viewpoints | `ClashDistillerService.cs`, `NativeClashRedlineHelper.cs` | Exported clash viewpoints missing user-drawn redline markups (ellipses, clouds, text annotations) and review comments | `DocumentClashTests.TestsViewpointForResult` returns only the camera `Viewpoint`; `new SavedViewpoint(vp)` creates an empty viewpoint dropping `Redlines` (`LcOpRedlineList`) and `Comments` stored on native `LcOclTestIssue`. | Implemented `NativeClashRedlineHelper` dynamically binding `?GetRedlines@LcOclTestIssue`, `??4LcOpRedlineList` (`operator=`), and `?Merge@LcOpRedlineList` to copy all graphic markups and review comments from clash results/groups directly into `SavedViewpoint` before committing to the document. |
 
 
 ---
@@ -256,5 +257,53 @@ In the generic clash matrix interface on branch `generic-clash-runner`:
    - Updated `CopyDirectory` to strip `ReadOnly` attributes on destination files before overwriting.
    - Guaranteed that ProgramData deployment proceeds directly to `CopyDirectory` overwrite even if `Directory.Delete` encounters locked or protected files.
 
+---
 
+### ISS-052: Preserving & Exporting Redline Markups (Ellipses, Clouds, Text Annotations) and Comments in Saved Viewpoints
 
+#### Symptoms
+When a BIM coordinator reviews clashes in Navisworks Manage Clash Detective:
+1. They select a clash result or clash group, mark its status as `"Reviewed"`, and draw graphic redlines (e.g. revision ellipses, clouds, text annotations, arrows).
+2. When using the add-in's **"Create Viewpoints"** tab to export viewpoints into the Saved Viewpoints folder for "Reviewed" clashes, the viewpoints are created with the correct camera perspective and clash location, but **all redline markups (ellipses, text) and comments are completely missing**.
+
+#### Root Cause Analysis
+1. **Camera vs. Saved Viewpoint Separation in Navisworks API**:
+   - In the public .NET API, `DocumentClashTests.TestsViewpointForResult()` returns an `Autodesk.Navisworks.Api.Viewpoint` object.
+   - A `Viewpoint` represents **only 3D camera geometry** (`Position`, `Direction`, `UpVector`, `FocalDistance`, `Projection`). It does **not** contain redline markups or comments.
+2. **Empty SavedViewpoint Instantiation**:
+   - `ClashDistillerService.ExportViewpoints()` previously called `new SavedViewpoint(vp) { DisplayName = vpName }`.
+   - This constructor creates an empty `SavedViewpoint` whose `Redlines` collection (`LcOpRedlineList`) is empty and whose `Comments` collection is empty.
+3. **Where Navisworks Stores Clash Redlines**:
+   - Reverse engineering of `lcclash.dll` and `lcodclash.dll` revealed that `ClashResult` (`LcOclTestResult`) and `ClashResultGroup` (`LcOclTestResultGroup`) both inherit from the native C++ class `LcOclTestIssue`.
+   - `LcOclTestIssue` stores its `LcOpRedlineList` at memory offset `+0x198` of its native pointer, exposed by the exported symbol:
+     ```cpp
+     const LcOpRedlineList& LcOclTestIssue::GetRedlines() const;
+     // Decorated: ?GetRedlines@LcOclTestIssue@@QEBAAEBVLcOpRedlineList@@XZ
+     ```
+   - In `lcodyplugin.dll`, Navisworks natively copies redlines into new viewpoints using the C++ assignment operator:
+     ```cpp
+     LcOpRedlineList& LcOpRedlineList::operator=(const LcOpRedlineList&);
+     // Decorated: ??4LcOpRedlineList@@QEAAAEAV0@AEBV0@@Z
+     void LcOpRedlineList::Merge(LcOpRedlineList*);
+     // Decorated: ?Merge@LcOpRedlineList@@QEAAXPEAV1@@Z
+     ```
+   - Because the add-in never extracted the native `LcOpRedlineList` or invoked the assignment/merge functions, markups were never copied into the newly created `SavedViewpoint`.
+
+#### Architectural Solutions & Implementation
+1. **`NativeClashRedlineHelper` (`Services/NativeClashRedlineHelper.cs`)**:
+   - Created a thread-safe helper that dynamically binds to `lcodclash.dll` and `lcodyplugin.dll` (already in-process in Navisworks).
+   - Resolves native delegates for `GetRedlines`, `AssignRedlines` (`operator=`), and `MergeRedlines`.
+   - Employs an offset `+0x198` fallback if `GetProcAddress` returns null.
+   - Extracts native `IntPtr` from `NativeHandle.Handle` on clash items and `SavedViewpoint.EditRedlines().Handle` on destination viewpoints.
+2. **Support for Group & Child Clash Markups**:
+   - When exporting a `ClashResultGroup`:
+     - Checks if the group itself has redlines (`grp.HasRedlines`).
+     - Also iterates `grp.Children.OfType<ClashResult>()`: if a coordinator reviewed a specific child clash in the group (`child.HasRedlines`), child redlines and comments are automatically extracted and merged into the exported group viewpoint.
+   - When exporting a raw `ClashResult`:
+     - If `raw.HasRedlines`, copies all redlines directly.
+3. **Review Comment Preservation**:
+   - Copies review comments (`Author`, `Body`, `Status`) from `result.Comments` and child comments into `svp.Comments`, preventing duplicate entries.
+4. **Enhanced Camera Perspective for Groups**:
+   - In `GetTestsViewpointForResult`: If a `ClashResultGroup` does not have a saved camera viewpoint (`!clashGroup.HasSavedViewpoint`), the method checks if any child clash has `HasSavedViewpoint || HasRedlines` and uses that camera perspective, ensuring the camera aligns perfectly with where the coordinator drew their annotations.
+5. **Fail-Safe Exception Handling**:
+   - All pointer operations are wrapped in rigorous exception blocks. If native redline extraction fails for any reason, the add-in logs a warning and creates the clean viewpoint camera without crashing the host.

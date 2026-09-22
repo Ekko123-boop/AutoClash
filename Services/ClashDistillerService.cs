@@ -438,6 +438,7 @@ namespace AutomatedClashRunner.Services
                         {
                             string vpName = _naming.FormatViewpointName(test.DisplayName, group.DisplayName, gIdx);
                             var svp = new SavedViewpoint(vp) { DisplayName = vpName };
+                            NativeClashRedlineHelper.CopyRedlinesAndComments(group, svp, _logger);
                             savedViewpoints.AddCopy(actualFolder, svp);
                             viewpointsCreated++;
                             testCreated++;
@@ -463,6 +464,7 @@ namespace AutomatedClashRunner.Services
                         {
                             string vpName = _naming.FormatViewpointName(test.DisplayName, raw.DisplayName, rIdx);
                             var svp = new SavedViewpoint(vp) { DisplayName = vpName };
+                            NativeClashRedlineHelper.CopyRedlinesAndComments(raw, svp, _logger);
                             savedViewpoints.AddCopy(actualFolder, svp);
                             viewpointsCreated++;
                             testCreated++;
@@ -493,6 +495,17 @@ namespace AutomatedClashRunner.Services
         private Viewpoint GetTestsViewpointForResult(DocumentClashTests clashData, IClashResult result)
         {
             if (clashData == null || result == null) return null;
+
+            // 0. If group itself has no saved viewpoint, check if any child has a saved viewpoint or redlines
+            if (result is ClashResultGroup clashGroup && !clashGroup.HasSavedViewpoint && clashGroup.Children != null)
+            {
+                var childWithVp = clashGroup.Children.OfType<ClashResult>().FirstOrDefault(c => c.HasSavedViewpoint || c.HasRedlines);
+                if (childWithVp != null)
+                {
+                    var childVp = GetTestsViewpointForResult(clashData, childWithVp);
+                    if (childVp != null) return childVp;
+                }
+            }
 
             // 1. Primary: In Navisworks 2024+, TestsViewpointForResult exists on DocumentClashTests and takes IClashResult
             try
