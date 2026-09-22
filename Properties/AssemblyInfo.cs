@@ -2,7 +2,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Cypher Tools")]
-[assembly: AssemblyDescription("Automated Model Clash Runner and Distiller for Autodesk Navisworks")]
+[assembly: AssemblyDescription("Automated Model Clash Runner for Autodesk Navisworks")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Cypher")]
 [assembly: AssemblyProduct("Cypher Tools")]

@@ -307,7 +307,7 @@ namespace AutomatedClashRunner.Services
                                 if (movedCount % 25 == 0 || movedCount == totalMoves)
                                 {
                                     progressCallback?.Invoke(
-                                        $"Distilling '{test.DisplayName}': grouped {movedCount} of {totalMoves} clashes...",
+                                        $"Grouping '{test.DisplayName}': grouped {movedCount} of {totalMoves} clashes...",
                                         movedCount,
                                         totalMoves);
                                     DoEvents();
@@ -320,7 +320,7 @@ namespace AutomatedClashRunner.Services
                         }
                     }
 
-                    _logger.Log($"Distilled test '{test.DisplayName}': {movedCount} clashes grouped into {groupIndex - 1} groups.");
+                    _logger.Log($"Grouped test '{test.DisplayName}': {movedCount} clashes grouped into {groupIndex - 1} groups.");
                 }
                 catch (Exception ex)
                 {

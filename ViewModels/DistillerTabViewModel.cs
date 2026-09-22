@@ -227,13 +227,13 @@ namespace AutomatedClashRunner.ViewModels
             if (targetTests.Count == 0)
             {
                 _dialogService.ShowWarning(
-                    selectedOnly ? "Please select at least one test to distill." : "No clash tests available.",
+                    selectedOnly ? "Please select at least one test to group." : "No clash tests available.",
                     "No Tests Available");
                 return;
             }
 
             IsBusy = true;
-            ProgressText = "Preparing clash distillation...";
+            ProgressText = "Preparing clash grouping...";
             ProgressBarValue = 0;
             ProgressBarMax = 100;
 
@@ -253,12 +253,12 @@ namespace AutomatedClashRunner.ViewModels
                     });
 
                 LoadTests();
-                _dialogService.ShowInformation($"Clash Distillation complete! Created {groupsCreated} new groups across {targetTests.Count} tests.", "Distill Complete");
+                _dialogService.ShowInformation($"Clash Grouping complete! Created {groupsCreated} new groups across {targetTests.Count} tests.", "Grouping Complete");
             }
             catch (Exception ex)
             {
-                _logger.LogError("Error distilling clash tests", ex);
-                _dialogService.ShowError($"Failed to distill clashes: {ex.Message}");
+                _logger.LogError("Error grouping clash tests", ex);
+                _dialogService.ShowError($"Failed to group clashes: {ex.Message}");
             }
             finally
             {

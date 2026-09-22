@@ -23,10 +23,10 @@ namespace AutomatedClashRunner
              LargeIcon = "Images\\icon_matrix_32.png",
              ToolTip = "Launch Clash Matrix generator and Tools Test runner")]
     [Command("ID_CYPHER_CMD_DISTILL",
-             DisplayName = "Distill Clashes",
+             DisplayName = "Group Clashes",
              Icon = "Images\\icon_distill_16.png",
              LargeIcon = "Images\\icon_distill_32.png",
-             ToolTip = "Spatial element grouping & clash cluster distillation")]
+             ToolTip = "Spatial element grouping & clash clustering")]
     [Command("ID_CYPHER_CMD_VIEWPOINTS",
              DisplayName = "Create Viewpoints",
              Icon = "Images\\icon_viewpoints_16.png",
@@ -72,7 +72,7 @@ namespace AutomatedClashRunner
     // =========================================================================
     // 2. Tool Add-ins Tab Fallback Plugin
     // =========================================================================
-    [Plugin("CypherNavisAddin", "CYPH", DisplayName = "Cypher Tools", ToolTip = "Automated Model Clash Runner & Distiller")]
+    [Plugin("CypherNavisAddin", "CYPH", DisplayName = "Cypher Tools", ToolTip = "Automated Model Clash Runner")]
     [AddInPlugin(AddInLocation.AddIn)]
     public class App : AddInPlugin
     {

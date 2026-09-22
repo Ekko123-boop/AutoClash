@@ -124,9 +124,9 @@ namespace AutomatedClashRunner.ViewModels
             }
         }
 
-        public string[] AvailableDelimiters => new[] { "v", "x", "vs" };
+        public string[] AvailableDelimiters => new[] { "x", "v", "vs" };
 
-        private string _selectedDelimiter = "v";
+        private string _selectedDelimiter = "x";
         public string SelectedDelimiter
         {
             get => _selectedDelimiter;

@@ -25,7 +25,7 @@
                             Size="Large"
                             KeyTip="B2"
                             ShowText="True"
-                            Text="Distill Clashes"
+                            Text="Group Clashes"
                             Orientation="Vertical"
                 />
 

@@ -1,7 +1,7 @@
 <Window x:Class="AutomatedClashRunner.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Cypher Tools — Automated Model Clash Runner &amp; Distiller" 
+        Title="Cypher Tools" 
         Height="760" Width="1160" 
         MinHeight="600" MinWidth="950"
         WindowStartupLocation="CenterOwner"
@@ -396,8 +396,7 @@
                     <TextBlock Text="CYPH" FontWeight="Bold" FontSize="11" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="Cypher Tools — Clash Runner &amp; Distiller" FontWeight="Bold" FontSize="16" Foreground="#0F172A"/>
-                    <TextBlock Text="Autodesk Navisworks Automated Coordination Suite" FontSize="11" Foreground="#64748B"/>
+                    <TextBlock Text="Cypher Tools" FontWeight="Bold" FontSize="16" Foreground="#0F172A"/>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -783,9 +782,9 @@
 
 
             <!-- ========================================================================= -->
-            <!-- TAB 2: DISTILL (MATCHING REFERENCE IMAGE 2)                               -->
+            <!-- TAB 2: GROUP CLASHES (MATCHING REFERENCE IMAGE 2)                               -->
             <!-- ========================================================================= -->
-            <TabItem Header="Distill Clashes" Style="{StaticResource ModernTabItem}" DataContext="{Binding DistillerTab}">
+            <TabItem Header="Group Clashes" Style="{StaticResource ModernTabItem}" DataContext="{Binding DistillerTab}">
                 <Grid Margin="0,12,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -796,7 +795,7 @@
 
                     <!-- Title Header Banner -->
                     <DockPanel Grid.Row="0" Margin="0,0,0,10">
-                        <TextBlock Text="DISTILL" FontWeight="Bold" FontSize="24" Foreground="#0F172A" VerticalAlignment="Center"/>
+                        <TextBlock Text="GROUP" FontWeight="Bold" FontSize="24" Foreground="#0F172A" VerticalAlignment="Center"/>
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <Button Content="Select All" Command="{Binding SelectAllTestsCommand}" Style="{StaticResource MiniButton}" Margin="0,0,4,0"/>
@@ -876,7 +875,7 @@
                         </ListView>
                     </Border>
 
-                    <!-- Distillation Settings Card -->
+                    <!-- Grouping Settings Card -->
                     <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="14" Margin="0,0,0,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -885,7 +884,7 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                                <TextBlock Text="Distillation Settings" FontWeight="Bold" FontSize="13" Foreground="#0F172A" Margin="0,0,0,8"/>
+                                <TextBlock Text="Grouping Settings" FontWeight="Bold" FontSize="13" Foreground="#0F172A" Margin="0,0,0,8"/>
                                 
                                 <TextBlock Text="Proximity Clustering Range:" FontWeight="SemiBold" Foreground="#475569" FontSize="11" Margin="0,0,0,4"/>
                                 <DockPanel Margin="0,0,0,10" Width="285" HorizontalAlignment="Left">
@@ -933,14 +932,14 @@
                                 <StackPanel Orientation="Horizontal">
                                     <Path Data="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"
                                           Fill="#475569" Width="13" Height="13" Stretch="Uniform" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Distill Selected Test(s)" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Group Selected Test(s)" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                             <Button Command="{Binding DistillAllCommand}" Style="{StaticResource PrimaryGreenButton}">
                                 <StackPanel Orientation="Horizontal">
                                     <Path Data="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"
                                           Fill="White" Width="13" Height="13" Stretch="Uniform" Margin="0,0,7,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Distill All Tests" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Group All Tests" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
@@ -951,7 +950,7 @@
                         <Border Background="#FFFFFF" BorderBrush="#00875A" BorderThickness="2" CornerRadius="8" 
                                 HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28" Width="440">
                             <StackPanel>
-                                <TextBlock Text="Distilling Clashes..." FontWeight="Bold" FontSize="15" Foreground="#00875A" Margin="0,0,0,12" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Grouping Clashes..." FontWeight="Bold" FontSize="15" Foreground="#00875A" Margin="0,0,0,12" HorizontalAlignment="Center"/>
                                 <ProgressBar Value="{Binding ProgressBarValue}" Maximum="{Binding ProgressBarMax}" Height="18" Margin="0,0,0,10"/>
                                 <TextBlock Text="{Binding ProgressText}" Foreground="#475569" TextAlignment="Center" TextWrapping="Wrap"/>
                             </StackPanel>

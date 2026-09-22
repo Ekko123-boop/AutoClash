@@ -99,9 +99,9 @@ namespace AutomatedClashRunner.Services
                         () => launchCallback(0));
                     itemsList.Add(btnMatrix);
 
-                    // Button 2: Distill Clashes (Target Tab 1)
+                    // Button 2: Group Clashes (Target Tab 1)
                     object btnDistill = CreateRibbonButton(ribbonButtonType, ribbonItemSizeType,
-                        "Distill\nClashes", "ID_CYPHER_CMD_DISTILL", "Spatial element grouping & clash cluster distillation",
+                        "Group\nClashes", "ID_CYPHER_CMD_DISTILL", "Spatial element grouping & clash clustering",
                         Path.Combine(asmDir, "Images", "icon_distill_32.png"),
                         Path.Combine(asmDir, "Images", "icon_distill_16.png"),
                         () => launchCallback(1));
