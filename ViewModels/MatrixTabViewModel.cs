@@ -85,6 +85,57 @@ namespace AutomatedClashRunner.ViewModels
             }
         }
 
+        private bool _showNwcA = true;
+        public bool ShowNwcA
+        {
+            get => _showNwcA;
+            set
+            {
+                if (SetProperty(ref _showNwcA, value))
+                {
+                    if (!value)
+                    {
+                        foreach (var m in ModelsA.Where(x => !x.IsNwd))
+                            m.IsSelected = false;
+                    }
+                    OnPropertyChanged(nameof(FilterTypeTextA));
+                    ModelsViewA.Refresh();
+                    UpdateSelectionState();
+                }
+            }
+        }
+
+        private bool _showNwdA = true;
+        public bool ShowNwdA
+        {
+            get => _showNwdA;
+            set
+            {
+                if (SetProperty(ref _showNwdA, value))
+                {
+                    if (!value)
+                    {
+                        foreach (var m in ModelsA.Where(x => x.IsNwd))
+                            m.IsSelected = false;
+                    }
+                    OnPropertyChanged(nameof(FilterTypeTextA));
+                    ModelsViewA.Refresh();
+                    UpdateSelectionState();
+                }
+            }
+        }
+
+        public string FilterTypeTextA
+        {
+            get
+            {
+                if (ShowNwcA && ShowNwdA) return "Type: All ▾";
+                if (ShowNwcA) return "Type: NWC ▾";
+                if (ShowNwdA) return "Type: NWD ▾";
+                return "Type: None ▾";
+            }
+        }
+
         private string _searchTextSetsA = string.Empty;
         public string SearchTextSetsA
         {
@@ -108,6 +159,57 @@ namespace AutomatedClashRunner.ViewModels
                 {
                     ModelsViewB.Refresh();
                 }
+            }
+        }
+
+        private bool _showNwcB = true;
+        public bool ShowNwcB
+        {
+            get => _showNwcB;
+            set
+            {
+                if (SetProperty(ref _showNwcB, value))
+                {
+                    if (!value)
+                    {
+                        foreach (var m in ModelsB.Where(x => !x.IsNwd))
+                            m.IsSelected = false;
+                    }
+                    OnPropertyChanged(nameof(FilterTypeTextB));
+                    ModelsViewB.Refresh();
+                    UpdateSelectionState();
+                }
+            }
+        }
+
+        private bool _showNwdB = true;
+        public bool ShowNwdB
+        {
+            get => _showNwdB;
+            set
+            {
+                if (SetProperty(ref _showNwdB, value))
+                {
+                    if (!value)
+                    {
+                        foreach (var m in ModelsB.Where(x => x.IsNwd))
+                            m.IsSelected = false;
+                    }
+                    OnPropertyChanged(nameof(FilterTypeTextB));
+                    ModelsViewB.Refresh();
+                    UpdateSelectionState();
+                }
+            }
+        }
+
+        public string FilterTypeTextB
+        {
+            get
+            {
+                if (ShowNwcB && ShowNwdB) return "Type: All ▾";
+                if (ShowNwcB) return "Type: NWC ▾";
+                if (ShowNwdB) return "Type: NWD ▾";
+                return "Type: None ▾";
             }
         }
 
@@ -325,6 +427,10 @@ namespace AutomatedClashRunner.ViewModels
         private bool FilterModelItemA(object obj)
         {
             if (!(obj is ModelSourceNode node)) return false;
+
+            if (!ShowNwcA && !node.IsNwd) return false;
+            if (!ShowNwdA && node.IsNwd) return false;
+
             if (string.IsNullOrWhiteSpace(SearchTextModelsA)) return true;
 
             string q = SearchTextModelsA.Trim();
@@ -344,6 +450,10 @@ namespace AutomatedClashRunner.ViewModels
         private bool FilterModelItemB(object obj)
         {
             if (!(obj is ModelSourceNode node)) return false;
+
+            if (!ShowNwcB && !node.IsNwd) return false;
+            if (!ShowNwdB && node.IsNwd) return false;
+
             if (string.IsNullOrWhiteSpace(SearchTextModelsB)) return true;
 
             string q = SearchTextModelsB.Trim();
@@ -701,7 +811,7 @@ namespace AutomatedClashRunner.ViewModels
             string typeAName;
             if (ActiveTabIndexA == 0)
             {
-                itemsA = ModelsA.Where(x => x.IsSelected && x.IsSelectable).Cast<ISelectableItem>().ToList();
+                itemsA = ModelsA.Where(x => x.IsSelected && x.IsSelectable && ((ShowNwcA && !x.IsNwd) || (ShowNwdA && x.IsNwd))).Cast<ISelectableItem>().ToList();
                 typeAName = "Model(s)";
             }
             else
@@ -714,7 +824,7 @@ namespace AutomatedClashRunner.ViewModels
             string typeBName;
             if (ActiveTabIndexB == 0)
             {
-                itemsB = ModelsB.Where(x => x.IsSelected && x.IsSelectable).Cast<ISelectableItem>().ToList();
+                itemsB = ModelsB.Where(x => x.IsSelected && x.IsSelectable && ((ShowNwcB && !x.IsNwd) || (ShowNwdB && x.IsNwd))).Cast<ISelectableItem>().ToList();
                 typeBName = "Model(s)";
             }
             else

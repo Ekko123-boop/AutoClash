@@ -288,5 +288,54 @@ namespace AutomatedClashRunner.Tests
             string headerSelected = selectedModels > 0 ? $"Models ({selectedModels}/{totalModels})" : $"Models ({totalModels})";
             headerSelected.Should().Be("Models (5/47)");
         }
+
+        [Fact]
+        public void ModelTypeFilter_PredicateLogic_FiltersNwcAndNwdCorrectly()
+        {
+            var nwcItem = new ModelSourceNode { ModelType = "NWC", DisplayName = "Piping.nwc" };
+            var nwdItem = new ModelSourceNode { ModelType = "NWD", DisplayName = "Architecture.nwd" };
+
+            // Both enabled
+            bool showNwc = true;
+            bool showNwd = true;
+            Func<ModelSourceNode, bool> filter = n => (!showNwc && !n.IsNwd) ? false : ((!showNwd && n.IsNwd) ? false : true);
+            filter(nwcItem).Should().BeTrue();
+            filter(nwdItem).Should().BeTrue();
+
+            // NWC only enabled
+            showNwc = true;
+            showNwd = false;
+            filter(nwcItem).Should().BeTrue();
+            filter(nwdItem).Should().BeFalse();
+
+            // NWD only enabled
+            showNwc = false;
+            showNwd = true;
+            filter(nwcItem).Should().BeFalse();
+            filter(nwdItem).Should().BeTrue();
+
+            // Neither enabled
+            showNwc = false;
+            showNwd = false;
+            filter(nwcItem).Should().BeFalse();
+            filter(nwdItem).Should().BeFalse();
+        }
+
+        [Fact]
+        public void FilterTypeButtonText_Formatting_ReflectsStateAccurately()
+        {
+            Func<bool, bool, string> getLabel = (nwc, nwd) =>
+            {
+                if (nwc && nwd) return "Type: All ▾";
+                if (nwc) return "Type: NWC ▾";
+                if (nwd) return "Type: NWD ▾";
+                return "Type: None ▾";
+            };
+
+            getLabel(true, true).Should().Be("Type: All ▾");
+            getLabel(true, false).Should().Be("Type: NWC ▾");
+            getLabel(false, true).Should().Be("Type: NWD ▾");
+            getLabel(false, false).Should().Be("Type: None ▾");
+        }
     }
 }

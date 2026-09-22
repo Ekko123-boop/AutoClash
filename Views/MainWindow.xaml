@@ -231,6 +231,42 @@
             <Setter Property="Margin" Value="2,0"/>
         </Style>
 
+        <!-- Mini Dropdown Toggle Button for Filters -->
+        <Style x:Key="MiniToggleButton" TargetType="ToggleButton">
+            <Setter Property="Padding" Value="7,3"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="#334155"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F1F5F9"/>
+                </Trigger>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="Background" Value="#F0F9FF"/>
+                    <Setter Property="BorderBrush" Value="#0284C7"/>
+                    <Setter Property="Foreground" Value="#0284C7"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- Status Filter Toggle Button -->
         <Style x:Key="StatusToggleButton" TargetType="ToggleButton">
             <Setter Property="Padding" Value="14,6"/>
@@ -461,6 +497,27 @@
                                                 <Button Content="All" Command="{Binding SelectAllACommand}" Style="{StaticResource MiniButton}"/>
                                                 <Button Content="None" Command="{Binding DeselectAllACommand}" Style="{StaticResource MiniButton}"/>
                                                 <Border Width="1" Background="#CBD5E1" Margin="5,3"/>
+                                                <ToggleButton x:Name="BtnFilterTypeA" 
+                                                              Style="{StaticResource MiniToggleButton}" 
+                                                              Content="{Binding FilterTypeTextA}" 
+                                                              ToolTip="Filter models by file type (NWC / NWD)"/>
+                                                <Popup PlacementTarget="{Binding ElementName=BtnFilterTypeA}" 
+                                                       Placement="Bottom" 
+                                                       IsOpen="{Binding IsChecked, ElementName=BtnFilterTypeA, Mode=TwoWay}" 
+                                                       StaysOpen="False" 
+                                                       AllowsTransparency="True">
+                                                    <Border Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,4,0,0">
+                                                        <Border.Effect>
+                                                            <DropShadowEffect BlurRadius="8" Direction="270" Opacity="0.15" ShadowDepth="2"/>
+                                                        </Border.Effect>
+                                                        <StackPanel Width="110">
+                                                            <TextBlock Text="Filter File Types" FontWeight="Bold" FontSize="11" Foreground="#0F172A" Margin="0,0,0,6"/>
+                                                            <CheckBox Content="NWC Files" IsChecked="{Binding ShowNwcA, Mode=TwoWay}" Margin="0,2,0,4" Foreground="#334155" FontSize="11"/>
+                                                            <CheckBox Content="NWD Files" IsChecked="{Binding ShowNwdA, Mode=TwoWay}" Margin="0,2,0,2" Foreground="#334155" FontSize="11"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </Popup>
+                                                <Border Width="1" Background="#CBD5E1" Margin="5,3"/>
                                                 <Button Content="{Binding SortNameTextA}" Command="{Binding ToggleSortNameACommand}" Style="{StaticResource MiniButton}" ToolTip="Sort models by Name (A-Z / Z-A)"/>
                                                 <Button Content="{Binding SortTypeTextA}" Command="{Binding ToggleSortTypeACommand}" Style="{StaticResource MiniButton}" ToolTip="Sort models by Type (NWC / NWD)"/>
                                             </StackPanel>
@@ -531,7 +588,7 @@
                                                 <Button Content="{Binding SortSetsTextA}" Command="{Binding ToggleSortSetsACommand}" Style="{StaticResource MiniButton}" ToolTip="Sort sets by Path (A-Z / Z-A)"/>
                                             </StackPanel>
                                             <TextBox Style="{StaticResource ModernSearchBox}" 
-                                                     Tag="Filter search sets by path..." 
+                                                     Tag="Filter search sets..." 
                                                      Text="{Binding SearchTextSetsA, UpdateSourceTrigger=PropertyChanged}"/>
                                         </DockPanel>
 
@@ -597,6 +654,27 @@
                                             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="4,0,0,0">
                                                 <Button Content="All" Command="{Binding SelectAllBCommand}" Style="{StaticResource MiniButton}"/>
                                                 <Button Content="None" Command="{Binding DeselectAllBCommand}" Style="{StaticResource MiniButton}"/>
+                                                <Border Width="1" Background="#CBD5E1" Margin="5,3"/>
+                                                <ToggleButton x:Name="BtnFilterTypeB" 
+                                                              Style="{StaticResource MiniToggleButton}" 
+                                                              Content="{Binding FilterTypeTextB}" 
+                                                              ToolTip="Filter models by file type (NWC / NWD)"/>
+                                                <Popup PlacementTarget="{Binding ElementName=BtnFilterTypeB}" 
+                                                       Placement="Bottom" 
+                                                       IsOpen="{Binding IsChecked, ElementName=BtnFilterTypeB, Mode=TwoWay}" 
+                                                       StaysOpen="False" 
+                                                       AllowsTransparency="True">
+                                                    <Border Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="4" Padding="12,10" Margin="0,4,0,0">
+                                                        <Border.Effect>
+                                                            <DropShadowEffect BlurRadius="8" Direction="270" Opacity="0.15" ShadowDepth="2"/>
+                                                        </Border.Effect>
+                                                        <StackPanel Width="110">
+                                                            <TextBlock Text="Filter File Types" FontWeight="Bold" FontSize="11" Foreground="#0F172A" Margin="0,0,0,6"/>
+                                                            <CheckBox Content="NWC Files" IsChecked="{Binding ShowNwcB, Mode=TwoWay}" Margin="0,2,0,4" Foreground="#334155" FontSize="11"/>
+                                                            <CheckBox Content="NWD Files" IsChecked="{Binding ShowNwdB, Mode=TwoWay}" Margin="0,2,0,2" Foreground="#334155" FontSize="11"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </Popup>
                                                 <Border Width="1" Background="#CBD5E1" Margin="5,3"/>
                                                 <Button Content="{Binding SortNameTextB}" Command="{Binding ToggleSortNameBCommand}" Style="{StaticResource MiniButton}" ToolTip="Sort models by Name (A-Z / Z-A)"/>
                                                 <Button Content="{Binding SortTypeTextB}" Command="{Binding ToggleSortTypeBCommand}" Style="{StaticResource MiniButton}" ToolTip="Sort models by Type (NWC / NWD)"/>
@@ -668,7 +746,7 @@
                                                 <Button Content="{Binding SortSetsTextB}" Command="{Binding ToggleSortSetsBCommand}" Style="{StaticResource MiniButton}" ToolTip="Sort sets by Path (A-Z / Z-A)"/>
                                             </StackPanel>
                                             <TextBox Style="{StaticResource ModernSearchBox}" 
-                                                     Tag="Filter search sets by path..." 
+                                                     Tag="Filter search sets..." 
                                                      Text="{Binding SearchTextSetsB, UpdateSourceTrigger=PropertyChanged}"/>
                                         </DockPanel>
 
