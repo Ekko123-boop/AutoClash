@@ -332,8 +332,8 @@ namespace AutomatedClashRunner.ViewModels
         private ListSortDirection? _sortModelTypeA;
         private ListSortDirection? _sortModelNameB;
         private ListSortDirection? _sortModelTypeB;
-        private ListSortDirection? _sortSetsPathA;
-        private ListSortDirection? _sortSetsPathB;
+        private ListSortDirection? _sortSetsNameA;
+        private ListSortDirection? _sortSetsNameB;
 
         public string SortNameTextA => _sortModelNameA == ListSortDirection.Ascending ? "Name ▲" : (_sortModelNameA == ListSortDirection.Descending ? "Name ▼" : "Name ⇅");
         public string SortTypeTextA => _sortModelTypeA == ListSortDirection.Ascending ? "Type ▲" : (_sortModelTypeA == ListSortDirection.Descending ? "Type ▼" : "Type ⇅");
@@ -341,8 +341,8 @@ namespace AutomatedClashRunner.ViewModels
         public string SortNameTextB => _sortModelNameB == ListSortDirection.Ascending ? "Name ▲" : (_sortModelNameB == ListSortDirection.Descending ? "Name ▼" : "Name ⇅");
         public string SortTypeTextB => _sortModelTypeB == ListSortDirection.Ascending ? "Type ▲" : (_sortModelTypeB == ListSortDirection.Descending ? "Type ▼" : "Type ⇅");
 
-        public string SortSetsTextA => _sortSetsPathA == ListSortDirection.Ascending ? "Path ▲" : (_sortSetsPathA == ListSortDirection.Descending ? "Path ▼" : "Path ⇅");
-        public string SortSetsTextB => _sortSetsPathB == ListSortDirection.Ascending ? "Path ▲" : (_sortSetsPathB == ListSortDirection.Descending ? "Path ▼" : "Path ⇅");
+        public string SortSetsTextA => _sortSetsNameA == ListSortDirection.Ascending ? "Name ▲" : (_sortSetsNameA == ListSortDirection.Descending ? "Name ▼" : "Name ⇅");
+        public string SortSetsTextB => _sortSetsNameB == ListSortDirection.Ascending ? "Name ▲" : (_sortSetsNameB == ListSortDirection.Descending ? "Name ▼" : "Name ⇅");
 
         public int ExpectedTestCount => SelectedCountA * SelectedCountB;
 
@@ -656,10 +656,10 @@ namespace AutomatedClashRunner.ViewModels
 
         private void ToggleSortSetsA()
         {
-            if (_sortSetsPathA == null || _sortSetsPathA == ListSortDirection.Descending)
-                _sortSetsPathA = ListSortDirection.Ascending;
+            if (_sortSetsNameA == null || _sortSetsNameA == ListSortDirection.Descending)
+                _sortSetsNameA = ListSortDirection.Ascending;
             else
-                _sortSetsPathA = ListSortDirection.Descending;
+                _sortSetsNameA = ListSortDirection.Descending;
             ApplySetsSortA();
         }
 
@@ -668,9 +668,9 @@ namespace AutomatedClashRunner.ViewModels
             using (SetsViewA.DeferRefresh())
             {
                 SetsViewA.SortDescriptions.Clear();
-                if (_sortSetsPathA.HasValue)
+                if (_sortSetsNameA.HasValue)
                 {
-                    SetsViewA.SortDescriptions.Add(new SortDescription(nameof(SearchSetNode.FullPath), _sortSetsPathA.Value));
+                    SetsViewA.SortDescriptions.Add(new SortDescription(nameof(SearchSetNode.DisplayName), _sortSetsNameA.Value));
                 }
             }
             OnPropertyChanged(nameof(SortSetsTextA));
@@ -678,10 +678,10 @@ namespace AutomatedClashRunner.ViewModels
 
         private void ToggleSortSetsB()
         {
-            if (_sortSetsPathB == null || _sortSetsPathB == ListSortDirection.Descending)
-                _sortSetsPathB = ListSortDirection.Ascending;
+            if (_sortSetsNameB == null || _sortSetsNameB == ListSortDirection.Descending)
+                _sortSetsNameB = ListSortDirection.Ascending;
             else
-                _sortSetsPathB = ListSortDirection.Descending;
+                _sortSetsNameB = ListSortDirection.Descending;
             ApplySetsSortB();
         }
 
@@ -690,9 +690,9 @@ namespace AutomatedClashRunner.ViewModels
             using (SetsViewB.DeferRefresh())
             {
                 SetsViewB.SortDescriptions.Clear();
-                if (_sortSetsPathB.HasValue)
+                if (_sortSetsNameB.HasValue)
                 {
-                    SetsViewB.SortDescriptions.Add(new SortDescription(nameof(SearchSetNode.FullPath), _sortSetsPathB.Value));
+                    SetsViewB.SortDescriptions.Add(new SortDescription(nameof(SearchSetNode.DisplayName), _sortSetsNameB.Value));
                 }
             }
             OnPropertyChanged(nameof(SortSetsTextB));

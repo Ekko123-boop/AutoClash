@@ -585,7 +585,7 @@
                                                 <Button Content="All" Command="{Binding SelectAllACommand}" Style="{StaticResource MiniButton}"/>
                                                 <Button Content="None" Command="{Binding DeselectAllACommand}" Style="{StaticResource MiniButton}"/>
                                                 <Border Width="1" Background="#CBD5E1" Margin="5,3"/>
-                                                <Button Content="{Binding SortSetsTextA}" Command="{Binding ToggleSortSetsACommand}" Style="{StaticResource MiniButton}" ToolTip="Sort sets by Path (A-Z / Z-A)"/>
+                                                <Button Content="{Binding SortSetsTextA}" Command="{Binding ToggleSortSetsACommand}" Style="{StaticResource MiniButton}" ToolTip="Sort sets by Name (A-Z / Z-A)"/>
                                             </StackPanel>
                                             <TextBox Style="{StaticResource ModernSearchBox}" 
                                                      Tag="Filter search sets..." 
@@ -743,7 +743,7 @@
                                                 <Button Content="All" Command="{Binding SelectAllBCommand}" Style="{StaticResource MiniButton}"/>
                                                 <Button Content="None" Command="{Binding DeselectAllBCommand}" Style="{StaticResource MiniButton}"/>
                                                 <Border Width="1" Background="#CBD5E1" Margin="5,3"/>
-                                                <Button Content="{Binding SortSetsTextB}" Command="{Binding ToggleSortSetsBCommand}" Style="{StaticResource MiniButton}" ToolTip="Sort sets by Path (A-Z / Z-A)"/>
+                                                <Button Content="{Binding SortSetsTextB}" Command="{Binding ToggleSortSetsBCommand}" Style="{StaticResource MiniButton}" ToolTip="Sort sets by Name (A-Z / Z-A)"/>
                                             </StackPanel>
                                             <TextBox Style="{StaticResource ModernSearchBox}" 
                                                      Tag="Filter search sets..." 
