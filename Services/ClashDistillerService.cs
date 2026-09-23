@@ -384,8 +384,21 @@ namespace AutomatedClashRunner.Services
                         {
                             string vpName = _naming.FormatViewpointName(test.DisplayName, group.DisplayName, gIdx);
                             var svp = new SavedViewpoint(vp) { DisplayName = vpName };
-                            NativeClashRedlineHelper.CopyRedlinesAndComments(group, svp, _logger);
                             savedViewpoints.AddCopy(actualFolder, svp);
+
+                            // Redline Hack: Apply redlines AFTER adding to document to ensure serialization
+                            var addedItem = ((GroupItem)actualFolder).Children.LastOrDefault() as SavedViewpoint;
+                            if (addedItem != null)
+                            {
+                                var editCopy = addedItem.CreateCopy() as SavedViewpoint;
+                                NativeClashRedlineHelper.CopyRedlinesAndComments(group, editCopy, _logger);
+                                int index = ((GroupItem)actualFolder).Children.IndexOf(addedItem);
+                                if (index >= 0)
+                                {
+                                    savedViewpoints.ReplaceWithCopy((GroupItem)actualFolder, index, editCopy);
+                                }
+                            }
+
                             viewpointsCreated++;
                             testCreated++;
 
@@ -410,8 +423,21 @@ namespace AutomatedClashRunner.Services
                         {
                             string vpName = _naming.FormatViewpointName(test.DisplayName, raw.DisplayName, rIdx);
                             var svp = new SavedViewpoint(vp) { DisplayName = vpName };
-                            NativeClashRedlineHelper.CopyRedlinesAndComments(raw, svp, _logger);
                             savedViewpoints.AddCopy(actualFolder, svp);
+                            
+                            // Redline Hack: Apply redlines AFTER adding to document to ensure serialization
+                            var addedItem = ((GroupItem)actualFolder).Children.LastOrDefault() as SavedViewpoint;
+                            if (addedItem != null && raw.HasRedlines)
+                            {
+                                var editCopy = addedItem.CreateCopy() as SavedViewpoint;
+                                NativeClashRedlineHelper.CopyRedlinesAndComments(raw, editCopy, _logger);
+                                int index = ((GroupItem)actualFolder).Children.IndexOf(addedItem);
+                                if (index >= 0)
+                                {
+                                    savedViewpoints.ReplaceWithCopy((GroupItem)actualFolder, index, editCopy);
+                                }
+                            }
+                            
                             viewpointsCreated++;
                             testCreated++;
 
