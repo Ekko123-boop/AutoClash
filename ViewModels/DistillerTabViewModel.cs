@@ -240,7 +240,7 @@ namespace AutomatedClashRunner.ViewModels
             try
             {
                 var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
-                int groupsCreated = _distiller.GroupByElement(
+                int groupsCreated = _distiller.GroupByDistance(
                     doc,
                     targetTests,
                     GroupingProximity,

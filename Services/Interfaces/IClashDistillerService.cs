@@ -7,7 +7,7 @@ namespace AutomatedClashRunner.Services.Interfaces
     public interface IClashDistillerService
     {
         void ReRunTests(Document doc, IEnumerable<ClashTest> tests);
-        int GroupByElement(Document doc, IEnumerable<ClashTest> tests, double maxProximityFt, System.Action<string, int, int> progressCallback = null);
+        int GroupByDistance(Document doc, IEnumerable<ClashTest> tests, double maxProximityFt, System.Action<string, int, int> progressCallback = null);
         int ExportReviewedViewpoints(Document doc, IEnumerable<ClashTest> tests);
         int ExportViewpoints(
             Document doc,

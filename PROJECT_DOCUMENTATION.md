@@ -79,8 +79,7 @@ Cypher Tools (`CypherNavisTools.dll`) is a modular, high-reliability Autodesk Na
 
 ### 2.5 ClashDistillerService
 - **ReRunTests**: Runs tests against updated model geometry.
-- **GroupByElement**:
-  - **Ancestor Element Memoization**: Caches resolved top-level named elements in Selection A across clashes, reducing COM property reflection by >95%.
+- **GroupByDistance**:
   - **$O(N)$ Spatial Voxel Hash Grid**: Uses 3D spatial voxel binning with squared euclidean distance comparisons ($dx^2 + dy^2 + dz^2 \le \text{dist}^2$) rather than brute-force $O(N^2)$ pairwise loops, reducing clustering time on large tests by orders of magnitude. Converts feet to Navisworks internal meters via `maxProximityFt * 0.3048`.
   - **Zero-`IndexOf` Single-Pass Reverse Move**: Pre-creates group containers and moves clash results in a single descending loop from `test.Children.Count - 1` down to `0`, eliminating millions of $O(N)$ `test.Children.IndexOf` scans.
   - **STA Dispatcher Pumping (`DoEvents`)**: Periodically pumps the Windows message loop every 25 moves, preventing the Windows "Not Responding" state and eliminating the blue spinning wait cursor.

@@ -175,7 +175,7 @@ namespace AutomatedClashRunner.Services
             return clusters;
         }
 
-        public int GroupByElement(Document doc, IEnumerable<ClashTest> tests, double maxProximityFt, Action<string, int, int> progressCallback = null)
+        public int GroupByDistance(Document doc, IEnumerable<ClashTest> tests, double maxProximityFt, Action<string, int, int> progressCallback = null)
         {
             int groupsCreated = 0;
             if (doc == null || tests == null) return groupsCreated;
@@ -207,62 +207,8 @@ namespace AutomatedClashRunner.Services
                     var rawResults = test.Children.OfType<ClashResult>().ToList();
                     if (rawResults.Count == 0) continue;
 
-                    // Group by top-level named ancestor in Selection A with memoization cache
-                    var ancestorCache = new Dictionary<ModelItem, ModelItem>();
-                    ModelItem GetMasterElement(ModelItem item)
-                    {
-                        if (item == null) return null;
-                        if (ancestorCache.TryGetValue(item, out var cached)) return cached;
-
-                        ModelItem master = null;
-                        foreach (var node in item.AncestorsAndSelf)
-                        {
-                            if (ancestorCache.TryGetValue(node, out var ancCached))
-                            {
-                                master = ancCached;
-                                break;
-                            }
-
-                            try
-                            {
-                                if (node.PropertyCategories.FindPropertyByDisplayName("Item", "Name") != null)
-                                {
-                                    master = node;
-                                    break;
-                                }
-                            }
-                            catch { }
-                        }
-
-                        master = master ?? item;
-                        ancestorCache[item] = master;
-                        return master;
-                    }
-
-                    var elementGroups = new Dictionary<ModelItem, List<ClashResult>>();
-                    foreach (var res in rawResults)
-                    {
-                        if (res.Item1 == null) continue;
-
-                        var masterElement = GetMasterElement(res.Item1);
-                        if (!elementGroups.TryGetValue(masterElement, out var list))
-                        {
-                            list = new List<ClashResult>();
-                            elementGroups[masterElement] = list;
-                        }
-                        list.Add(res);
-                    }
-
-                    // Compute all spatial clusters across all element groups
-                    var allClusters = new List<List<ClashResult>>();
-                    foreach (var kvp in elementGroups)
-                    {
-                        var items = kvp.Value;
-                        if (items.Count == 0) continue;
-
-                        var clusters = ClusterResults(items, maxDistMeters);
-                        allClusters.AddRange(clusters);
-                    }
+                    // Compute all spatial clusters across all raw results based only on distance
+                    var allClusters = ClusterResults(rawResults, maxDistMeters);
 
                     if (allClusters.Count == 0) continue;
 
