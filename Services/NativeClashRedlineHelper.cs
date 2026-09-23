@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -340,17 +340,14 @@ namespace AutomatedClashRunner.Services
             if (destPtr == IntPtr.Zero || srcPtr == IntPtr.Zero) return;
             try
             {
-                if (merge && _mergeRedlines != null)
+                // ALWAYS prefer Merge over operator= to avoid memory corruption on new objects
+                if (_mergeRedlines != null)
                 {
                     _mergeRedlines(destPtr, srcPtr);
                 }
                 else if (_assignRedlines != null)
                 {
                     _assignRedlines(destPtr, srcPtr);
-                }
-                else if (_mergeRedlines != null)
-                {
-                    _mergeRedlines(destPtr, srcPtr);
                 }
             }
             catch

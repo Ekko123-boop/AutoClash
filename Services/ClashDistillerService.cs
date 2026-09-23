@@ -442,18 +442,7 @@ namespace AutomatedClashRunner.Services
         {
             if (clashData == null || result == null) return null;
 
-            // 0. If group itself has no saved viewpoint, check if any child has a saved viewpoint or redlines
-            if (result is ClashResultGroup clashGroup && !clashGroup.HasSavedViewpoint && clashGroup.Children != null)
-            {
-                var childWithVp = clashGroup.Children.OfType<ClashResult>().FirstOrDefault(c => c.HasSavedViewpoint || c.HasRedlines);
-                if (childWithVp != null)
-                {
-                    var childVp = GetTestsViewpointForResult(clashData, childWithVp);
-                    if (childVp != null) return childVp;
-                }
-            }
-
-            // 1. Primary: In Navisworks 2024+, TestsViewpointForResult exists on DocumentClashTests and takes IClashResult
+            // 1. Primary: Try native method for the exact result
             try
             {
                 var method = typeof(DocumentClashTests).GetMethod("TestsViewpointForResult", 
@@ -465,12 +454,37 @@ namespace AutomatedClashRunner.Services
                     if (vp != null) return vp;
                 }
             }
-            catch
+            catch { }
+
+            // 2. If it's a group, try getting the viewpoint of its RepresentativeResult
+            if (result is ClashResultGroup clashGroup && clashGroup.RepresentativeResult != null)
             {
-                // Fall through to geometric camera positioning
+                try
+                {
+                    var method = typeof(DocumentClashTests).GetMethod("TestsViewpointForResult", 
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                    
+                    if (method != null)
+                    {
+                        var vp = method.Invoke(clashData, new object[] { clashGroup.RepresentativeResult }) as Viewpoint;
+                        if (vp != null) return vp;
+                    }
+                }
+                catch { }
             }
 
-            // 2. Focused geometric camera fallback (Navisworks 2023 or when native VP is null):
+            // 3. Fallback: Check if any child has a saved viewpoint or redlines
+            if (result is ClashResultGroup fallbackGrp && fallbackGrp.Children != null)
+            {
+                var childWithVp = fallbackGrp.Children.OfType<ClashResult>().FirstOrDefault(c => c.HasSavedViewpoint || c.HasRedlines);
+                if (childWithVp != null)
+                {
+                    var childVp = GetTestsViewpointForResult(clashData, childWithVp);
+                    if (childVp != null) return childVp;
+                }
+            }
+
+            // 4. Focused geometric camera fallback (Navisworks 2023 or when native VP is null):
             // Extract exact 3D coordinates and bounding box from the clash or group
             try
             {
