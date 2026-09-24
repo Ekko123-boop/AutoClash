@@ -384,20 +384,19 @@ namespace AutomatedClashRunner.Services
                         {
                             string vpName = _naming.FormatViewpointName(test.DisplayName, group.DisplayName, gIdx);
                             var svp = new SavedViewpoint(vp) { DisplayName = vpName };
-                            savedViewpoints.AddCopy(actualFolder, svp);
+                            NativeClashRedlineHelper.AttachRedlinesToSavedViewpoint(group, svp, _logger);
 
-                            // Redline Hack: Apply redlines AFTER adding to document to ensure serialization
-                            var addedItem = ((GroupItem)actualFolder).Children.LastOrDefault() as SavedViewpoint;
-                            if (addedItem != null)
-                            {
-                                var editCopy = addedItem.CreateCopy() as SavedViewpoint;
-                                NativeClashRedlineHelper.CopyRedlinesAndComments(group, editCopy, _logger);
-                                int index = ((GroupItem)actualFolder).Children.IndexOf(addedItem);
-                                if (index >= 0)
-                                {
-                                    savedViewpoints.ReplaceWithCopy((GroupItem)actualFolder, index, editCopy);
-                                }
-                            }
+                            GroupItem targetFolder = (GroupItem)actualFolder ?? (targetRootFolder ?? savedViewpoints.RootItem);
+                            savedViewpoints.AddCopy(targetFolder, svp);
+
+                            // Native Redline Injection: LcOpSavedViewsElement::ReplaceViewRedlines attaches redlines to viewpoint in document
+                            int vpIdx = targetFolder.Children.Count - 1;
+                            NativeClashRedlineHelper.ApplyRedlinesToViewpoint(
+                                Autodesk.Navisworks.Api.Application.ActiveDocument,
+                                targetFolder,
+                                vpIdx,
+                                group,
+                                _logger);
 
                             viewpointsCreated++;
                             testCreated++;
@@ -423,20 +422,19 @@ namespace AutomatedClashRunner.Services
                         {
                             string vpName = _naming.FormatViewpointName(test.DisplayName, raw.DisplayName, rIdx);
                             var svp = new SavedViewpoint(vp) { DisplayName = vpName };
-                            savedViewpoints.AddCopy(actualFolder, svp);
+                            NativeClashRedlineHelper.AttachRedlinesToSavedViewpoint(raw, svp, _logger);
+
+                            GroupItem targetFolder = (GroupItem)actualFolder ?? (targetRootFolder ?? savedViewpoints.RootItem);
+                            savedViewpoints.AddCopy(targetFolder, svp);
                             
-                            // Redline Hack: Apply redlines AFTER adding to document to ensure serialization
-                            var addedItem = ((GroupItem)actualFolder).Children.LastOrDefault() as SavedViewpoint;
-                            if (addedItem != null && raw.HasRedlines)
-                            {
-                                var editCopy = addedItem.CreateCopy() as SavedViewpoint;
-                                NativeClashRedlineHelper.CopyRedlinesAndComments(raw, editCopy, _logger);
-                                int index = ((GroupItem)actualFolder).Children.IndexOf(addedItem);
-                                if (index >= 0)
-                                {
-                                    savedViewpoints.ReplaceWithCopy((GroupItem)actualFolder, index, editCopy);
-                                }
-                            }
+                            // Native Redline Injection: LcOpSavedViewsElement::ReplaceViewRedlines attaches redlines to viewpoint in document
+                            int vpIdx = targetFolder.Children.Count - 1;
+                            NativeClashRedlineHelper.ApplyRedlinesToViewpoint(
+                                Autodesk.Navisworks.Api.Application.ActiveDocument,
+                                targetFolder,
+                                vpIdx,
+                                raw,
+                                _logger);
                             
                             viewpointsCreated++;
                             testCreated++;
