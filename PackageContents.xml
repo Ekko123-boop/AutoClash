@@ -42,12 +42,12 @@
     <!-- Navisworks 2025 -->
     <Components Description="Navisworks 2025">
         <RuntimeRequirements OS="Win64" Platform="NAVMAN|NAVSIM" SeriesMin="Nw22" SeriesMax="Nw22" />
-        <ComponentEntry AppName="Cypher Tools" ModuleName="./Contents/2024/CypherNavisTools.dll" AppType="ManagedPlugin" />
+        <ComponentEntry AppName="Cypher Tools" ModuleName="./Contents/2025/CypherNavisTools.dll" AppType="ManagedPlugin" />
     </Components>
 
     <!-- Navisworks 2026 -->
     <Components Description="Navisworks 2026">
-        <RuntimeRequirements OS="Win64" Platform="NAVMAN|NAVSIM" SeriesMin="Nw23" SeriesMax="Nw23" />
-        <ComponentEntry AppName="Cypher Tools" ModuleName="./Contents/2024/CypherNavisTools.dll" AppType="ManagedPlugin" />
+        <RuntimeRequirements OS="Win64" Platform="NAVMAN|NAVSIM" SeriesMin="Nw23" SeriesMax="Nw24" />
+        <ComponentEntry AppName="Cypher Tools" ModuleName="./Contents/2026/CypherNavisTools.dll" AppType="ManagedPlugin" />
     </Components>
 </ApplicationPackage>

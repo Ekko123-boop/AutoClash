@@ -18,6 +18,8 @@ echo.
 set "ROOT=%~dp0"
 set "BIN2023=%ROOT%bin\Release\2023"
 set "BIN2024=%ROOT%bin\Release\2024"
+set "BIN2025=%ROOT%bin\Release\2025"
+set "BIN2026=%ROOT%bin\Release\2026"
 set "COUNT=0"
 
 :: 0. Clean legacy User AppData plugins to prevent duplicate loading
@@ -59,6 +61,10 @@ mkdir "%USER_BUNDLE%\Contents\2023\en-US" 2>nul
 mkdir "%USER_BUNDLE%\Contents\2023\Images" 2>nul
 mkdir "%USER_BUNDLE%\Contents\2024\en-US" 2>nul
 mkdir "%USER_BUNDLE%\Contents\2024\Images" 2>nul
+mkdir "%USER_BUNDLE%\Contents\2025\en-US" 2>nul
+mkdir "%USER_BUNDLE%\Contents\2025\Images" 2>nul
+mkdir "%USER_BUNDLE%\Contents\2026\en-US" 2>nul
+mkdir "%USER_BUNDLE%\Contents\2026\Images" 2>nul
 mkdir "%USER_BUNDLE%\en-US" 2>nul
 mkdir "%USER_BUNDLE%\Images" 2>nul
 
@@ -76,13 +82,25 @@ if exist "%BIN2024%\CypherNavisTools.dll" (
     copy /Y "%ROOT%en-US\*.xaml" "%USER_BUNDLE%\Contents\2024\en-US\" >nul
     copy /Y "%ROOT%Images\*.png" "%USER_BUNDLE%\Contents\2024\Images\" >nul
 )
+if exist "%BIN2025%\CypherNavisTools.dll" (
+    copy /Y "%BIN2025%\CypherNavisTools.dll" "%USER_BUNDLE%\Contents\2025\" >nul
+    copy /Y "%ROOT%en-US\*.xaml" "%USER_BUNDLE%\Contents\2025\en-US\" >nul
+    copy /Y "%ROOT%Images\*.png" "%USER_BUNDLE%\Contents\2025\Images\" >nul
+)
+if exist "%BIN2026%\CypherNavisTools.dll" (
+    copy /Y "%BIN2026%\CypherNavisTools.dll" "%USER_BUNDLE%\Contents\2026\" >nul
+    copy /Y "%ROOT%en-US\*.xaml" "%USER_BUNDLE%\Contents\2026\en-US\" >nul
+    copy /Y "%ROOT%Images\*.png" "%USER_BUNDLE%\Contents\2026\Images\" >nul
+)
 echo      - User AppData Bundle deployed successfully.
 
 echo.
 echo ====================================================================
 echo   SUCCESS! Cypher Tools deployed cleanly to ApplicationPlugins.
 echo   - 2023 Engine: Navisworks 2020, 2021, 2022, 2023
-echo   - 2024 Engine: Navisworks 2024, 2025, 2026
+echo   - 2024 Engine: Navisworks 2024
+echo   - 2025 Engine: Navisworks 2025
+echo   - 2026 Engine: Navisworks 2026
 echo   - Location: %USER_BUNDLE%
 echo.
 echo   You can now launch Navisworks Manage!

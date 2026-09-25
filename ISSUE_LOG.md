@@ -63,6 +63,7 @@ This document records the full engineering history, bugs encountered, root cause
 | **ISS-054** | Deployment / Ribbon UI | `build_all.ps1`, `Install_CypherTools.bat`, `PackageContents.xml` | Cypher ribbon tab vanished after build or install | Dual deployment to both `C:\ProgramData\Autodesk\ApplicationPlugins` and `%APPDATA%\Autodesk\ApplicationPlugins` (or presence of backup folders containing `PackageContents.xml` in ProgramData) caused duplicate assembly registration collision during Navisworks startup, causing MFC ribbon dispatcher to drop the tab. | Enforced strict Single-Target deployment to `%APPDATA%\Autodesk\ApplicationPlugins\CypherNavisTools.bundle`. Updated `build_all.ps1`, `Install_CypherTools.bat`, and `Uninstall_CypherTools.bat` to proactively purge all ProgramData bundles and backup folders. Added unique `ProductCode` to manifest. |
 | **ISS-055** | Clash Detective / Viewpoints | `ClashDistillerService.cs`, `NativeClashRedlineHelper.cs` | Redlines still missing on exported Saved Viewpoints | `savedViewpoints.AddCopy(targetFolder, svp)` performs a shallow clone copying only managed camera/comments and discarding unmanaged `LcOpRedlineList` attached to detached `svp`. Subsequent calls to `ReplaceViewRedlines` failed because `doc.State.Handle` is an `LcOwDocument*`, not `LcOpState*`. | Mutate the committed document-bound `SavedViewpoint` directly: immediately after `savedViewpoints.AddCopy()`, retrieve `boundSvp` from `targetFolder.Children` and invoke `NativeClashRedlineHelper.AttachRedlinesToSavedViewpoint(source, boundSvp, _logger)` which writes native redlines via `operator=` and `Merge` directly into the document-bound viewpoint. |
 | **ISS-056** | UI Refinement & Rebranding | `MainWindow.xaml`, `CypherRibbon.xaml`, `App.cs`, `DynamicRibbonService.cs`, `MatrixTabViewModel.cs` | Redundant UI copy, confusing "Generate Matrix" terminology, cluttering Naming Formula label, and redundant explanatory text in Group Clashes tab | 1) Users found "Generate Matrix" technical and confusing compared to standard "Clash Test". 2) "Naming Formula: Selection A x Selection B" was visual clutter since users already select delimiter directly. 3) Group Clashes card had redundant "Proximity Clustering Range:" label, outdated "Clustering Strategy" bullet points (from pre-ISS-053), and verbose "Raw clashes within proximity distance..." copy. | 1) Renamed Tab 1 from "Generate Matrix" to "Clash Test". 2) Renamed primary action button to "Run Clash Test ({0} Tests)". 3) Updated Ribbon button and CommandHandler to "Clash Test". 4) Removed "Naming Formula" text and bindings from Tab 1 and confirmation dialog. 5) Removed "Proximity Clustering Range:" label, "Clustering Strategy" bullets, and "Raw clashes within proximity distance..." copy from Group Clashes tab. |
+| **ISS-057** | Multi-Version CLR Binding & Deployment | `PackageContents.xml`, `AutomatedClashRunner.csproj`, `Installer/Program.cs`, `build_all.ps1`, `ClashDistillerService.cs` | Cypher tab missing in Navisworks 2026 despite working in Navisworks 2024 | 1) `PackageContents.xml` routed Navisworks 2026 (`Nw23`) to `./Contents/2024/CypherNavisTools.dll` compiled against API v21.0. Navisworks 2026 runs API v23.0; lack of cross-major binding redirect in `rroamer.exe.config` caused CLR `FileLoadException` on startup. 2) Navisworks 2026 removed `Viewpoint.PivotPoint` property. 3) `Installer/Program.cs` deployed dual bundle copies to both ProgramData and AppData, triggering ribbon dispatcher drop (ISS-054). | 1) Added dedicated `Release2025` (v22.0) and `Release2026` (v23.0) build targets to `.csproj` referencing strong-named assemblies. 2) Updated `PackageContents.xml` to route `Nw22` to `Contents/2025` and `Nw23` to `Contents/2026`. 3) Safely set `Viewpoint.PivotPoint` via reflection across all versions. 4) Purged ProgramData bundle deployment from `Installer/Program.cs` ensuring strict Single-Target AppData deployment. |
 
 
 ---
@@ -311,3 +312,52 @@ When a BIM coordinator reviews clashes in Navisworks Manage Clash Detective:
    - In `GetTestsViewpointForResult`: If a `ClashResultGroup` does not have a saved camera viewpoint (`!clashGroup.HasSavedViewpoint`), the method checks if any child clash has `HasSavedViewpoint || HasRedlines` and uses that camera perspective, ensuring the camera aligns perfectly with where the coordinator drew their annotations.
 5. **Fail-Safe Exception Handling**:
    - All pointer operations are wrapped in rigorous exception blocks. If native redline extraction fails for any reason, the add-in logs a warning and creates the clean viewpoint camera without crashing the host.
+
+---
+
+### ISS-057: Navisworks 2026 Add-in Loading Failure (Missing Ribbon Tab) & Cross-Version CLR Binding
+
+#### Context & Symptom
+After installing Cypher Tools:
+- On **Navisworks Manage 2024**, the add-in loaded and functioned properly.
+- On **Navisworks Manage 2026**, the "Cypher" ribbon tab was completely absent. No error dialog was displayed to the user on startup.
+
+#### Root Cause Analysis
+1. **Strong-Named Assembly Versioning & Lack of Host Binding Redirects**:
+   - Autodesk Navisworks assemblies (Autodesk.Navisworks.Api, Autodesk.Navisworks.Clash, Autodesk.Navisworks.ComApi, Autodesk.Navisworks.Interop.ComApi) are strong-named with PublicKeyToken=d85e58fa5af9b484.
+   - Each major release increments assembly versions:
+     - 2023 (Nw20): Version=20.0.0.0
+     - 2024 (Nw21): Version=21.0.0.0
+     - 2025 (Nw22): Version=22.0.0.0
+     - 2026 (Nw23): Version=23.0.0.0
+   - `roamer.exe.config` in Navisworks Manage 2026 redirects internal minor builds (23.0.0.0 - 23.0.9999.9999) to 23.0.0.0, but **does not** redirect older major versions (21.0.0.0 -> 23.0.0.0).
+   - PackageContents.xml routed Navisworks 2026 (Nw23) to ./Contents/2024/CypherNavisTools.dll.
+   - Because Contents/2024/CypherNavisTools.dll was compiled against Version=21.0.0.0, the .NET CLR threw System.IO.FileLoadException: Could not load file or assembly 'Autodesk.Navisworks.Api, Version=21.0.0.0', and Navisworks silently dropped the add-in.
+2. **Breaking API Change in Navisworks 2026 (Viewpoint.PivotPoint)**:
+   - In Navisworks 2025 and 2026, Autodesk removed the PivotPoint property from Autodesk.Navisworks.Api.Viewpoint.
+   - Attempting to compile against the 2026 API failed with error CS1061: 'Viewpoint' does not contain a definition for 'PivotPoint'.
+3. **Installer ProgramData Collision Risk (ISS-054 Relapse)**:
+   - Installer/Program.cs had reintroduced code deploying the bundle to C:\ProgramData\Autodesk\ApplicationPlugins\CypherNavisTools.bundle in addition to %APPDATA%.
+   - Dual-location deployment causes duplicate GUID registration collisions in Navisworks, causing the MFC ribbon dispatcher to drop the ribbon tab.
+
+#### Architectural Solutions & Implementation
+1. **Four-Target Multi-Version Architecture**:
+   - Acquired official strong-named reference assemblies for 2025 (lib/2025, 22.0.0.0) and 2026 (lib/2026, 23.0.0.0).
+   - Configured dedicated build configurations in AutomatedClashRunner.csproj:
+     - Release2023: Output bin\Release\2023\, references lib/2023
+     - Release2024: Output bin\Release\2024\, references lib/2024
+     - Release2025: Output bin\Release\2025\, references lib/2025
+     - Release2026: Output bin\Release\2026\, references lib/2026
+2. **Autoloader Manifest Alignment**:
+   - Updated PackageContents.xml:
+     - Series Nw22 (2025) -> ./Contents/2025/CypherNavisTools.dll
+     - Series Nw23 (2026+) -> ./Contents/2026/CypherNavisTools.dll
+3. **Safe Cross-Version Reflection for PivotPoint**:
+   - In ClashDistillerService.cs, wrapped Viewpoint.PivotPoint in safe reflection to work across 2020-2026.
+4. **Purged ProgramData Deployment from Standalone Installer**:
+   - Removed duplicate ProgramData copying in Installer/Program.cs.
+   - Added proactive purge of ProgramData\Autodesk\ApplicationPlugins\CypherNavisTools.bundle.
+   - Enforced strict Single-Target deployment to %APPDATA%\Autodesk\ApplicationPlugins\CypherNavisTools.bundle.
+5. **Updated Build Scripts & Packaging**:
+   - Updated build_all.ps1 and Install_CypherTools.bat to compile, stage, package, and deploy all 4 engines (2023, 2024, 2025, 2026).
+   - Recompiled modern standalone CypherGenericClash_Installer.exe containing the complete 4-version payload.

@@ -32,28 +32,46 @@ Write-Host ">>> 2. Building Navisworks 2024 Engine (Release2024)..." -Foreground
 & $msbuild "AutomatedClashRunner.csproj" -p:Configuration=Release2024 -p:Platform=x64
 if ($LASTEXITCODE -ne 0) { throw "2024 Plugin build failed." }
 
+Write-Host ">>> 3. Building Navisworks 2025 Engine (Release2025)..." -ForegroundColor Cyan
+& $msbuild "AutomatedClashRunner.csproj" -p:Configuration=Release2025 -p:Platform=x64
+if ($LASTEXITCODE -ne 0) { throw "2025 Plugin build failed." }
+
+Write-Host ">>> 4. Building Navisworks 2026 Engine (Release2026)..." -ForegroundColor Cyan
+& $msbuild "AutomatedClashRunner.csproj" -p:Configuration=Release2026 -p:Platform=x64
+if ($LASTEXITCODE -ne 0) { throw "2026 Plugin build failed." }
+
 # 4. Package Multi-Version bundle.zip for Standalone Installer
-Write-Host ">>> 3. Staging and Packaging Multi-Version bundle.zip..." -ForegroundColor Cyan
+Write-Host ">>> 5. Staging and Packaging Multi-Version bundle.zip..." -ForegroundColor Cyan
 $staging = "$env:TEMP\cyphertools_bundle_staging"
 if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
 
 $stgContents2023 = "$staging\Contents\2023"
 $stgContents2024 = "$staging\Contents\2024"
+$stgContents2025 = "$staging\Contents\2025"
+$stgContents2026 = "$staging\Contents\2026"
 New-Item -ItemType Directory -Force -Path $stgContents2023 | Out-Null
 New-Item -ItemType Directory -Force -Path $stgContents2024 | Out-Null
+New-Item -ItemType Directory -Force -Path $stgContents2025 | Out-Null
+New-Item -ItemType Directory -Force -Path $stgContents2026 | Out-Null
 
 Copy-Item "PackageContents.xml" -Destination $staging -Force
 Copy-Item "bin\Release\2023\*.dll" -Destination $stgContents2023 -Force
 Copy-Item "bin\Release\2024\*.dll" -Destination $stgContents2024 -Force
+Copy-Item "bin\Release\2025\*.dll" -Destination $stgContents2025 -Force
+Copy-Item "bin\Release\2026\*.dll" -Destination $stgContents2026 -Force
 
 if (Test-Path "en-US") {
     Copy-Item "en-US" -Destination "$stgContents2023\en-US" -Recurse -Force
     Copy-Item "en-US" -Destination "$stgContents2024\en-US" -Recurse -Force
+    Copy-Item "en-US" -Destination "$stgContents2025\en-US" -Recurse -Force
+    Copy-Item "en-US" -Destination "$stgContents2026\en-US" -Recurse -Force
     Copy-Item "en-US" -Destination "$staging\en-US" -Recurse -Force
 }
 if (Test-Path "Images") {
     Copy-Item "Images" -Destination "$stgContents2023\Images" -Recurse -Force
     Copy-Item "Images" -Destination "$stgContents2024\Images" -Recurse -Force
+    Copy-Item "Images" -Destination "$stgContents2025\Images" -Recurse -Force
+    Copy-Item "Images" -Destination "$stgContents2026\Images" -Recurse -Force
     Copy-Item "Images" -Destination "$staging\Images" -Recurse -Force
 }
 
@@ -63,7 +81,7 @@ Compress-Archive -Path "$staging\*" -DestinationPath $zipDest -Force
 Remove-Item $staging -Recurse -Force
 
 # 5. Build Standalone Installer EXE
-Write-Host ">>> 4. Compiling Modern Standalone CypherGenericClash_Installer.exe..." -ForegroundColor Cyan
+Write-Host ">>> 6. Compiling Modern Standalone CypherGenericClash_Installer.exe..." -ForegroundColor Cyan
 & $msbuild "Installer\Installer.csproj" -p:Configuration=Release -p:Platform=x64
 if ($LASTEXITCODE -ne 0) { throw "Installer build failed." }
 
@@ -83,28 +101,38 @@ try {
     Write-Host " - Warning: CypherTools_Installer.exe could not be copied: $($_.Exception.Message)" -ForegroundColor Yellow
 }
 
-# 5. Direct AppData Deployment: Multi-Version ApplicationPlugins Bundle
-Write-Host ">>> 5. Deploying Multi-Version CypherNavisTools.bundle to Navisworks ApplicationPlugins..." -ForegroundColor Cyan
+# 6. Direct AppData Deployment: Multi-Version ApplicationPlugins Bundle
+Write-Host ">>> 7. Deploying Multi-Version CypherNavisTools.bundle to Navisworks ApplicationPlugins..." -ForegroundColor Cyan
 $bundleDir = "$env:APPDATA\Autodesk\ApplicationPlugins\CypherNavisTools.bundle"
 if (Test-Path $bundleDir) { Remove-Item $bundleDir -Recurse -Force }
 
 $contentsDir2023 = "$bundleDir\Contents\2023"
 $contentsDir2024 = "$bundleDir\Contents\2024"
+$contentsDir2025 = "$bundleDir\Contents\2025"
+$contentsDir2026 = "$bundleDir\Contents\2026"
 New-Item -ItemType Directory -Force -Path $contentsDir2023 | Out-Null
 New-Item -ItemType Directory -Force -Path $contentsDir2024 | Out-Null
+New-Item -ItemType Directory -Force -Path $contentsDir2025 | Out-Null
+New-Item -ItemType Directory -Force -Path $contentsDir2026 | Out-Null
 
 Copy-Item "PackageContents.xml" -Destination $bundleDir -Force
 Copy-Item "bin\Release\2023\*.dll" -Destination $contentsDir2023 -Force
 Copy-Item "bin\Release\2024\*.dll" -Destination $contentsDir2024 -Force
+Copy-Item "bin\Release\2025\*.dll" -Destination $contentsDir2025 -Force
+Copy-Item "bin\Release\2026\*.dll" -Destination $contentsDir2026 -Force
 
 if (Test-Path "en-US") {
     Copy-Item "en-US" -Destination "$contentsDir2023\en-US" -Recurse -Force
     Copy-Item "en-US" -Destination "$contentsDir2024\en-US" -Recurse -Force
+    Copy-Item "en-US" -Destination "$contentsDir2025\en-US" -Recurse -Force
+    Copy-Item "en-US" -Destination "$contentsDir2026\en-US" -Recurse -Force
     Copy-Item "en-US" -Destination "$bundleDir\en-US" -Recurse -Force
 }
 if (Test-Path "Images") {
     Copy-Item "Images" -Destination "$contentsDir2023\Images" -Recurse -Force
     Copy-Item "Images" -Destination "$contentsDir2024\Images" -Recurse -Force
+    Copy-Item "Images" -Destination "$contentsDir2025\Images" -Recurse -Force
+    Copy-Item "Images" -Destination "$contentsDir2026\Images" -Recurse -Force
     Copy-Item "Images" -Destination "$bundleDir\Images" -Recurse -Force
 }
 Get-ChildItem $bundleDir -Recurse | Unblock-File -ErrorAction SilentlyContinue

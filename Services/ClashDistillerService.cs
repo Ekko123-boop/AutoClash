@@ -559,7 +559,12 @@ namespace AutomatedClashRunner.Services
                         Point3D cameraEye = new Point3D(center.X - offset.X, center.Y - offset.Y, center.Z - offset.Z);
 
                         vp.Position = cameraEye;
-                        vp.PivotPoint = center;
+                        try
+                        {
+                            var pivotProp = vp.GetType().GetProperty("PivotPoint");
+                            pivotProp?.SetValue(vp, center, null);
+                        }
+                        catch { }
                         vp.FocalDistance = focalDist;
                         vp.AlignDirection(dir);
                         vp.AlignUp(new Vector3D(0, 0, 1));

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -46,6 +46,28 @@
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
+
+  <!-- 2025 Dedicated Target -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release2025|x64' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\2025\</OutputPath>
+    <DefineConstants>TRACE;Version2025</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <!-- 2026 Dedicated Target -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release2026|x64' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\2026\</OutputPath>
+    <DefineConstants>TRACE;Version2026</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
   
   <ItemGroup>
     <Reference Include="System" />
@@ -88,8 +110,56 @@
     </Reference>
   </ItemGroup>
 
+  <!-- 2025 Assemblies -->
+  <ItemGroup Condition=" '$(Configuration)' == 'Release2025' ">
+    <Reference Include="Autodesk.Navisworks.Api">
+      <HintPath>lib\2025\Autodesk.Navisworks.Api.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="Autodesk.Navisworks.ComApi">
+      <HintPath>lib\2025\Autodesk.Navisworks.ComApi.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="Autodesk.Navisworks.Interop.ComApi">
+      <HintPath>lib\2025\Autodesk.Navisworks.Interop.ComApi.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="Autodesk.Navisworks.Clash">
+      <HintPath>lib\2025\Autodesk.Navisworks.Clash.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+  </ItemGroup>
+
+  <!-- 2026 Assemblies -->
+  <ItemGroup Condition=" '$(Configuration)' == 'Release2026' ">
+    <Reference Include="Autodesk.Navisworks.Api">
+      <HintPath>lib\2026\Autodesk.Navisworks.Api.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="Autodesk.Navisworks.ComApi">
+      <HintPath>lib\2026\Autodesk.Navisworks.ComApi.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="Autodesk.Navisworks.Interop.ComApi">
+      <HintPath>lib\2026\Autodesk.Navisworks.Interop.ComApi.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="Autodesk.Navisworks.Clash">
+      <HintPath>lib\2026\Autodesk.Navisworks.Clash.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+  </ItemGroup>
+
   <!-- 2024 Assemblies (Default / Release / Release2024) -->
-  <ItemGroup Condition=" '$(Configuration)' != 'Release2023' ">
+  <ItemGroup Condition=" '$(Configuration)' != 'Release2023' And '$(Configuration)' != 'Release2025' And '$(Configuration)' != 'Release2026' ">
     <Reference Include="Autodesk.Navisworks.Api">
       <HintPath>lib\2024\Autodesk.Navisworks.Api.dll</HintPath>
       <Private>False</Private>
@@ -111,7 +181,6 @@
       <SpecificVersion>False</SpecificVersion>
     </Reference>
   </ItemGroup>
-  
   <ItemGroup>
     <Compile Include="**\*.cs" Exclude="obj\**\*.cs;bin\**\*.cs;Installer\**\*.cs;AutomatedClashRunner.Tests\**\*.cs" />
   </ItemGroup>

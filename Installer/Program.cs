@@ -201,7 +201,9 @@ namespace AutomatedClashRunner.Installer
             foreach (var dir in detected)
             {
                 string name = Path.GetFileName(dir);
-                string engine = name.Contains("2024") || name.Contains("2025") || name.Contains("2026") ? "2024 Engine" : "2023 Engine";
+                string engine = name.Contains("2026") ? "2026 Engine" :
+                                name.Contains("2025") ? "2025 Engine" :
+                                name.Contains("2024") ? "2024 Engine" : "2023 Engine";
                 clbVersions.Items.Add($"{name} ({engine})", true);
             }
 
@@ -432,15 +434,18 @@ namespace AutomatedClashRunner.Installer
                         }
                     }
 
-                    // 1c. Clean any legacy bundles (ProgramData and AppData)
+                    // 1c. Clean any bundles from ProgramData (ensuring NO duplicate bundle in ProgramData)
                     string commonProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-                    foreach (var legacyBundle in new[] { "CypherTools.bundle", "RimoNavisTools.bundle", "RimoTools.bundle", "AutomatedClashRunner.bundle" })
+                    foreach (var legacyBundle in new[] { "CypherNavisTools.bundle", "CypherTools.bundle", "RimoNavisTools.bundle", "RimoTools.bundle", "AutomatedClashRunner.bundle" })
                     {
                         string pdOld = Path.Combine(commonProgData, @"Autodesk\ApplicationPlugins", legacyBundle);
                         if (Directory.Exists(pdOld))
                         {
-                            try { Directory.Delete(pdOld, true); log($"✓ Cleaned legacy bundle: {legacyBundle}"); } catch { }
+                            try { Directory.Delete(pdOld, true); log($"✓ Purged ProgramData bundle to prevent duplicate collision: {legacyBundle}"); } catch { }
                         }
+                    }
+                    foreach (var legacyBundle in new[] { "CypherTools.bundle", "RimoNavisTools.bundle", "RimoTools.bundle", "AutomatedClashRunner.bundle" })
+                    {
                         string adOld = Path.Combine(userAppData, @"Autodesk\ApplicationPlugins", legacyBundle);
                         if (Directory.Exists(adOld))
                         {
@@ -448,7 +453,7 @@ namespace AutomatedClashRunner.Installer
                         }
                     }
 
-                    // 2. Deploy User AppData ApplicationPlugins bundle (canonical location for current user)
+                    // 2. Deploy User AppData ApplicationPlugins bundle (Single authoritative bundle for current user)
                     string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                     string userBundle = Path.Combine(appData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
                     try
@@ -462,24 +467,6 @@ namespace AutomatedClashRunner.Installer
                     {
                         log($"⚠ Error deploying bundle to AppData: {appEx.Message}");
                         failureCount++;
-                    }
-
-                    // 3. Also deploy Global ProgramData ApplicationPlugins bundle (for machine-wide multi-user availability)
-                    try
-                    {
-                        string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-                        string globalBundle = Path.Combine(progData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
-                        if (Directory.Exists(globalBundle))
-                        {
-                            try { Directory.Delete(globalBundle, true); } catch { }
-                        }
-                        CopyDirectory(tempDir, globalBundle);
-                        log("✓ Deployed Global ApplicationPlugins Bundle (ProgramData)");
-                        successCount++;
-                    }
-                    catch (Exception ex)
-                    {
-                        log($"Note: ProgramData deployment skipped/warning: {ex.Message}");
                     }
                 }
                 else
@@ -496,8 +483,11 @@ namespace AutomatedClashRunner.Installer
                             continue;
                         }
 
-                        bool is2024Plus = nwName.Contains("2024") || nwName.Contains("2025") || nwName.Contains("2026");
-                        string engineFolder = is2024Plus ? "2024" : "2023";
+                        string engineFolder;
+                        if (nwName.Contains("2026")) engineFolder = "2026";
+                        else if (nwName.Contains("2025")) engineFolder = "2025";
+                        else if (nwName.Contains("2024")) engineFolder = "2024";
+                        else engineFolder = "2023";
 
                         try
                         {
