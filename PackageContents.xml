@@ -4,6 +4,7 @@
     Name="CypherNavisTools"
     AppVersion="2.1.0"
     Description="Cypher Generic Clash Runner - Universal Model and Selection Set Matrix Add-in for Navisworks"
+    ProductCode="{E89B1002-3CD2-45F4-A0C3-8991D4C3E481}"
     ProductType="Application">
 
     <CompanyDetails Name="Cypher" />

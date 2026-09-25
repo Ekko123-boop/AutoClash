@@ -476,7 +476,7 @@ namespace AutomatedClashRunner.Services
                 if (_assignRedlines != null)
                 {
                     _assignRedlines(dest, redlinePointers[0]);
-                    string msg = $"[NativeClashRedlineHelper] Assigned {GetRedlineCountInMemory(redlinePointers[0])} redlines to detached SavedViewpoint for '{source.DisplayName}'";
+                    string msg = $"[NativeClashRedlineHelper] Assigned {GetRedlineCountInMemory(redlinePointers[0])} redlines to SavedViewpoint for '{source.DisplayName}'";
                     logger?.Log(msg);
                     TraceLog(msg);
                 }
@@ -491,7 +491,7 @@ namespace AutomatedClashRunner.Services
                     for (int i = 1; i < redlinePointers.Count; i++)
                     {
                         _mergeRedlines(dest, redlinePointers[i]);
-                        TraceLog($"Merged additional {GetRedlineCountInMemory(redlinePointers[i])} redlines into detached SavedViewpoint for '{source.DisplayName}'");
+                        TraceLog($"Merged additional {GetRedlineCountInMemory(redlinePointers[i])} redlines into SavedViewpoint for '{source.DisplayName}'");
                     }
                 }
 

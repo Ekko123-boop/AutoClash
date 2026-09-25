@@ -851,9 +851,8 @@ namespace AutomatedClashRunner.ViewModels
                 $"Selection B: {itemsB.Count} {typeBName}\n" +
                 $"Clash Type: {SelectedClashType}\n" +
                 $"Tolerance: {Tolerance:F4} m\n" +
-                $"Delimiter: '{SelectedDelimiter}'\n\n" +
-                $"Naming formula: Selection A {SelectedDelimiter} Selection B",
-                "Confirm Clash Matrix Execution");
+                $"Delimiter: '{SelectedDelimiter}'",
+                "Confirm Clash Test Execution");
 
             if (!confirm) return;
 
@@ -865,7 +864,7 @@ namespace AutomatedClashRunner.ViewModels
             }
 
             IsBusy = true;
-            ProgressText = "Initializing Clash Matrix...";
+            ProgressText = "Initializing Clash Tests...";
             ProgressBarValue = 0;
             ProgressBarMax = count;
 

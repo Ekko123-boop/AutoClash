@@ -91,9 +91,9 @@ namespace AutomatedClashRunner.Services
 
                     string asmDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
 
-                    // Button 1: Clash Matrix (Target Tab 0)
+                    // Button 1: Clash Test (Target Tab 0)
                     object btnMatrix = CreateRibbonButton(ribbonButtonType, ribbonItemSizeType,
-                        "Clash\nMatrix", "ID_CYPHER_CMD_MATRIX", "Launch Clash Matrix generator and Tools Test runner",
+                        "Clash\nTest", "ID_CYPHER_CMD_MATRIX", "Launch Clash Test generator",
                         Path.Combine(asmDir, "Images", "icon_matrix_32.png"),
                         Path.Combine(asmDir, "Images", "icon_matrix_16.png"),
                         () => launchCallback(0));

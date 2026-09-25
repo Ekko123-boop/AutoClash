@@ -110,17 +110,17 @@ if (Test-Path "Images") {
 Get-ChildItem $bundleDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
 Write-Host " - Multi-Version Bundle deployed to: $bundleDir" -ForegroundColor Green
 
-# 5b. Attempt ProgramData deployment if writable
-$globalBundle = "$env:ProgramData\Autodesk\ApplicationPlugins\CypherNavisTools.bundle"
-try {
-    if (Test-Path $globalBundle) {
-        Copy-Item "PackageContents.xml" -Destination $globalBundle -Force -ErrorAction Stop
-        Copy-Item "bin\Release\2023\*.dll" -Destination "$globalBundle\Contents\2023" -Force -ErrorAction Stop
-        Copy-Item "bin\Release\2024\*.dll" -Destination "$globalBundle\Contents\2024" -Force -ErrorAction Stop
-        Write-Host " - Successfully updated Global ProgramData bundle: $globalBundle" -ForegroundColor Green
+# 5b. Ensure ProgramData is 100% clean (Rule: NEVER dual-deploy to ProgramData and AppData; duplicate bundle drops ribbon tab)
+$programDataPlugins = "$env:ProgramData\Autodesk\ApplicationPlugins"
+if (Test-Path $programDataPlugins) {
+    Get-ChildItem -Path $programDataPlugins -Filter "*Cypher*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            Remove-Item $_.FullName -Recurse -Force -ErrorAction Stop
+            Write-Host " - Purged duplicate bundle from ProgramData: $($_.FullName)" -ForegroundColor Yellow
+        } catch {
+            Write-Host " - Warning: Could not purge $($_.FullName) from ProgramData (requires admin)." -ForegroundColor Yellow
+        }
     }
-} catch {
-    Write-Host " - Note: ProgramData is Administrator-protected. Run CypherGenericClash_Installer.exe as Administrator to update ProgramData." -ForegroundColor Yellow
 }
 
 # 6. Clean Standalone User Plugins Directory (eliminating duplicate plugin loading)

@@ -43,12 +43,15 @@ for /d %%D in ("%ProgramFiles%\Autodesk\Navisworks*") do (
 :: 2. Remove from ProgramData ApplicationPlugins
 echo.
 echo [2/3] Cleaning ProgramData ApplicationPlugins bundles...
-set "BUNDLES=CypherNavisTools.bundle CypherTools.bundle RimoNavisTools.bundle RimoTools.bundle AutomatedClashRunner.bundle"
+set "BUNDLES=CypherNavisTools.bundle CypherNavisTools_backup CypherTools.bundle RimoNavisTools.bundle RimoTools.bundle AutomatedClashRunner.bundle"
 for %%B in (%BUNDLES%) do (
     if exist "%ProgramData%\Autodesk\ApplicationPlugins\%%B" (
         rmdir /s /q "%ProgramData%\Autodesk\ApplicationPlugins\%%B" 2>nul
         echo   [-] Removed ProgramData\Autodesk\ApplicationPlugins\%%B
     )
+)
+if exist "C:\ProgramData\CypherNavisTools_quarantine" (
+    rmdir /s /q "C:\ProgramData\CypherNavisTools_quarantine" 2>nul
 )
 
 :: 3. Remove from AppData (User space)

@@ -441,12 +441,9 @@
         <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}" Background="Transparent" BorderThickness="0" Margin="14,10,14,14">
             
             <!-- ========================================================================= -->
-            <!-- TAB 1: GENERATE MATRIX                                                    -->
+            <!-- TAB 1: CLASH TEST (GENERIC DUAL-TAB SELECTION)                            -->
             <!-- ========================================================================= -->
-            <!-- ========================================================================= -->
-            <!-- TAB 1: GENERATE MATRIX (GENERIC DUAL-TAB SELECTION)                       -->
-            <!-- ========================================================================= -->
-            <TabItem Header="Generate Matrix" Style="{StaticResource ModernTabItem}" DataContext="{Binding MatrixTab}">
+            <TabItem Header="Clash Test" Style="{StaticResource ModernTabItem}" DataContext="{Binding MatrixTab}">
                 <Grid Margin="0,12,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -785,11 +782,6 @@
 
                             <TextBlock Text="Delimiter: " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334155"/>
                             <ComboBox ItemsSource="{Binding AvailableDelimiters}" SelectedItem="{Binding SelectedDelimiter}" Width="65" Margin="0,0,20,0" Padding="6,3"/>
-
-                            <TextBlock Text="Naming Formula: " VerticalAlignment="Center" FontWeight="SemiBold" Foreground="#334155"/>
-                            <TextBlock Text="Selection A " VerticalAlignment="Center" Foreground="#0284C7" FontWeight="SemiBold"/>
-                            <TextBlock Text="{Binding SelectedDelimiter}" VerticalAlignment="Center" Foreground="#0284C7" FontWeight="Bold"/>
-                            <TextBlock Text=" Selection B" VerticalAlignment="Center" Foreground="#0284C7" FontWeight="SemiBold"/>
                         </WrapPanel>
                     </Border>
 
@@ -838,7 +830,7 @@
                                 <StackPanel Orientation="Horizontal">
                                     <Path Data="M8 5v14l11-7z"
                                           Fill="White" Width="13" Height="13" Stretch="Uniform" Margin="0,0,7,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding ExpectedTestCount, StringFormat='Run Clash Matrix ({0} Tests)'}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding ExpectedTestCount, StringFormat='Run Clash Test ({0} Tests)'}" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
@@ -849,7 +841,7 @@
                         <Border Background="#FFFFFF" BorderBrush="#00875A" BorderThickness="2" CornerRadius="8" 
                                 HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28" Width="440">
                             <StackPanel>
-                                <TextBlock Text="Executing Clash Matrix..." FontWeight="Bold" FontSize="15" Foreground="#00875A" Margin="0,0,0,12" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Executing Clash Tests..." FontWeight="Bold" FontSize="15" Foreground="#00875A" Margin="0,0,0,12" HorizontalAlignment="Center"/>
                                 <ProgressBar Value="{Binding ProgressBarValue}" Maximum="{Binding ProgressBarMax}" Height="18" Margin="0,0,0,10"/>
                                 <TextBlock Text="{Binding ProgressText}" Foreground="#475569" TextAlignment="Center" TextWrapping="Wrap"/>
                             </StackPanel>
@@ -961,27 +953,21 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                            <StackPanel Grid.Column="0" Margin="0,0,16,0" VerticalAlignment="Center">
                                 <TextBlock Text="Grouping Settings" FontWeight="Bold" FontSize="13" Foreground="#0F172A" Margin="0,0,0,8"/>
                                 
-                                <TextBlock Text="Proximity Clustering Range:" FontWeight="SemiBold" Foreground="#475569" FontSize="11" Margin="0,0,0,4"/>
-                                <DockPanel Margin="0,0,0,10" Width="285" HorizontalAlignment="Left">
+                                <DockPanel Width="285" HorizontalAlignment="Left">
                                     <TextBlock Text="Focused" FontSize="10" Foreground="#64748B" VerticalAlignment="Center" DockPanel.Dock="Left" Margin="0,0,8,0"/>
                                     <TextBlock Text="Global" FontSize="10" Foreground="#64748B" VerticalAlignment="Center" DockPanel.Dock="Right" Margin="8,0,0,0"/>
                                     <TextBox Text="{Binding GroupingProximity, UpdateSourceTrigger=PropertyChanged}" Width="44" DockPanel.Dock="Right" Padding="2" TextAlignment="Center" VerticalContentAlignment="Center" Margin="6,0,0,0"/>
                                     <Slider Minimum="1" Maximum="300" Value="{Binding GroupingProximity}" TickFrequency="10" SmallChange="10" LargeChange="20" IsSnapToTickEnabled="True" VerticalAlignment="Center"/>
                                 </DockPanel>
-
-                                <TextBlock Text="Clustering Strategy:" FontWeight="SemiBold" Foreground="#475569" FontSize="11" Margin="0,0,0,4"/>
-                                <TextBlock Text="- Group by Master Named Element in Selection A" Foreground="#0F172A" FontSize="11" Margin="4,0,0,2"/>
-                                <TextBlock Text="- Sub-cluster by spatial proximity threshold" Foreground="#0F172A" FontSize="11" Margin="4,0,0,0"/>
                             </StackPanel>
 
-                            <Border Grid.Column="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="12">
+                            <Border Grid.Column="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="12" VerticalAlignment="Center">
                                 <StackPanel>
-                                    <TextBlock Text="Clash Classification &amp; Grouping" FontWeight="Bold" FontSize="12" Foreground="#0F172A" Margin="0,0,0,8"/>
-                                    <TextBlock Text="Group naming format: {TestName}-{001, 002, ...}" FontSize="11" Foreground="#475569" Margin="0,0,0,6"/>
-                                    <TextBlock Text="Raw clashes within proximity distance are organized cleanly into named groups under each clash test in Clash Detective." FontSize="11" Foreground="#64748B" TextWrapping="Wrap"/>
+                                    <TextBlock Text="Clash Classification &amp; Grouping" FontWeight="Bold" FontSize="12" Foreground="#0F172A" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Group naming format: {TestName} {1, 2, ...}" FontSize="11" Foreground="#475569"/>
                                 </StackPanel>
                             </Border>
                         </Grid>

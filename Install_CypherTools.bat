@@ -27,38 +27,20 @@ for /d %%M in ("%APPDATA%\Autodesk\Navisworks Manage*") do (
     )
 )
 
-:: 1. Global ProgramData Multi-Version Bundle Deployment
-echo [1/3] Deploying Global Multi-Version ApplicationPlugins Bundle...
-set "GLOBAL_BUNDLE=%ProgramData%\Autodesk\ApplicationPlugins\CypherNavisTools.bundle"
-if exist "%GLOBAL_BUNDLE%" rmdir /s /q "%GLOBAL_BUNDLE%"
-mkdir "%GLOBAL_BUNDLE%\Contents\2023\en-US" 2>nul
-mkdir "%GLOBAL_BUNDLE%\Contents\2023\Images" 2>nul
-mkdir "%GLOBAL_BUNDLE%\Contents\2024\en-US" 2>nul
-mkdir "%GLOBAL_BUNDLE%\Contents\2024\Images" 2>nul
-mkdir "%GLOBAL_BUNDLE%\en-US" 2>nul
-mkdir "%GLOBAL_BUNDLE%\Images" 2>nul
-
-copy /Y "%ROOT%PackageContents.xml" "%GLOBAL_BUNDLE%\" >nul
-copy /Y "%ROOT%en-US\*.xaml" "%GLOBAL_BUNDLE%\en-US\" >nul
-copy /Y "%ROOT%Images\*.png" "%GLOBAL_BUNDLE%\Images\" >nul
-
-if exist "%BIN2023%\CypherNavisTools.dll" (
-    copy /Y "%BIN2023%\CypherNavisTools.dll" "%GLOBAL_BUNDLE%\Contents\2023\" >nul
-    copy /Y "%ROOT%en-US\*.xaml" "%GLOBAL_BUNDLE%\Contents\2023\en-US\" >nul
-    copy /Y "%ROOT%Images\*.png" "%GLOBAL_BUNDLE%\Contents\2023\Images\" >nul
+:: 1. Purge duplicate plugins & bundles from ProgramData and Program Files
+echo [1/2] Purging conflicting bundles and standalone plugins...
+for %%B in (CypherNavisTools CypherNavisTools_backup CypherTools RimoNavisTools RimoTools AutomatedClashRunner) do (
+    if exist "%ProgramData%\Autodesk\ApplicationPlugins\%%B" (
+        rmdir /s /q "%ProgramData%\Autodesk\ApplicationPlugins\%%B" 2>nul
+        echo      - Removed ProgramData bundle: %%B
+    )
+    if exist "%ProgramData%\Autodesk\ApplicationPlugins\%%B.bundle" (
+        rmdir /s /q "%ProgramData%\Autodesk\ApplicationPlugins\%%B.bundle" 2>nul
+        echo      - Removed ProgramData bundle: %%B.bundle
+    )
 )
-if exist "%BIN2024%\CypherNavisTools.dll" (
-    copy /Y "%BIN2024%\CypherNavisTools.dll" "%GLOBAL_BUNDLE%\Contents\2024\" >nul
-    copy /Y "%ROOT%en-US\*.xaml" "%GLOBAL_BUNDLE%\Contents\2024\en-US\" >nul
-    copy /Y "%ROOT%Images\*.png" "%GLOBAL_BUNDLE%\Contents\2024\Images\" >nul
-)
-echo      - Global Bundle deployed successfully.
 
-:: 2. Purge duplicate standalone plugins from Program Files and User AppData
-echo.
-echo [2/3] Purging any duplicate standalone plugins to prevent dual-load conflicts...
 set "AUTODESK_DIR=%ProgramFiles%\Autodesk"
-
 for /d %%D in ("%AUTODESK_DIR%\Navisworks*") do (
     for %%P in (CypherNavisTools CypherTools RimoNavisTools RimoTools AutomatedClashRunner) do (
         if exist "%%~fD\Plugins\%%P" (
@@ -68,7 +50,9 @@ for /d %%D in ("%AUTODESK_DIR%\Navisworks*") do (
     )
 )
 
-:: Also deploy user AppData bundle so current user has direct access
+:: 2. Authoritative AppData Bundle Deployment (Rule: Single target avoids ribbon tab collision)
+echo.
+echo [2/2] Deploying Multi-Version ApplicationPlugins Bundle to AppData...
 set "USER_BUNDLE=%APPDATA%\Autodesk\ApplicationPlugins\CypherNavisTools.bundle"
 if exist "%USER_BUNDLE%" rmdir /s /q "%USER_BUNDLE%"
 mkdir "%USER_BUNDLE%\Contents\2023\en-US" 2>nul
@@ -94,14 +78,12 @@ if exist "%BIN2024%\CypherNavisTools.dll" (
 )
 echo      - User AppData Bundle deployed successfully.
 
-:: 3. Finish
-echo.
-echo [3/3] Finalizing installation...
 echo.
 echo ====================================================================
-echo   SUCCESS! Cypher Tools installed for !COUNT! Navisworks installation(s).
+echo   SUCCESS! Cypher Tools deployed cleanly to ApplicationPlugins.
 echo   - 2023 Engine: Navisworks 2020, 2021, 2022, 2023
 echo   - 2024 Engine: Navisworks 2024, 2025, 2026
+echo   - Location: %USER_BUNDLE%
 echo.
 echo   You can now launch Navisworks Manage!
 echo ====================================================================

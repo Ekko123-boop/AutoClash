@@ -18,10 +18,10 @@ namespace AutomatedClashRunner
     [RibbonLayout("CypherRibbon.xaml")]
     [RibbonTab("Cypher", DisplayName = "Cypher")]
     [Command("ID_CYPHER_CMD_MATRIX",
-             DisplayName = "Clash Matrix",
+             DisplayName = "Clash Test",
              Icon = "Images\\icon_matrix_16.png",
              LargeIcon = "Images\\icon_matrix_32.png",
-             ToolTip = "Launch Clash Matrix generator and Tools Test runner")]
+             ToolTip = "Launch Clash Test generator")]
     [Command("ID_CYPHER_CMD_DISTILL",
              DisplayName = "Group Clashes",
              Icon = "Images\\icon_distill_16.png",

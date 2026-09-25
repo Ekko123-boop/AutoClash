@@ -389,14 +389,15 @@ namespace AutomatedClashRunner.Services
                             GroupItem targetFolder = (GroupItem)actualFolder ?? (targetRootFolder ?? savedViewpoints.RootItem);
                             savedViewpoints.AddCopy(targetFolder, svp);
 
-                            // Native Redline Injection: LcOpSavedViewsElement::ReplaceViewRedlines attaches redlines to viewpoint in document
-                            int vpIdx = targetFolder.Children.Count - 1;
-                            NativeClashRedlineHelper.ApplyRedlinesToViewpoint(
-                                Autodesk.Navisworks.Api.Application.ActiveDocument,
-                                targetFolder,
-                                vpIdx,
-                                group,
-                                _logger);
+                            // Directly retrieve the committed document-bound SavedViewpoint and embed native redlines
+                            var boundSvp = (targetFolder.Children[targetFolder.Children.Count - 1] as SavedViewpoint)
+                                ?? targetFolder.Children.OfType<SavedViewpoint>().LastOrDefault(v => v.DisplayName == vpName)
+                                ?? targetFolder.Children.OfType<SavedViewpoint>().LastOrDefault();
+
+                            if (boundSvp != null)
+                            {
+                                NativeClashRedlineHelper.AttachRedlinesToSavedViewpoint(group, boundSvp, _logger);
+                            }
 
                             viewpointsCreated++;
                             testCreated++;
@@ -427,14 +428,15 @@ namespace AutomatedClashRunner.Services
                             GroupItem targetFolder = (GroupItem)actualFolder ?? (targetRootFolder ?? savedViewpoints.RootItem);
                             savedViewpoints.AddCopy(targetFolder, svp);
                             
-                            // Native Redline Injection: LcOpSavedViewsElement::ReplaceViewRedlines attaches redlines to viewpoint in document
-                            int vpIdx = targetFolder.Children.Count - 1;
-                            NativeClashRedlineHelper.ApplyRedlinesToViewpoint(
-                                Autodesk.Navisworks.Api.Application.ActiveDocument,
-                                targetFolder,
-                                vpIdx,
-                                raw,
-                                _logger);
+                            // Directly retrieve the committed document-bound SavedViewpoint and embed native redlines
+                            var boundSvp = (targetFolder.Children[targetFolder.Children.Count - 1] as SavedViewpoint)
+                                ?? targetFolder.Children.OfType<SavedViewpoint>().LastOrDefault(v => v.DisplayName == vpName)
+                                ?? targetFolder.Children.OfType<SavedViewpoint>().LastOrDefault();
+
+                            if (boundSvp != null)
+                            {
+                                NativeClashRedlineHelper.AttachRedlinesToSavedViewpoint(raw, boundSvp, _logger);
+                            }
                             
                             viewpointsCreated++;
                             testCreated++;
