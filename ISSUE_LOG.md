@@ -362,3 +362,59 @@ After installing Cypher Tools:
 5. **Updated Build Scripts & Packaging**:
    - Updated build_all.ps1 and Install_CypherTools.bat to compile, stage, package, and deploy all 4 engines (2023, 2024, 2025, 2026).
    - Recompiled modern standalone CypherGenericClash_Installer.exe containing the complete 4-version payload.
+
+---
+
+### ISS-058: Access Violation Crash During "Export Viewpoints" (Unsafe Native Pointer Operation & STA UI Deadlock)
+
+#### Context & Symptom
+When exporting clash viewpoints in Navisworks Manage 2024, the application abruptly terminated or threw an unhandled `AccessViolationException` (`0xc0000005`) during redline / comment processing. Additionally, modal progress dialogs occasionally hung the UI thread.
+
+#### Root Cause Analysis
+1. **Unsafe Native Memory Invocations in `NativeClashRedlineHelper`**:
+   - `NativeClashRedlineHelper` attempted to invoke unexported C++ member operators (`operator=` and `Merge`) at hardcoded struct offsets (`0x630` and `0x220`) in `lcodclash.dll` and `lcodyplugin.dll`.
+   - Internal Navisworks object layouts differ between patch levels and runtime configurations. Dereferencing these memory offsets directly caused memory access violations (`AccessViolationException`), which are non-catchable SEH exceptions in modern .NET Framework / .NET Core runtimes unless explicitly permitted, crashing the host `roamer.exe`.
+2. **STA UI Thread Reentrancy Deadlock**:
+   - Long-running export operations on the STA thread bound `IsBusy = true` without pumping the Windows message queue prior to launching modal `MessageBox` confirmation dialogs, occasionally leaving modal dialog owners in an orphaned state.
+
+#### Architectural Solutions & Implementation
+1. **Managed Comment Preservation (`ClashDistillerService.cs`)**:
+   - Replaced all unsafe native pointer manipulation and memory offsets with 100% safe managed comment synchronization via `Autodesk.Navisworks.Api.Comment` APIs.
+   - Preserves all review comments (`Author`, `Body`, `Status`) from both raw clashes and group children without any native C++ pointer dereferences.
+2. **UI Thread Pump & Safe Window Ownership**:
+   - Added `IsBusy = false; DoEvents();` prior to modal prompt invocations in `ViewpointsTabViewModel`, `DistillerTabViewModel`, and `MatrixTabViewModel`.
+   - Attached `DialogService.ActiveWindow = MainWindow` to guarantee correct owner window chaining for modal dialogs.
+3. **Unit Test Verification**:
+   - All 81 unit tests passing under `dotnet test`.
+
+---
+
+### ISS-059: Installer Multi-Engine Package & Elevated ProgramData Deployment Architecture
+
+#### Context & Symptom
+- Users reported that Navisworks 2026 was not displaying the Cypher tab, and viewpoint export continued to fail even after the DLL fix was compiled.
+- Investigation revealed that an old stale bundle from 3:07 PM (`C:\ProgramData\Autodesk\ApplicationPlugins\CypherNavisTools.bundle`) remained on disk, owned by `BUILTIN\Administrators`. Non-elevated scripts could not delete or overwrite it (`Access is denied`), so Navisworks prioritized loading the stale bundle over `%APPDATA%`.
+
+#### Root Cause Analysis
+1. **The Stale `ProgramData` Bundle Trap**:
+   - Navisworks loads bundles from `C:\ProgramData\Autodesk\ApplicationPlugins` with machine-wide priority before or alongside `%APPDATA%`.
+   - The stale bundle in `ProgramData` contained an older `PackageContents.xml` that mapped Navisworks 2026 (`Nw23`) to `./Contents/2024/CypherNavisTools.dll` (.NET Framework 4.8), which .NET 8 (CoreCLR) rejected, dropping the ribbon tab silently.
+   - Furthermore, Navisworks 2024 loaded the 3:07 PM DLL from `ProgramData`, bypassing the newly fixed DLL in `%APPDATA%`.
+2. **Lack of Administrator Privilege Handling in Non-Elevated Scripts**:
+   - Standard user scripts and command prompts lack permissions to delete or overwrite administrator-owned directories in `C:\ProgramData`.
+
+#### Architectural Solutions & Implementation
+1. **UAC Elevated Standalone Installer (`CypherGenericClash_Installer.exe`)**:
+   - Embedded `app.manifest` with `<requestedExecutionLevel level="requireAdministrator" uiAccess="false" />` ensuring full administrative rights upon launch.
+   - Implemented `SafeDeleteDirectory` with recursive `FileAttributes.Normal` clearing to cleanly purge locked or read-only files.
+2. **Authoritative Single-Target Machine-Wide Deployment**:
+   - Primary Target: Deploys all 4 engines (2023, 2024, 2025, 2026) directly to `C:\ProgramData\Autodesk\ApplicationPlugins\CypherNavisTools.bundle` (machine-wide for all users).
+   - Single-Target Rule: Automatically purges `%APPDATA%\Autodesk\ApplicationPlugins\CypherNavisTools.bundle` and legacy bundles to strictly eliminate duplicate bundle collisions.
+   - Non-Elevated Fallback: If `ProgramData` is not writable, gracefully deploys to `%APPDATA%`.
+3. **Modern Standalone Distribution**:
+   - Compiled modern standalone `CypherGenericClash_Installer.exe` (308 KB) with updated UI header: `⚡ CYPHER GENERIC CLASH SETUP`.
+   - Distributed to:
+     1. `AutomatedClashRunner\CypherGenericClash_Installer.exe`
+     2. Workspace root: `CypherGenericClash_Installer.exe`
+     3. Downloads folder: `C:\Users\Rimo\Downloads\CypherGenericClash_Installer.exe`
+

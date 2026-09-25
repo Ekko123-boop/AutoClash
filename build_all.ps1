@@ -85,20 +85,26 @@ Write-Host ">>> 6. Compiling Modern Standalone CypherGenericClash_Installer.exe.
 & $msbuild "Installer\Installer.csproj" -p:Configuration=Release -p:Platform=x64
 if ($LASTEXITCODE -ne 0) { throw "Installer build failed." }
 
-try {
-    Copy-Item "Installer\bin\Release\CypherTools_Installer.exe" -Destination "CypherGenericClash_Installer.exe" -Force -ErrorAction Stop
-    Get-Item "CypherGenericClash_Installer.exe" | Unblock-File -ErrorAction SilentlyContinue
-    Write-Host " - Standalone Generic Installer ready at: CypherGenericClash_Installer.exe" -ForegroundColor Green
-} catch {
-    Write-Host " - Warning: CypherGenericClash_Installer.exe is currently open/running. Close it to update that file." -ForegroundColor Yellow
+$installerSource = "Installer\bin\Release\CypherGenericClash_Installer.exe"
+if (!(Test-Path $installerSource)) {
+    $installerSource = "Installer\bin\Release\CypherTools_Installer.exe"
 }
 
-try {
-    Copy-Item "Installer\bin\Release\CypherTools_Installer.exe" -Destination "CypherTools_Installer.exe" -Force -ErrorAction Stop
-    Get-Item "CypherTools_Installer.exe" | Unblock-File -ErrorAction SilentlyContinue
-    Write-Host " - Standalone Installer ready at: CypherTools_Installer.exe" -ForegroundColor Green
-} catch {
-    Write-Host " - Warning: CypherTools_Installer.exe could not be copied: $($_.Exception.Message)" -ForegroundColor Yellow
+$destinations = @(
+    "CypherGenericClash_Installer.exe",
+    "..\CypherGenericClash_Installer.exe",
+    "$env:USERPROFILE\Downloads\CypherGenericClash_Installer.exe",
+    "CypherTools_Installer.exe"
+)
+
+foreach ($dest in $destinations) {
+    try {
+        Copy-Item $installerSource -Destination $dest -Force -ErrorAction Stop
+        Get-Item $dest | Unblock-File -ErrorAction SilentlyContinue
+        Write-Host " - Standalone Generic Installer ready at: $dest" -ForegroundColor Green
+    } catch {
+        Write-Host " - Warning: Could not copy to ${dest} - $($_.Exception.Message)" -ForegroundColor Yellow
+    }
 }
 
 # 6. Direct AppData Deployment: Multi-Version ApplicationPlugins Bundle

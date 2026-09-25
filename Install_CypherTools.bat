@@ -33,10 +33,12 @@ for /d %%M in ("%APPDATA%\Autodesk\Navisworks Manage*") do (
 echo [1/2] Purging conflicting bundles and standalone plugins...
 for %%B in (CypherNavisTools CypherNavisTools_backup CypherTools RimoNavisTools RimoTools AutomatedClashRunner) do (
     if exist "%ProgramData%\Autodesk\ApplicationPlugins\%%B" (
+        attrib -r -s -h "%ProgramData%\Autodesk\ApplicationPlugins\%%B\*.*" /s /d >nul 2>&1
         rmdir /s /q "%ProgramData%\Autodesk\ApplicationPlugins\%%B" 2>nul
         echo      - Removed ProgramData bundle: %%B
     )
     if exist "%ProgramData%\Autodesk\ApplicationPlugins\%%B.bundle" (
+        attrib -r -s -h "%ProgramData%\Autodesk\ApplicationPlugins\%%B.bundle\*.*" /s /d >nul 2>&1
         rmdir /s /q "%ProgramData%\Autodesk\ApplicationPlugins\%%B.bundle" 2>nul
         echo      - Removed ProgramData bundle: %%B.bundle
     )
