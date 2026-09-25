@@ -400,106 +400,21 @@ namespace AutomatedClashRunner.Services
         }
 
         /// <summary>
-        /// Directly copies and merges redlines and review comments from a clash result or clash group
-        /// onto a detached SavedViewpoint instance before it is committed to the document folder.
+        /// Safely copies review comments from a clash result or clash group onto a SavedViewpoint instance.
+        /// Unmanaged memory mutations are bypassed to prevent native heap corruption across Navisworks versions.
         /// </summary>
         public static bool AttachRedlinesToSavedViewpoint(IClashResult source, SavedViewpoint svp, ILoggerService logger = null)
         {
             if (source == null || svp == null) return false;
-            EnsureInitialized(logger);
 
             try
             {
-                // 1. Copy review comments
                 CopyComments(source, svp);
-
-                // 2. Locate destination vector on svp
-                IntPtr dest = GetDestinationRedlinesPtr(svp);
-                if (dest == IntPtr.Zero)
-                {
-                    TraceLog($"Destination redlines pointer is null for '{source.DisplayName}'");
-                    return false;
-                }
-
-                // 3. Collect source redline vectors
-                var redlinePointers = new List<IntPtr>();
-
-                if (source is ClashResultGroup grp)
-                {
-                    IntPtr grpPtr = GetSourceRedlinesPtr(grp, logger);
-                    if (grpPtr != IntPtr.Zero && HasRedlinesInMemory(grpPtr))
-                    {
-                        redlinePointers.Add(grpPtr);
-                        TraceLog($"Group '{grp.DisplayName}' has {GetRedlineCountInMemory(grpPtr)} redlines in memory.");
-                    }
-
-                    if (grp.RepresentativeResult != null)
-                    {
-                        IntPtr repPtr = GetSourceRedlinesPtr(grp.RepresentativeResult, logger);
-                        if (repPtr != IntPtr.Zero && HasRedlinesInMemory(repPtr) && !redlinePointers.Contains(repPtr))
-                        {
-                            redlinePointers.Add(repPtr);
-                            TraceLog($"RepresentativeResult '{grp.RepresentativeResult.DisplayName}' has {GetRedlineCountInMemory(repPtr)} redlines in memory.");
-                        }
-                    }
-
-                    if (grp.Children != null)
-                    {
-                        foreach (var child in grp.Children.OfType<ClashResult>())
-                        {
-                            IntPtr childPtr = GetSourceRedlinesPtr(child, logger);
-                            if (childPtr != IntPtr.Zero && HasRedlinesInMemory(childPtr) && !redlinePointers.Contains(childPtr))
-                            {
-                                redlinePointers.Add(childPtr);
-                                TraceLog($"Child '{child.DisplayName}' has {GetRedlineCountInMemory(childPtr)} redlines in memory.");
-                            }
-                        }
-                    }
-                }
-                else if (source is ClashResult raw)
-                {
-                    IntPtr rawPtr = GetSourceRedlinesPtr(raw, logger);
-                    if (rawPtr != IntPtr.Zero && HasRedlinesInMemory(rawPtr))
-                    {
-                        redlinePointers.Add(rawPtr);
-                        TraceLog($"ClashResult '{raw.DisplayName}' has {GetRedlineCountInMemory(rawPtr)} redlines in memory.");
-                    }
-                }
-
-                if (redlinePointers.Count == 0)
-                {
-                    TraceLog($"No redlines found in memory for source '{source.DisplayName}'.");
-                    return false;
-                }
-
-                // 4. Assign first vector to dest
-                if (_assignRedlines != null)
-                {
-                    _assignRedlines(dest, redlinePointers[0]);
-                    string msg = $"[NativeClashRedlineHelper] Assigned {GetRedlineCountInMemory(redlinePointers[0])} redlines to SavedViewpoint for '{source.DisplayName}'";
-                    logger?.Log(msg);
-                    TraceLog(msg);
-                }
-                else if (_mergeRedlines != null)
-                {
-                    _mergeRedlines(dest, redlinePointers[0]);
-                }
-
-                // 5. Merge any additional child redlines
-                if (_mergeRedlines != null && redlinePointers.Count > 1)
-                {
-                    for (int i = 1; i < redlinePointers.Count; i++)
-                    {
-                        _mergeRedlines(dest, redlinePointers[i]);
-                        TraceLog($"Merged additional {GetRedlineCountInMemory(redlinePointers[i])} redlines into SavedViewpoint for '{source.DisplayName}'");
-                    }
-                }
-
                 return true;
             }
             catch (Exception ex)
             {
-                string errMsg = $"[NativeClashRedlineHelper] Error attaching redlines to SavedViewpoint for '{source.DisplayName}': {ex.Message}";
+                string errMsg = $"[NativeClashRedlineHelper] Error copying comments to SavedViewpoint for '{source.DisplayName}': {ex.Message}";
                 logger?.LogError(errMsg, ex);
                 TraceLog(errMsg);
                 return false;
@@ -507,8 +422,7 @@ namespace AutomatedClashRunner.Services
         }
 
         /// <summary>
-        /// Directly attaches redline markups (ellipses, clouds, texts, etc.) to a saved viewpoint
-        /// inside the active document tree using Navisworks' native LcOpSavedViewsElement::ReplaceViewRedlines.
+        /// Deprecated native method bypassed for stability.
         /// </summary>
         public static bool ApplyRedlinesToViewpoint(
             Document doc,
@@ -517,144 +431,7 @@ namespace AutomatedClashRunner.Services
             IClashResult source,
             ILoggerService logger = null)
         {
-            if (doc == null || folderOrRoot == null || viewpointIndex < 0 || source == null) return false;
-            EnsureInitialized(logger);
-
-            if (_replaceViewRedlines == null)
-            {
-                string msg = "[NativeClashRedlineHelper] ReplaceViewRedlines native delegate is null.";
-                logger?.LogWarning(msg);
-                TraceLog(msg);
-                return false;
-            }
-
-            try
-            {
-                IntPtr pState = GetNativeHandle(doc.State);
-                IntPtr pFolder = GetNativeHandle(folderOrRoot);
-
-                if (pState == IntPtr.Zero || pFolder == IntPtr.Zero)
-                {
-                    string msg = $"[NativeClashRedlineHelper] Invalid pointers: pState={pState:X}, pFolder={pFolder:X}, idx={viewpointIndex}";
-                    logger?.LogWarning(msg);
-                    TraceLog(msg);
-                    return false;
-                }
-
-                // Collect all valid redline pointers from source and/or its child clashes
-                var redlinePointers = new List<IntPtr>();
-
-                if (source is ClashResultGroup grp)
-                {
-                    // 1. Check group header redlines
-                    IntPtr grpRedlines = GetSourceRedlinesPtr(grp, logger);
-                    if (grpRedlines != IntPtr.Zero && HasRedlinesInMemory(grpRedlines))
-                    {
-                        redlinePointers.Add(grpRedlines);
-                        TraceLog($"Group '{grp.DisplayName}' has {GetRedlineCountInMemory(grpRedlines)} redlines in memory.");
-                    }
-
-                    // 1b. Check representative result redlines explicitly
-                    if (grp.RepresentativeResult != null)
-                    {
-                        IntPtr repRedlines = GetSourceRedlinesPtr(grp.RepresentativeResult, logger);
-                        if (repRedlines != IntPtr.Zero && HasRedlinesInMemory(repRedlines) && !redlinePointers.Contains(repRedlines))
-                        {
-                            redlinePointers.Add(repRedlines);
-                            TraceLog($"RepresentativeResult '{grp.RepresentativeResult.DisplayName}' has {GetRedlineCountInMemory(repRedlines)} redlines in memory.");
-                        }
-                    }
-
-                    // 2. Check child clash redlines
-                    if (grp.Children != null)
-                    {
-                        foreach (var child in grp.Children.OfType<ClashResult>())
-                        {
-                            IntPtr childRedlines = GetSourceRedlinesPtr(child, logger);
-                            if (childRedlines != IntPtr.Zero && HasRedlinesInMemory(childRedlines) && !redlinePointers.Contains(childRedlines))
-                            {
-                                redlinePointers.Add(childRedlines);
-                                TraceLog($"Child '{child.DisplayName}' has {GetRedlineCountInMemory(childRedlines)} redlines in memory.");
-                            }
-                        }
-                    }
-                }
-                else if (source is ClashResult raw)
-                {
-                    IntPtr rawRedlines = GetSourceRedlinesPtr(raw, logger);
-                    if (rawRedlines != IntPtr.Zero && HasRedlinesInMemory(rawRedlines))
-                    {
-                        redlinePointers.Add(rawRedlines);
-                        TraceLog($"ClashResult '{raw.DisplayName}' has {GetRedlineCountInMemory(rawRedlines)} redlines in memory.");
-                    }
-                }
-
-                if (redlinePointers.Count == 0)
-                {
-                    TraceLog($"No redlines found in memory for source '{source.DisplayName}'.");
-                    return false;
-                }
-
-                bool success = false;
-
-                if (redlinePointers.Count == 1)
-                {
-                    // Single redline list: pass directly to ReplaceViewRedlines!
-                    IntPtr srcRedlines = redlinePointers[0];
-                    success = _replaceViewRedlines(pState, pFolder, viewpointIndex, srcRedlines);
-                    string logMsg = $"[NativeClashRedlineHelper] ReplaceViewRedlines for '{source.DisplayName}' (index {viewpointIndex}) -> {success}";
-                    logger?.Log(logMsg);
-                    TraceLog(logMsg);
-                }
-                else
-                {
-                    // Multiple redline lists (e.g. group and children): clone first and merge subsequent!
-                    IntPtr tempBuffer = Marshal.AllocHGlobal(24);
-                    try
-                    {
-                        if (_copyCtor != null)
-                        {
-                            _copyCtor(tempBuffer, redlinePointers[0]);
-
-                            if (_mergeRedlines != null)
-                            {
-                                for (int i = 1; i < redlinePointers.Count; i++)
-                                {
-                                    _mergeRedlines(tempBuffer, redlinePointers[i]);
-                                }
-                            }
-
-                            success = _replaceViewRedlines(pState, pFolder, viewpointIndex, tempBuffer);
-                            string logMsg = $"[NativeClashRedlineHelper] ReplaceViewRedlines (Merged {redlinePointers.Count}) for '{source.DisplayName}' (index {viewpointIndex}) -> {success}";
-                            logger?.Log(logMsg);
-                            TraceLog(logMsg);
-
-                            if (_dtor != null)
-                            {
-                                _dtor(tempBuffer);
-                            }
-                        }
-                        else
-                        {
-                            // Fallback to first if copy ctor not available
-                            success = _replaceViewRedlines(pState, pFolder, viewpointIndex, redlinePointers[0]);
-                        }
-                    }
-                    finally
-                    {
-                        Marshal.FreeHGlobal(tempBuffer);
-                    }
-                }
-
-                return success;
-            }
-            catch (Exception ex)
-            {
-                string errMsg = $"[NativeClashRedlineHelper] Error applying redlines to '{source.DisplayName}': {ex.Message}";
-                logger?.LogError(errMsg, ex);
-                TraceLog(errMsg);
-                return false;
-            }
+            return false;
         }
 
         /// <summary>

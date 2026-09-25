@@ -14,6 +14,9 @@ namespace AutomatedClashRunner.Views
             ShiftClickBehavior.SetIsEnabled(ListViewSelectionBSets, true);
             ShiftClickBehavior.SetIsEnabled(ListViewDistillerTests, true);
             ShiftClickBehavior.SetIsEnabled(ListViewViewpointsTests, true);
+
+            Loaded += (s, e) => Services.DialogService.ActiveWindow = this;
+            Closed += (s, e) => { if (Services.DialogService.ActiveWindow == this) Services.DialogService.ActiveWindow = null; };
         }
     }
 }

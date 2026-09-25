@@ -241,11 +241,14 @@ namespace AutomatedClashRunner.ViewModels
             ProgressText = "Preparing viewpoint generation...";
             ProgressBarValue = 0;
             ProgressBarMax = targetTests.Count;
+            DoEvents();
 
+            int count = 0;
+            bool success = false;
             try
             {
                 var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
-                int count = _distiller.ExportViewpoints(
+                count = _distiller.ExportViewpoints(
                     doc,
                     targetTests,
                     IncludeNew,
@@ -262,22 +265,41 @@ namespace AutomatedClashRunner.ViewModels
                         DoEvents();
                     });
 
-                LoadTests();
-
-                _dialogService.ShowInformation(
-                    $"Generated {count} viewpoints across {targetTests.Count} clash tests into the Saved Viewpoints window.",
-                    "Viewpoints Created");
+                success = true;
             }
             catch (Exception ex)
             {
                 _logger.LogError("Error generating viewpoints", ex);
+                IsBusy = false;
+                ProgressText = string.Empty;
+                ProgressBarValue = 0;
+                DoEvents();
+
                 _dialogService.ShowError($"Failed to generate viewpoints: {ex.Message}");
+                return;
             }
             finally
             {
                 IsBusy = false;
                 ProgressText = string.Empty;
                 ProgressBarValue = 0;
+                DoEvents();
+            }
+
+            if (success)
+            {
+                try
+                {
+                    LoadTests();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError("Error reloading tests after viewpoint export", ex);
+                }
+
+                _dialogService.ShowInformation(
+                    $"Generated {count} viewpoints across {targetTests.Count} clash tests into the Saved Viewpoints window.",
+                    "Viewpoints Created");
             }
         }
 

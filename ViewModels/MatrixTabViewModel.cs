@@ -868,9 +868,10 @@ namespace AutomatedClashRunner.ViewModels
             ProgressBarValue = 0;
             ProgressBarMax = count;
 
+            ExecutionResult result = null;
             try
             {
-                var result = _clashExecution.RunGenericClashMatrix(
+                result = _clashExecution.RunGenericClashMatrix(
                     doc,
                     itemsA,
                     itemsB,
@@ -884,19 +885,29 @@ namespace AutomatedClashRunner.ViewModels
                         ProgressBarMax = total;
                         DoEvents();
                     });
-
-                _dialogService.ShowSummary(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError("Fatal error in clash matrix execution", ex);
+                IsBusy = false;
+                ProgressText = string.Empty;
+                ProgressBarValue = 0;
+                DoEvents();
+
                 _dialogService.ShowError($"Execution failed: {ex.Message}");
+                return;
             }
             finally
             {
                 IsBusy = false;
                 ProgressText = string.Empty;
                 ProgressBarValue = 0;
+                DoEvents();
+            }
+
+            if (result != null)
+            {
+                _dialogService.ShowSummary(result);
             }
         }
 

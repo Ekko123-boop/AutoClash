@@ -197,24 +197,46 @@ namespace AutomatedClashRunner.ViewModels
             ProgressText = "Re-running selected clash tests...";
             ProgressBarValue = 0;
             ProgressBarMax = selected.Count;
+            DoEvents();
 
+            bool success = false;
             try
             {
                 var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
                 _distiller.ReRunTests(doc, selected);
-                LoadTests();
-                _dialogService.ShowInformation($"Re-ran {selected.Count} tests successfully.", "Success");
+                success = true;
             }
             catch (Exception ex)
             {
                 _logger.LogError("Error re-running selected tests", ex);
+                IsBusy = false;
+                ProgressText = string.Empty;
+                ProgressBarValue = 0;
+                DoEvents();
+
                 _dialogService.ShowError($"Failed to re-run tests: {ex.Message}");
+                return;
             }
             finally
             {
                 IsBusy = false;
                 ProgressText = string.Empty;
                 ProgressBarValue = 0;
+                DoEvents();
+            }
+
+            if (success)
+            {
+                try
+                {
+                    LoadTests();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError("Error reloading tests after re-run", ex);
+                }
+
+                _dialogService.ShowInformation($"Re-ran {selected.Count} tests successfully.", "Success");
             }
         }
 
@@ -236,11 +258,14 @@ namespace AutomatedClashRunner.ViewModels
             ProgressText = "Preparing clash grouping...";
             ProgressBarValue = 0;
             ProgressBarMax = 100;
+            DoEvents();
 
+            int groupsCreated = 0;
+            bool success = false;
             try
             {
                 var doc = Autodesk.Navisworks.Api.Application.ActiveDocument;
-                int groupsCreated = _distiller.GroupByDistance(
+                groupsCreated = _distiller.GroupByDistance(
                     doc,
                     targetTests,
                     GroupingProximity,
@@ -252,19 +277,39 @@ namespace AutomatedClashRunner.ViewModels
                         DoEvents();
                     });
 
-                LoadTests();
-                _dialogService.ShowInformation($"Clash Grouping complete! Created {groupsCreated} new groups across {targetTests.Count} tests.", "Grouping Complete");
+                success = true;
             }
             catch (Exception ex)
             {
                 _logger.LogError("Error grouping clash tests", ex);
+                IsBusy = false;
+                ProgressText = string.Empty;
+                ProgressBarValue = 0;
+                DoEvents();
+
                 _dialogService.ShowError($"Failed to group clashes: {ex.Message}");
+                return;
             }
             finally
             {
                 IsBusy = false;
                 ProgressText = string.Empty;
                 ProgressBarValue = 0;
+                DoEvents();
+            }
+
+            if (success)
+            {
+                try
+                {
+                    LoadTests();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError("Error reloading tests after grouping", ex);
+                }
+
+                _dialogService.ShowInformation($"Clash Grouping complete! Created {groupsCreated} new groups across {targetTests.Count} tests.", "Grouping Complete");
             }
         }
 

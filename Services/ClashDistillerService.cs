@@ -384,20 +384,10 @@ namespace AutomatedClashRunner.Services
                         {
                             string vpName = _naming.FormatViewpointName(test.DisplayName, group.DisplayName, gIdx);
                             var svp = new SavedViewpoint(vp) { DisplayName = vpName };
-                            NativeClashRedlineHelper.AttachRedlinesToSavedViewpoint(group, svp, _logger);
+                            CopyComments(group, svp);
 
                             GroupItem targetFolder = (GroupItem)actualFolder ?? (targetRootFolder ?? savedViewpoints.RootItem);
                             savedViewpoints.AddCopy(targetFolder, svp);
-
-                            // Directly retrieve the committed document-bound SavedViewpoint and embed native redlines
-                            var boundSvp = (targetFolder.Children[targetFolder.Children.Count - 1] as SavedViewpoint)
-                                ?? targetFolder.Children.OfType<SavedViewpoint>().LastOrDefault(v => v.DisplayName == vpName)
-                                ?? targetFolder.Children.OfType<SavedViewpoint>().LastOrDefault();
-
-                            if (boundSvp != null)
-                            {
-                                NativeClashRedlineHelper.AttachRedlinesToSavedViewpoint(group, boundSvp, _logger);
-                            }
 
                             viewpointsCreated++;
                             testCreated++;
@@ -423,21 +413,11 @@ namespace AutomatedClashRunner.Services
                         {
                             string vpName = _naming.FormatViewpointName(test.DisplayName, raw.DisplayName, rIdx);
                             var svp = new SavedViewpoint(vp) { DisplayName = vpName };
-                            NativeClashRedlineHelper.AttachRedlinesToSavedViewpoint(raw, svp, _logger);
+                            CopyComments(raw, svp);
 
                             GroupItem targetFolder = (GroupItem)actualFolder ?? (targetRootFolder ?? savedViewpoints.RootItem);
                             savedViewpoints.AddCopy(targetFolder, svp);
-                            
-                            // Directly retrieve the committed document-bound SavedViewpoint and embed native redlines
-                            var boundSvp = (targetFolder.Children[targetFolder.Children.Count - 1] as SavedViewpoint)
-                                ?? targetFolder.Children.OfType<SavedViewpoint>().LastOrDefault(v => v.DisplayName == vpName)
-                                ?? targetFolder.Children.OfType<SavedViewpoint>().LastOrDefault();
 
-                            if (boundSvp != null)
-                            {
-                                NativeClashRedlineHelper.AttachRedlinesToSavedViewpoint(raw, boundSvp, _logger);
-                            }
-                            
                             viewpointsCreated++;
                             testCreated++;
 
@@ -575,6 +555,63 @@ namespace AutomatedClashRunner.Services
             catch { }
 
             return null;
+        }
+
+        private static void CopyComments(IClashResult source, SavedViewpoint svp)
+        {
+            if (source == null || svp == null) return;
+            try
+            {
+                CopyItemComments(source, svp);
+
+                if (source is ClashResultGroup grp)
+                {
+                    if (grp.RepresentativeResult != null)
+                    {
+                        CopyItemComments(grp.RepresentativeResult, svp);
+                    }
+
+                    if (grp.Children != null)
+                    {
+                        foreach (var child in grp.Children.OfType<ClashResult>())
+                        {
+                            CopyItemComments(child, svp);
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private static void CopyItemComments(IClashResult source, SavedViewpoint svp)
+        {
+            if (source?.Comments == null || source.Comments.Count == 0 || svp?.Comments == null) return;
+            try
+            {
+                foreach (Comment c in source.Comments)
+                {
+                    if (c == null) continue;
+                    bool exists = false;
+                    try
+                    {
+                        foreach (Comment existing in svp.Comments)
+                        {
+                            if (existing != null && existing.Body == c.Body && existing.Author == c.Author)
+                            {
+                                exists = true;
+                                break;
+                            }
+                        }
+                    }
+                    catch { }
+
+                    if (!exists)
+                    {
+                        svp.Comments.Add(new Comment(c));
+                    }
+                }
+            }
+            catch { }
         }
     }
 }
