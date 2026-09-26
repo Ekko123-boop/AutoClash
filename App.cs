@@ -12,16 +12,16 @@ using AutomatedClashRunner.Views;
 namespace AutomatedClashRunner
 {
     // =========================================================================
-    // 1. Dedicated "Cypher" Ribbon Tab via Official Navisworks CommandHandlerPlugin
+    // 1. Dedicated "Cypher Fab" Ribbon Tab via Official Navisworks CommandHandlerPlugin
     // =========================================================================
-    [Plugin("CypherNavisRibbon", "CYPH", DisplayName = "Cypher Tools")]
+    [Plugin("CypherFabRibbon", "CYPH", DisplayName = "Cypher Fab Tools")]
     [RibbonLayout("CypherRibbon.xaml")]
-    [RibbonTab("Cypher", DisplayName = "Cypher")]
+    [RibbonTab("CypherFab_Tab", DisplayName = "Cypher Fab")]
     [Command("ID_CYPHER_CMD_MATRIX",
              DisplayName = "Clash Matrix",
              Icon = "Images\\icon_matrix_16.png",
              LargeIcon = "Images\\icon_matrix_32.png",
-             ToolTip = "Launch Clash Matrix generator and Tools Test runner")]
+             ToolTip = "Launch Clash Matrix generator, Tools Test, Base Build & Constructability POC")]
     [Command("ID_CYPHER_CMD_DISTILL",
              DisplayName = "Distill Clashes",
              Icon = "Images\\icon_distill_16.png",
@@ -72,7 +72,7 @@ namespace AutomatedClashRunner
     // =========================================================================
     // 2. Tool Add-ins Tab Fallback Plugin
     // =========================================================================
-    [Plugin("CypherNavisAddin", "CYPH", DisplayName = "Cypher Tools", ToolTip = "Automated Model Clash Runner & Distiller")]
+    [Plugin("CypherFabAddin", "CYPH", DisplayName = "Cypher Fab Tools", ToolTip = "Tools Test, Base Build & Constructability POC Clash Suite")]
     [AddInPlugin(AddInLocation.AddIn)]
     public class App : AddInPlugin
     {

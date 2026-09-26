@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
-    <ProjectGuid>{B78E1C23-4567-4DEF-8901-23456789ABCD}</ProjectGuid>
+    <ProjectGuid>{B78E1C23-4567-4DEF-8901-23456789FAB1}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <RootNamespace>AutomatedClashRunner.Installer</RootNamespace>
-    <AssemblyName>CypherTools_Installer</AssemblyName>
+    <AssemblyName>CypherFabTools_Installer</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

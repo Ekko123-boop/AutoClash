@@ -59,7 +59,7 @@ namespace AutomatedClashRunner.Installer
 
         private void InitializeComponent()
         {
-            this.Text = "Cypher Tools Setup (Navisworks 2020-2026)";
+            this.Text = "Cypher Fab Tools Setup (Navisworks 2020-2026)";
             this.Size = new Size(580, 560);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -78,7 +78,7 @@ namespace AutomatedClashRunner.Installer
 
             lblHeader = new Label
             {
-                Text = "⚡ CYPHER TOOLS SETUP",
+                Text = "⚡ CYPHER FAB TOOLS SETUP",
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold),
                 ForeColor = Color.White,
                 Location = new Point(20, 16),
@@ -87,7 +87,7 @@ namespace AutomatedClashRunner.Installer
 
             lblSubtitle = new Label
             {
-                Text = "Universal Multi-Version Add-in Installer for Autodesk Navisworks (2020 - 2026)",
+                Text = "Semiconductor & Tool Install Multi-Version Add-in Installer (2020 - 2026)",
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
                 ForeColor = Color.FromArgb(148, 163, 184),
                 Location = new Point(22, 48),
@@ -303,7 +303,7 @@ namespace AutomatedClashRunner.Installer
 
             Log("=== Uninstallation Completed! ===");
             MessageBox.Show(
-                "Cypher Tools has been completely removed from all Navisworks versions.",
+                "Cypher Fab Tools has been completely removed from all Navisworks versions.",
                 "Uninstall Complete",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
@@ -314,7 +314,23 @@ namespace AutomatedClashRunner.Installer
     {
         public static bool IsNavisworksRunning()
         {
-            return Process.GetProcessesByName("Roamer").Length > 0;
+            try
+            {
+                return Process.GetProcesses().Any(p =>
+                {
+                    try
+                    {
+                        string name = p.ProcessName;
+                        return name.IndexOf("roamer", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                               name.IndexOf("navisworks", StringComparison.OrdinalIgnoreCase) >= 0;
+                    }
+                    catch { return false; }
+                });
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public static List<string> GetInstalledNavisworksDirectories()
@@ -417,7 +433,7 @@ namespace AutomatedClashRunner.Installer
 
                     // 1c. Clean any legacy bundles (ProgramData and AppData)
                     string commonProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-                    foreach (var legacyBundle in new[] { "CypherTools.bundle", "RimoNavisTools.bundle", "RimoTools.bundle", "AutomatedClashRunner.bundle" })
+                    foreach (var legacyBundle in new[] { "CypherNavisTools.bundle", "CypherTools.bundle", "RimoNavisTools.bundle", "RimoTools.bundle", "AutomatedClashRunner.bundle", "CypherFabTools.bundle" })
                     {
                         string pdOld = Path.Combine(commonProgData, @"Autodesk\ApplicationPlugins", legacyBundle);
                         if (Directory.Exists(pdOld))
@@ -436,7 +452,7 @@ namespace AutomatedClashRunner.Installer
                     try
                     {
                         string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-                        string globalBundle = Path.Combine(progData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
+                        string globalBundle = Path.Combine(progData, @"Autodesk\ApplicationPlugins\CypherFabTools.bundle");
                         if (Directory.Exists(globalBundle)) Directory.Delete(globalBundle, true);
                         CopyDirectory(tempDir, globalBundle);
                         log("✓ Deployed Global ApplicationPlugins Bundle (ProgramData)");
@@ -451,7 +467,7 @@ namespace AutomatedClashRunner.Installer
                     // 3. If ProgramData succeeded, clean AppData bundle to ensure exactly ONE copy exists.
                     //    If ProgramData failed, deploy User AppData bundle as canonical fallback.
                     string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                    string userBundle = Path.Combine(appData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
+                    string userBundle = Path.Combine(appData, @"Autodesk\ApplicationPlugins\CypherFabTools.bundle");
                     if (progDataSuccess)
                     {
                         if (Directory.Exists(userBundle))
@@ -568,7 +584,7 @@ namespace AutomatedClashRunner.Installer
 
             // 2. ProgramData
             string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-            string[] bundles = { "CypherNavisTools.bundle", "CypherTools.bundle", "RimoNavisTools.bundle", "RimoTools.bundle", "AutomatedClashRunner.bundle" };
+            string[] bundles = { "CypherFabTools.bundle", "CypherNavisTools.bundle", "CypherTools.bundle", "RimoNavisTools.bundle", "RimoTools.bundle", "AutomatedClashRunner.bundle" };
             foreach (var b in bundles)
             {
                 string p = Path.Combine(progData, @"Autodesk\ApplicationPlugins", b);

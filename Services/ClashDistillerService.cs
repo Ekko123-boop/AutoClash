@@ -438,6 +438,7 @@ namespace AutomatedClashRunner.Services
                         {
                             string vpName = _naming.FormatViewpointName(test.DisplayName, group.DisplayName, gIdx);
                             var svp = new SavedViewpoint(vp) { DisplayName = vpName };
+                            CopyComments(group, svp);
                             savedViewpoints.AddCopy(actualFolder, svp);
                             viewpointsCreated++;
                             testCreated++;
@@ -463,6 +464,7 @@ namespace AutomatedClashRunner.Services
                         {
                             string vpName = _naming.FormatViewpointName(test.DisplayName, raw.DisplayName, rIdx);
                             var svp = new SavedViewpoint(vp) { DisplayName = vpName };
+                            CopyComments(raw, svp);
                             savedViewpoints.AddCopy(actualFolder, svp);
                             viewpointsCreated++;
                             testCreated++;
@@ -495,6 +497,7 @@ namespace AutomatedClashRunner.Services
             if (clashData == null || result == null) return null;
 
             // 1. Primary: In Navisworks 2024+, TestsViewpointForResult exists on DocumentClashTests and takes IClashResult
+            // 1. Primary: Try native method for the exact result
             try
             {
                 var method = typeof(DocumentClashTests).GetMethod("TestsViewpointForResult", 
@@ -506,12 +509,37 @@ namespace AutomatedClashRunner.Services
                     if (vp != null) return vp;
                 }
             }
-            catch
+            catch { }
+
+            // 2. If it's a group, try getting the viewpoint of its RepresentativeResult
+            if (result is ClashResultGroup clashGroup && clashGroup.RepresentativeResult != null)
             {
-                // Fall through to geometric camera positioning
+                try
+                {
+                    var method = typeof(DocumentClashTests).GetMethod("TestsViewpointForResult", 
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                    
+                    if (method != null)
+                    {
+                        var vp = method.Invoke(clashData, new object[] { clashGroup.RepresentativeResult }) as Viewpoint;
+                        if (vp != null) return vp;
+                    }
+                }
+                catch { }
             }
 
-            // 2. Focused geometric camera fallback (Navisworks 2023 or when native VP is null):
+            // 3. Fallback: Check if any child has a saved viewpoint or redlines
+            if (result is ClashResultGroup fallbackGrp && fallbackGrp.Children != null)
+            {
+                var childWithVp = fallbackGrp.Children.OfType<ClashResult>().FirstOrDefault(c => c.HasSavedViewpoint || c.HasRedlines);
+                if (childWithVp != null)
+                {
+                    var childVp = GetTestsViewpointForResult(clashData, childWithVp);
+                    if (childVp != null) return childVp;
+                }
+            }
+
+            // 4. Focused geometric camera fallback (Navisworks 2023 or when native VP is null):
             // Extract exact 3D coordinates and bounding box from the clash or group
             try
             {
@@ -560,7 +588,12 @@ namespace AutomatedClashRunner.Services
                         Point3D cameraEye = new Point3D(center.X - offset.X, center.Y - offset.Y, center.Z - offset.Z);
 
                         vp.Position = cameraEye;
-                        vp.PivotPoint = center;
+                        try
+                        {
+                            var pivotProp = vp.GetType().GetProperty("PivotPoint");
+                            pivotProp?.SetValue(vp, center, null);
+                        }
+                        catch { }
                         vp.FocalDistance = focalDist;
                         vp.AlignDirection(dir);
                         vp.AlignUp(new Vector3D(0, 0, 1));
@@ -571,6 +604,63 @@ namespace AutomatedClashRunner.Services
             catch { }
 
             return null;
+        }
+
+        private static void CopyComments(IClashResult source, SavedViewpoint svp)
+        {
+            if (source == null || svp == null) return;
+            try
+            {
+                CopyItemComments(source, svp);
+
+                if (source is ClashResultGroup grp)
+                {
+                    if (grp.RepresentativeResult != null)
+                    {
+                        CopyItemComments(grp.RepresentativeResult, svp);
+                    }
+
+                    if (grp.Children != null)
+                    {
+                        foreach (var child in grp.Children.OfType<ClashResult>())
+                        {
+                            CopyItemComments(child, svp);
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private static void CopyItemComments(IClashResult source, SavedViewpoint svp)
+        {
+            if (source?.Comments == null || source.Comments.Count == 0 || svp?.Comments == null) return;
+            try
+            {
+                foreach (Comment c in source.Comments)
+                {
+                    if (c == null) continue;
+                    bool exists = false;
+                    try
+                    {
+                        foreach (Comment existing in svp.Comments)
+                        {
+                            if (existing != null && existing.Body == c.Body && existing.Author == c.Author)
+                            {
+                                exists = true;
+                                break;
+                            }
+                        }
+                    }
+                    catch { }
+
+                    if (!exists)
+                    {
+                        svp.Comments.Add(new Comment(c));
+                    }
+                }
+            }
+            catch { }
         }
     }
 }
