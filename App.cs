@@ -12,11 +12,11 @@ using AutomatedClashRunner.Views;
 namespace AutomatedClashRunner
 {
     // =========================================================================
-    // 1. Dedicated "Cypher" Ribbon Tab via Official Navisworks CommandHandlerPlugin
+    // 1. Dedicated "Cypher Clash" Ribbon Tab via Official Navisworks CommandHandlerPlugin
     // =========================================================================
-    [Plugin("CypherNavisRibbon", "CYPH", DisplayName = "Cypher Tools")]
+    [Plugin("CypherGenericRibbon", "CYPH", DisplayName = "Cypher Generic Clash")]
     [RibbonLayout("CypherRibbon.xaml")]
-    [RibbonTab("Cypher", DisplayName = "Cypher")]
+    [RibbonTab("CypherGeneric_Tab", DisplayName = "Cypher Clash")]
     [Command("ID_CYPHER_CMD_MATRIX",
              DisplayName = "Clash Test",
              Icon = "Images\\icon_matrix_16.png",
@@ -72,7 +72,7 @@ namespace AutomatedClashRunner
     // =========================================================================
     // 2. Tool Add-ins Tab Fallback Plugin
     // =========================================================================
-    [Plugin("CypherNavisAddin", "CYPH", DisplayName = "Cypher Tools", ToolTip = "Automated Model Clash Runner")]
+    [Plugin("CypherGenericAddin", "CYPH", DisplayName = "Cypher Generic Clash", ToolTip = "Universal Model and Selection Set Matrix Clash Runner")]
     [AddInPlugin(AddInLocation.AddIn)]
     public class App : AddInPlugin
     {

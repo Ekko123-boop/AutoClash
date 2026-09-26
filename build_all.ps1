@@ -108,8 +108,8 @@ foreach ($dest in $destinations) {
 }
 
 # 6. Direct AppData Deployment: Multi-Version ApplicationPlugins Bundle
-Write-Host ">>> 7. Deploying Multi-Version CypherNavisTools.bundle to Navisworks ApplicationPlugins..." -ForegroundColor Cyan
-$bundleDir = "$env:APPDATA\Autodesk\ApplicationPlugins\CypherNavisTools.bundle"
+Write-Host ">>> 7. Deploying Multi-Version CypherGenericClash.bundle to Navisworks ApplicationPlugins..." -ForegroundColor Cyan
+$bundleDir = "$env:APPDATA\Autodesk\ApplicationPlugins\CypherGenericClash.bundle"
 if (Test-Path $bundleDir) { Remove-Item $bundleDir -Recurse -Force }
 
 $contentsDir2023 = "$bundleDir\Contents\2023"
@@ -144,13 +144,13 @@ if (Test-Path "Images") {
 Get-ChildItem $bundleDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
 Write-Host " - Multi-Version Bundle deployed to: $bundleDir" -ForegroundColor Green
 
-# 5b. Ensure ProgramData is 100% clean (Rule: NEVER dual-deploy to ProgramData and AppData; duplicate bundle drops ribbon tab)
+# 5b. Purge any obsolete CypherNavisTools bundle from ProgramData if present
 $programDataPlugins = "$env:ProgramData\Autodesk\ApplicationPlugins"
 if (Test-Path $programDataPlugins) {
-    Get-ChildItem -Path $programDataPlugins -Filter "*Cypher*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+    Get-ChildItem -Path $programDataPlugins -Filter "*CypherNavisTools*" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
         try {
             Remove-Item $_.FullName -Recurse -Force -ErrorAction Stop
-            Write-Host " - Purged duplicate bundle from ProgramData: $($_.FullName)" -ForegroundColor Yellow
+            Write-Host " - Purged obsolete bundle from ProgramData: $($_.FullName)" -ForegroundColor Yellow
         } catch {
             Write-Host " - Warning: Could not purge $($_.FullName) from ProgramData (requires admin)." -ForegroundColor Yellow
         }

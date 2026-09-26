@@ -9,7 +9,7 @@
     xmlns:local="clr-namespace:Autodesk.Navisworks.Gui.Roamer.AIRLook;assembly=navisworks.gui.roamer">
     <!-- END STANDARD SECTION DO NOT EDIT -->
     
-    <RibbonTab Id="Cypher" KeyTip="C1" Title="Cypher">
+    <RibbonTab Id="CypherGeneric_Tab" KeyTip="CG" Title="Cypher Clash">
         <RibbonPanel x:Uid="RibbonPanel_Cypher_1">
             <RibbonPanelSource x:Uid="RibbonPanelSource_Cypher_1" KeyTip="C1" Title="Clash Tools">
 

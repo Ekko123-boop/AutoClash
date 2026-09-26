@@ -438,7 +438,7 @@ namespace AutomatedClashRunner.Installer
 
                     // 1c. Clean legacy bundle names from both ProgramData and AppData
                     string commonProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-                    var legacyBundleNames = new[] { "CypherTools.bundle", "RimoNavisTools.bundle", "RimoTools.bundle", "AutomatedClashRunner.bundle", "CypherNavisTools_backup.bundle" };
+                    var legacyBundleNames = new[] { "CypherNavisTools.bundle", "CypherTools.bundle", "RimoNavisTools.bundle", "RimoTools.bundle", "AutomatedClashRunner.bundle", "CypherNavisTools_backup.bundle" };
                     foreach (var legacyBundle in legacyBundleNames)
                     {
                         string pdOld = Path.Combine(commonProgData, @"Autodesk\ApplicationPlugins", legacyBundle);
@@ -460,8 +460,8 @@ namespace AutomatedClashRunner.Installer
                     // Fallback Target #2: User AppData (if ProgramData is inaccessible)
                     // Rule: Single authoritative bundle location. Delete the secondary bundle to prevent duplicate loading collisions.
                     string progDataPlugins = Path.Combine(commonProgData, @"Autodesk\ApplicationPlugins");
-                    string progDataBundle = Path.Combine(progDataPlugins, "CypherNavisTools.bundle");
-                    string userBundle = Path.Combine(userAppData, @"Autodesk\ApplicationPlugins\CypherNavisTools.bundle");
+                    string progDataBundle = Path.Combine(progDataPlugins, "CypherGenericClash.bundle");
+                    string userBundle = Path.Combine(userAppData, @"Autodesk\ApplicationPlugins\CypherGenericClash.bundle");
 
                     bool deployedToProgramData = false;
                     try
@@ -602,7 +602,7 @@ namespace AutomatedClashRunner.Installer
 
             // 2. ProgramData
             string progData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-            string[] bundles = { "CypherNavisTools.bundle", "CypherTools.bundle", "RimoNavisTools.bundle", "RimoTools.bundle", "AutomatedClashRunner.bundle" };
+            string[] bundles = { "CypherGenericClash.bundle", "CypherNavisTools.bundle", "CypherTools.bundle", "RimoNavisTools.bundle", "RimoTools.bundle", "AutomatedClashRunner.bundle" };
             foreach (var b in bundles)
             {
                 string p = Path.Combine(progData, @"Autodesk\ApplicationPlugins", b);

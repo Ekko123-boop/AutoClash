@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ApplicationPackage
     SchemaVersion="1.0"
-    Name="CypherNavisTools"
+    Name="CypherGenericClash"
     AppVersion="2.1.0"
     Description="Cypher Generic Clash Runner - Universal Model and Selection Set Matrix Add-in for Navisworks"
     ProductCode="{E89B1002-3CD2-45F4-A0C3-8991D4C3E481}"
@@ -12,42 +12,42 @@
     <!-- Navisworks 2020 -->
     <Components Description="Navisworks 2020">
         <RuntimeRequirements OS="Win64" Platform="NAVMAN|NAVSIM" SeriesMin="Nw17" SeriesMax="Nw17" />
-        <ComponentEntry AppName="Cypher Tools" ModuleName="./Contents/2023/CypherNavisTools.dll" AppType="ManagedPlugin" />
+        <ComponentEntry AppName="Cypher Generic Clash" ModuleName="./Contents/2023/CypherGenericClash.dll" AppType="ManagedPlugin" />
     </Components>
 
     <!-- Navisworks 2021 -->
     <Components Description="Navisworks 2021">
         <RuntimeRequirements OS="Win64" Platform="NAVMAN|NAVSIM" SeriesMin="Nw18" SeriesMax="Nw18" />
-        <ComponentEntry AppName="Cypher Tools" ModuleName="./Contents/2023/CypherNavisTools.dll" AppType="ManagedPlugin" />
+        <ComponentEntry AppName="Cypher Generic Clash" ModuleName="./Contents/2023/CypherGenericClash.dll" AppType="ManagedPlugin" />
     </Components>
 
     <!-- Navisworks 2022 -->
     <Components Description="Navisworks 2022">
         <RuntimeRequirements OS="Win64" Platform="NAVMAN|NAVSIM" SeriesMin="Nw19" SeriesMax="Nw19" />
-        <ComponentEntry AppName="Cypher Tools" ModuleName="./Contents/2023/CypherNavisTools.dll" AppType="ManagedPlugin" />
+        <ComponentEntry AppName="Cypher Generic Clash" ModuleName="./Contents/2023/CypherGenericClash.dll" AppType="ManagedPlugin" />
     </Components>
 
     <!-- Navisworks 2023 -->
     <Components Description="Navisworks 2023">
         <RuntimeRequirements OS="Win64" Platform="NAVMAN|NAVSIM" SeriesMin="Nw20" SeriesMax="Nw20" />
-        <ComponentEntry AppName="Cypher Tools" ModuleName="./Contents/2023/CypherNavisTools.dll" AppType="ManagedPlugin" />
+        <ComponentEntry AppName="Cypher Generic Clash" ModuleName="./Contents/2023/CypherGenericClash.dll" AppType="ManagedPlugin" />
     </Components>
 
     <!-- Navisworks 2024 -->
     <Components Description="Navisworks 2024">
         <RuntimeRequirements OS="Win64" Platform="NAVMAN|NAVSIM" SeriesMin="Nw21" SeriesMax="Nw21" />
-        <ComponentEntry AppName="Cypher Tools" ModuleName="./Contents/2024/CypherNavisTools.dll" AppType="ManagedPlugin" />
+        <ComponentEntry AppName="Cypher Generic Clash" ModuleName="./Contents/2024/CypherGenericClash.dll" AppType="ManagedPlugin" />
     </Components>
 
     <!-- Navisworks 2025 -->
     <Components Description="Navisworks 2025">
         <RuntimeRequirements OS="Win64" Platform="NAVMAN|NAVSIM" SeriesMin="Nw22" SeriesMax="Nw22" />
-        <ComponentEntry AppName="Cypher Tools" ModuleName="./Contents/2025/CypherNavisTools.dll" AppType="ManagedPlugin" />
+        <ComponentEntry AppName="Cypher Generic Clash" ModuleName="./Contents/2025/CypherGenericClash.dll" AppType="ManagedPlugin" />
     </Components>
 
     <!-- Navisworks 2026 -->
     <Components Description="Navisworks 2026">
         <RuntimeRequirements OS="Win64" Platform="NAVMAN|NAVSIM" SeriesMin="Nw23" SeriesMax="Nw24" />
-        <ComponentEntry AppName="Cypher Tools" ModuleName="./Contents/2026/CypherNavisTools.dll" AppType="ManagedPlugin" />
+        <ComponentEntry AppName="Cypher Generic Clash" ModuleName="./Contents/2026/CypherGenericClash.dll" AppType="ManagedPlugin" />
     </Components>
 </ApplicationPackage>
