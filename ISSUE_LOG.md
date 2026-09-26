@@ -198,9 +198,43 @@ A coworker reported three critical defects:
 3. **Naming & trailing dashes**: Group and viewpoint names were formatted as `T-EGE-ASP1106-E--004` (double dashes, 3-digit zero-padding) instead of clean format `T-EGE-ASP1106-E 4`. Furthermore, exporting a filtered subset of clashes risked desynchronizing viewpoint numbers from clash numbers.
 
 #### Root Causes & Implementation
-1. **Counting groups**: In [`ClashTestNode.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Models/ClashTestNode.cs), `groupCount = group.Children.Count` added raw children to status totals. Fixed by counting each top-level `ClashResultGroup` as 1 item.
-2. **Viewpoint retrieval & geometric focus**: In [`ClashDistillerService.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Services/ClashDistillerService.cs), `ExportViewpoints` passed `group.RepresentativeResult` (often null or missing a viewpoint). Changed to pass `(IClashResult)group` directly to `TestsViewpointForResult`. In addition, replaced the uncoordinated screen copy fallback with a smart geometric focus algorithm calculating `cameraEye = center - (dir * focalDist)` targeting `center` and `bbox`.
-3. **Clean naming & number preservation**: In [`NamingService.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/AutomatedClashRunner/Services/NamingService.cs), implemented `SanitizeTestDisplayName`, `FormatGroupName`, and `FormatViewpointName`. Stripped trailing hyphens/underscores/spaces (`TrimEnd('-', '_', ' ')`), formatted names with a single space and unpadded digits (e.g. `EGE-ASP1106-E 4`), and extracted the exact trailing digit from source clash items (`\d+$`) so viewpoint numbers strictly preserve clash numbers even when exporting filtered subsets.
+1. **Counting groups**: In [`ClashTestNode.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/CypherFabTools/Models/ClashTestNode.cs), `groupCount = group.Children.Count` added raw children to status totals. Fixed by counting each top-level `ClashResultGroup` as 1 item.
+2. **Viewpoint retrieval & geometric focus**: In [`ClashDistillerService.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/CypherFabTools/Services/ClashDistillerService.cs), `ExportViewpoints` passed `group.RepresentativeResult` (often null or missing a viewpoint). Changed to pass `(IClashResult)group` directly to `TestsViewpointForResult`. In addition, replaced the uncoordinated screen copy fallback with a smart geometric focus algorithm calculating `cameraEye = center - (dir * focalDist)` targeting `center` and `bbox`.
+3. **Clean naming & number preservation**: In [`NamingService.cs`](file:///c:/Users/Rimo/Downloads/ACC/UCSC/Project%20Files/02%20-%20Models/02%20-%20Navisworks/CypherFabTools/Services/NamingService.cs), implemented `SanitizeTestDisplayName`, `FormatGroupName`, and `FormatViewpointName`. Stripped trailing hyphens/underscores/spaces (`TrimEnd('-', '_', ' ')`), formatted names with a single space and unpadded digits (e.g. `EGE-ASP1106-E 4`), and extracted the exact trailing digit from source clash items (`\d+$`) so viewpoint numbers strictly preserve clash numbers even when exporting filtered subsets.
+
+---
+
+### 6. Detailed Breakdown: ISS-058 (Safe Managed Comment Copy & Viewpoint Crash Elimination)
+- **Symptom**: Exporting viewpoints on large clash tests crashed Navisworks Manage or froze indefinitely.
+- **Root Cause**: Navisworks native COM objects on `SavedItem.Comments` trigger uncatchable access violations or recursive deadlocks when iterated concurrently during active transactions. Furthermore, in Navisworks 2025/2026 (.NET 8 CoreCLR), `Viewpoint.PivotPoint` was removed from the API, causing runtime MissingMethodException / CS1061 errors.
+- **Resolution**:
+  1. Implemented safe managed copy helper `CopyComments(IClashResult clash, SavedItem target)` which extracts comment text, author, and status into detached strings before creating saved viewpoints.
+  2. Accessed `Viewpoint.PivotPoint` via safe reflection (`vp.GetType().GetProperty("PivotPoint")?.SetValue(vp, center, null);`), ensuring forward and backward compatibility across 2020 through 2026.
+
+---
+
+### 7. Detailed Breakdown: ISS-060 (Architectural Separation: Cypher Fab Tools vs Cypher Generic Clash)
+- **Context**: The project originally evolved from a specialized semiconductor fab clash engine (with Tools test `T-`, Base build `B-`, and Constructability POC `C-`) into a universal clash tool. The user required two distinct physical editions with separate installers to distribute to coworkers (Fab edition) and executive leadership (Generic edition).
+- **Architecture & Coexistence**:
+  - **CypherFabTools**:
+    - Directory: `CypherFabTools/`
+    - Assembly: `CypherFabTools.dll`
+    - Ribbon Tab: `Cypher Fab` (`Id="CypherFab_Tab"`, KeyTip: `CF`)
+    - Plugin IDs: `CypherFabRibbon` / `CypherFabAddin`
+    - Bundle: `CypherFabTools.bundle` (ProductCode: `{D74A1B23-7F89-49DE-9A4B-2B76C1234567}`)
+    - Installer: `CypherFabTools_Installer.exe`
+    - Features: Tools Test (`T-`), Base Build (`B-`), Constructability POC Clearance (`C-`), Clash Matrix, Group Clashes, Viewpoints Export.
+  - **CypherGenericClash**:
+    - Directory: `CypherGenericClash/`
+    - Assembly: `CypherGenericClash.dll`
+    - Ribbon Tab: `Cypher Clash` (`Id="CypherGeneric_Tab"`, KeyTip: `CG`)
+    - Plugin IDs: `CypherGenericRibbon` / `CypherGenericAddin`
+    - Bundle: `CypherGenericClash.bundle` (ProductCode: `{E89B1002-3CD2-45F4-A0C3-8991D4C3E481}`)
+    - Installer: `CypherGenericClash_Installer.exe`
+    - Features: Universal Clash Test Matrix, Simplified Group Clashes, Viewpoints Export.
+  - **Side-by-Side Coexistence Guarantee**:
+    - Neither installer purges or deletes the sibling add-in's bundle.
+    - Both add-ins can be installed simultaneously in Navisworks Manage (2020-2026) and present their own discrete ribbon tabs side by side without clash.
 
 
 
