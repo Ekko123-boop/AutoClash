@@ -414,7 +414,32 @@ When exporting clash viewpoints in Navisworks Manage 2024, the application abrup
 3. **Modern Standalone Distribution**:
    - Compiled modern standalone `CypherGenericClash_Installer.exe` (308 KB) with updated UI header: `⚡ CYPHER GENERIC CLASH SETUP`.
    - Distributed to:
-     1. `AutomatedClashRunner\CypherGenericClash_Installer.exe`
+     1. `CypherGenericClash\CypherGenericClash_Installer.exe`
      2. Workspace root: `CypherGenericClash_Installer.exe`
      3. Downloads folder: `C:\Users\Rimo\Downloads\CypherGenericClash_Installer.exe`
+
+---
+
+### ISS-060: Architectural Separation of Add-in Suites (Generic vs Fab Coexistence)
+
+#### Context & Requirement
+The user requested separating the add-in into two distinct physical directories and standalone installers:
+1. **Fab Edition (`CypherFabTools`)**: Specialized for Semiconductor and Tool Install coordination, containing Tools Test (`T-`), Base Build (`B-`), and Constructability POC clearance tests (`C-`), tailored for coworkers.
+2. **Generic Edition (`CypherGenericClash`)**: Universal Clash Test matrix, simplified Grouping, and Viewpoint Export, tailored for executives and general BIM coordination.
+
+#### Architectural Separation & Side-by-Side Coexistence
+1. **Independent Directories & Git Branches**:
+   - `CypherGenericClash/` (branch: `generic-clash-runner`)
+   - `CypherFabTools/` (branch: `master`)
+2. **Isolated Assemblies & Identifiers**:
+   - Generic: `CypherGenericClash.dll`, Plugin ID `CypherGenericRibbon` / `CypherGenericAddin`, Ribbon Tab `Cypher Clash` (`Id="CypherGeneric_Tab"`, KeyTip: `CG`).
+   - Fab: `CypherFabTools.dll`, Plugin ID `CypherFabRibbon` / `CypherFabAddin`, Ribbon Tab `Cypher Fab` (`Id="CypherFab_Tab"`, KeyTip: `CF`).
+3. **Distinct Autoloader Bundles**:
+   - Generic: `CypherGenericClash.bundle` (ProductCode: `{E89B1002-3CD2-45F4-A0C3-8991D4C3E481}`)
+   - Fab: `CypherFabTools.bundle` (ProductCode: `{D74A1B23-7F89-49DE-9A4B-2B76C1234567}`)
+4. **Standalone Installers**:
+   - Generic: `CypherGenericClash_Installer.exe` (workspace root & Downloads)
+   - Fab: `CypherFabTools_Installer.exe` (workspace root & Downloads)
+   - Zero-Collision Purge Logic: Each installer exclusively purges legacy bundles (`CypherNavisTools`, `RimoTools`, etc.) and updates its own bundle; neither installer touches or removes the sibling add-in. Both run side by side seamlessly in Navisworks Manage (2020-2026).
+
 
